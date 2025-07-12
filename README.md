@@ -1,3 +1,5 @@
+[![npm version](https://badge.fury.io/js/@haskou%2Fvalue-objects.svg)](https://badge.fury.io/js/@haskou%2Fvalue-objects)
+
 # Value Objects
 
 A TypeScript dependency-less library for creating safe, immutable,
