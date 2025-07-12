@@ -1,0 +1,218 @@
+{
+  "env": {
+    "es2022": true,
+    "node": true,
+    "jest": true
+  },
+  "parser": "@typescript-eslint/parser",
+  "plugins": [
+    "@typescript-eslint",
+    "prettier",
+    "unused-imports",
+    "sonarjs",
+    "perfectionist"
+  ],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended"
+  ],
+  "parserOptions": {
+    "project": ["./tsconfig.json", "./tsconfig.jest.json"],
+    "sourceType": "module"
+  },
+  "rules": {
+    "lines-between-class-members": [
+      "error",
+      "always",
+      {
+        "exceptAfterSingleLine": true
+      }
+    ],
+    "padding-line-between-statements": [
+      "error",
+      {
+        "blankLine": "always",
+        "prev": "import",
+        "next": ["class", "export", "const", "let", "var"]
+      },
+      {
+        "blankLine": "always",
+        "prev": "*",
+        "next": ["return", "if"]
+      }
+    ],
+    "no-extra-boolean-cast": "error",
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "@typescript-eslint/naming-convention": [
+      "error",
+      {
+        "selector": ["variable", "function"],
+        "format": ["camelCase", "PascalCase"],
+        "leadingUnderscore": "allow"
+      },
+      {
+        "selector": "interface",
+        "format": ["PascalCase"],
+        "custom": {
+          "regex": "^[A-Z]",
+          "match": true
+        }
+      }
+    ],
+    "no-unused-vars": "off",
+    "unused-imports/no-unused-imports": "error",
+    "unused-imports/no-unused-vars": [
+      "warn",
+      {
+        "vars": "all",
+        "varsIgnorePattern": "^_",
+        "args": "after-used",
+        "argsIgnorePattern": "^_"
+      }
+    ],
+    "@typescript-eslint/no-use-before-define": "warn",
+    "@typescript-eslint/no-inferrable-types": "off",
+    "@typescript-eslint/no-this-alias": "warn",
+    "@typescript-eslint/no-require-imports": "error",
+    "@typescript-eslint/unbound-method": "off",
+    "require-await": "off",
+    "@typescript-eslint/require-await": "error",
+    "@typescript-eslint/no-misused-promises": "off",
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/prefer-for-of": "error",
+    "@typescript-eslint/member-delimiter-style": "off",
+    "@typescript-eslint/no-unsafe-return": "error",
+    "@typescript-eslint/no-unsafe-call": "warn",
+    "@typescript-eslint/no-unsafe-argument": "warn",
+    "max-classes-per-file": ["error", 1],
+    "no-multiple-empty-lines": [
+      1,
+      {
+        "max": 1,
+        "maxEOF": 0
+      }
+    ],
+    "max-len": [
+      "error",
+      {
+        "code": 80,
+        "ignoreStrings": true,
+        "ignoreRegExpLiterals": true,
+        "ignoreTemplateLiterals": true
+      }
+    ],
+    "@typescript-eslint/explicit-member-accessibility": [
+      "error",
+      {
+        "ignoredMethodNames": ["constructor"],
+        "accessibility": "explicit"
+      }
+    ],
+    "new-parens": "error",
+    "no-bitwise": "error",
+    "no-caller": "error",
+    "no-cond-assign": "error",
+    "no-console": "warn",
+    "no-debugger": "error",
+    "no-empty": "error",
+    "no-eval": "error",
+    "no-fallthrough": "off",
+    "no-invalid-this": "off",
+    "no-new-wrappers": "error",
+    "no-throw-literal": "error",
+    "no-trailing-spaces": "error",
+    "no-undef-init": "error",
+    "no-unsafe-finally": "error",
+    "no-unused-expressions": [
+      "error",
+      {
+        "allowShortCircuit": true
+      }
+    ],
+    "no-unused-labels": "error",
+    "object-shorthand": "error",
+    "one-var": ["error", "never"],
+    "radix": "error",
+    "spaced-comment": "error",
+    "use-isnan": "error",
+    "valid-typeof": "off",
+    "complexity": ["error", 8],
+    "@typescript-eslint/member-ordering": [
+      "error",
+      {
+        "default": [
+          "field",
+          "static-field",
+          "private-static-field",
+          "public-static-field",
+          "private-instance-field",
+          "public-instance-field",
+          "private-static-method",
+          "public-static-method",
+          "constructor",
+          "private-method",
+          "public-method"
+        ]
+      }
+    ],
+    "max-params": ["warn", 7],
+    "max-nested-callbacks": ["warn", 2],
+    "max-depth": ["warn", 3],
+    "sonarjs/prefer-single-boolean-return": "error",
+    "sonarjs/no-collapsible-if": "error",
+    "sonarjs/no-duplicated-branches": "error",
+    "sonarjs/no-identical-expressions": "warn",
+    "sonarjs/no-nested-switch": "warn",
+    "perfectionist/sort-objects": [
+      "warn",
+      {
+        "type": "natural",
+        "order": "asc"
+      }
+    ],
+    "perfectionist/sort-imports": [
+      "error",
+      {
+        "type": "natural",
+        "order": "asc"
+      }
+    ],
+    "sonarjs/cognitive-complexity": ["error", 10],
+    "@typescript-eslint/explicit-module-boundary-types": [
+      "error",
+      {
+        "allowedNames": ["toPrimitives"]
+      }
+    ],
+    "no-param-reassign": [
+      "warn",
+      {
+        "props": true
+      }
+    ],
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "../infrastructure",
+            "message": "Domain layer cannot import infrastructure."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["*.spec.ts"],
+      "rules": {
+        "no-unsafe-argument": "off",
+        "max-statements": "off",
+        "max-lines-per-function": "off",
+        "max-nested-callbacks": ["warn", 4]
+      }
+    }
+  ]
+}

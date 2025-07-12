@@ -1,0 +1,38 @@
+{
+  "name": "value-objects",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "lint": "eslint ./src --ext .ts",
+    "lint:fix": "eslint ./src --ext .ts --fix",
+    "test": "yarn lint && yarn test:unit",
+    "test:unit": "jest --passWithNoTests --runInBand",
+    "test:coverage": "NODE_ENV=test jest --collect-coverage",
+    "build": "rm -rf dist/ && tsc",
+    "publish:patch": "yarn lint && yarn test:coverage && yarn build && yarn version --patch && yarn publish && push",
+    "publish:minor": "yarn lint && yarn test:coverage && yarn build && yarn version --minor && yarn publish && push",
+    "publish:major": "yarn lint && yarn test:coverage && yarn build && yarn version --major && yarn publish && push"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.13",
+    "@typescript-eslint/eslint-plugin": "6.20.0",
+    "@typescript-eslint/parser": "6.20.0",
+    "eslint": "8.57.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-perfectionist": "^4.15.0",
+    "eslint-plugin-prettier": "^5.5.1",
+    "eslint-plugin-sonarjs": "^3.0.4",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "faker": "^6.6.6",
+    "jest": "^30.0.4",
+    "jest-extended": "^6.0.0",
+    "jest-runner-tsc": "^1.6.0",
+    "prettier": "^3.6.2",
+    "prettier-eslint": "^16.4.2",
+    "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}

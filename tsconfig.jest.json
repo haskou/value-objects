@@ -1,0 +1,33 @@
+{
+  "extends": "./tsconfig.json",
+  "typeAcquisition": {
+    "include": [
+      "jest",
+      "jest-extended"
+    ]
+  },
+  "compilerOptions": {
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "types": [
+      "node",
+      "jest",
+      "jest-extended"
+    ],
+    "baseUrl": "./",
+  },
+  "include": [
+    "src/**/*",
+    "tests/**/*",
+    "config/**/*",
+    "jest.config.ts"
+  ],
+  "files": [
+    "global.d.ts"
+  ],
+  "jest": {
+    "setupFilesAfterEnv": [
+      "jest-extended/all"
+    ]
+  }
+}
