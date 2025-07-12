@@ -6,7 +6,7 @@ and validated **Value Objects**. Perfect for applications that require **Domain-
 ## 🚀 Quick Start
 
 ```bash
-npm install value-objects
+npm install @haskou/value-objects
 ```
 
 ```typescript

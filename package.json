@@ -1,8 +1,11 @@
 {
-  "name": "value-objects",
+  "name": "@haskou/value-objects",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "lint": "eslint ./src --ext .ts",
     "lint:fix": "eslint ./src --ext .ts --fix",
