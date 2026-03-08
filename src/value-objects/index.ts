@@ -1,5 +1,6 @@
 export * from './coordinates';
 export * from './hashes';
+export * from './ids';
 export * from './time';
 export * from './Color';
 export * from './Email';
