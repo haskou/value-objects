@@ -58,6 +58,10 @@ your application.
 - **`Integer`** - Whole numbers
 - **`PositiveNumber`** - Positive numbers (> 0)
 
+### 🆔 Identifiers
+- **`ShortId`** - MongoDB ObjectId strings (24‑character hex)
+- **`UUID`** - Universally Unique Identifier (v4)
+
 ### ✨ Specialized
 - **`Email`** - Email addresses with automatic validation
 - **`Color`** - Hex colors (#FF0000)
@@ -79,7 +83,12 @@ your application.
 - **`Longitude`** - Longitude (-180 to 180)
 - **`Coordinates`** - Coordinate pairs
 
-### 📝 Other
+### � Hashes
+- **`MD5Hash`** - MD5 hashes with helpers
+- **`SHA256Hash`** - SHA‑256 hashes with helpers
+- **`SHA512Hash`** - SHA‑512 hashes with helpers
+
+### �📝 Other
 - **`Enum`** - Base class for typed enumerations
 
 ## 💡 Basic Examples
@@ -111,6 +120,16 @@ const coords = new Coordinates(latitude, longitude);
 const hour = new Hour('09:30');
 const year = new Year(2024);
 console.log(year.isLeapYear()); // true
+
+// IDs
+const id = ShortId.generate(); // 69ad70897364ee0d1406b1d0
+const uuid = UUID.generate(); // 3fd4c04a-8e73-4e10-aef3-f491b32ec538
+
+// Hashes
+const md5 = MD5Hash.from('hello'); // 5d41402abc4b2a76b9719d911017c592
+const sha256 = SHA256Hash.from('hello'); // 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
+const sha512 = SHA512Hash.from('hello'); // 9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca72323c3d99ba5c11d7c7acc6e14b8c5da0c4663475c2e5c3adef46f73bcdec043
+console.log(md5.toBase64());
 ```
 
 ## 📚 Technical Documentation

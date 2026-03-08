@@ -16,7 +16,7 @@ export class UUID extends ValueObject<string> {
   }
 
   constructor(value: string | StringValueObject) {
-    super(value.valueOf());
+    super(value?.valueOf());
 
     if (NullObject.isNullObject(this)) {
       return this;

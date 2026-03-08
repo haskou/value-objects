@@ -558,6 +558,85 @@ try {
 }
 ```
 
+### Hash Value Objects
+
+#### MD5Hash
+Represents immutable MD5 hashes with validation and utility methods.
+
+```typescript
+class MD5Hash extends Hash {
+  public static isValid(hash: string | StringValueObject): boolean;
+  public static from(buffer: Buffer | string | StringValueObject): MD5Hash;
+  constructor(source: string | StringValueObject);
+}
+```
+
+**Example:**
+```typescript
+// Compute an MD5 hash from a string or buffer
+const md5 = MD5Hash.from('hello');
+console.log(md5.toString());        // '5d41402abc4b2a76b9719d911017c592'
+console.log(md5.toBase64());        // 'XUEQKvLG6avlckeQEAXGSw=='
+
+// Create from existing hash string
+const existing = new MD5Hash('5d41402abc4b2a76b9719d911017c592');
+
+// Validation
+try {
+  new MD5Hash('invalid');          // Throws InvalidHashError
+} catch (err) {
+  console.error('Invalid MD5 hash');
+}
+```
+
+#### SHA256Hash
+Represents immutable SHA‑256 hashes with validation and utility methods.
+
+```typescript
+class SHA256Hash extends ValueObject<string> {
+  public static isValid(hash: string | StringValueObject): boolean;
+  public static from(buffer: Buffer | string | StringValueObject): SHA256Hash;
+  constructor(source: string | StringValueObject);
+}
+```
+
+**Example:**
+```typescript
+const sha256 = SHA256Hash.from('hello');
+console.log(sha256.toString().length); // 64
+console.log(sha256.toBase64());
+
+try {
+  new SHA256Hash('abc');            // Throws InvalidHashError
+} catch (err) {
+  console.error('Invalid SHA256 hash');
+}
+```
+
+#### SHA512Hash
+Represents immutable SHA‑512 hashes with validation and utility methods.
+
+```typescript
+class SHA512Hash extends ValueObject<string> {
+  public static isValid(hash: string | StringValueObject): boolean;
+  public static from(buffer: Buffer | string | StringValueObject): SHA512Hash;
+  constructor(source: string | StringValueObject);
+}
+```
+
+**Example:**
+```typescript
+const sha512 = SHA512Hash.from('hello');
+console.log(sha512.toString().length); // 128
+console.log(sha512.toBase64());
+
+try {
+  new SHA512Hash('abc');            // Throws InvalidHashError
+} catch (err) {
+  console.error('Invalid SHA512 hash');
+}
+```
+
 ### Hour Value Objects
 
 #### Hour
