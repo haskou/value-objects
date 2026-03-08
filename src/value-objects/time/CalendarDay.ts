@@ -1,7 +1,7 @@
 import { InvalidDayError } from '../../errors/InvalidDayError';
 import { InvalidDayFormatError } from '../../errors/InvalidDayFormatError';
-import { ValueObject } from '../../patterns';
 import { assert } from '../../patterns/Assert';
+import { ValueObject } from '../ValueObject';
 import { Day } from './Day';
 import { DayOfWeek } from './DayOfWeek';
 import { Month } from './Month';

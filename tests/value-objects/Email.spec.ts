@@ -1,9 +1,5 @@
-import {
-  Email,
-  InvalidEmailError,
-  NullObject,
-  StringValueObject,
-} from '../../src';
+import { Email, InvalidEmailError, StringValueObject } from '../../src';
+import { NullObject } from '../../src/value-objects/NullObject';
 
 describe('Email', () => {
   describe('constructor', () => {

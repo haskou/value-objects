@@ -7,3 +7,4 @@ export * from './Integer';
 export * from './NumberValueObject';
 export * from './PositiveNumber';
 export * from './StringValueObject';
+export * from './NullObject';

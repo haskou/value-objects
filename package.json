@@ -28,6 +28,7 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.13",
+    "@types/uuid": "8",
     "@typescript-eslint/eslint-plugin": "6.20.0",
     "@typescript-eslint/parser": "6.20.0",
     "eslint": "8.57.0",
@@ -45,5 +46,9 @@
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "bson-objectid": "^2.0.4",
+    "uuid": "8"
   }
 }

@@ -2,7 +2,7 @@
 
 # Value Objects
 
-A TypeScript dependency-less library for creating safe, immutable,
+A TypeScript lightweight library for creating safe, immutable,
 and validated **Value Objects**. Perfect for applications that require **Domain-Driven Design (DDD)** and **type safety**.
 
 ## 🚀 Quick Start
