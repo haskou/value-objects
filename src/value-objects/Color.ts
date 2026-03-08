@@ -1,6 +1,6 @@
 import { InvalidColorError } from '../errors/InvalidColorError';
 import { assert } from '../patterns/Assert';
-import { NullObject } from '../patterns/NullObject';
+import { NullObject } from './NullObject';
 import { StringValueObject } from './StringValueObject';
 
 export class Color extends StringValueObject {

@@ -1,4 +1,4 @@
-import { ValueObject } from '../../patterns/ValueObject';
+import { ValueObject } from '../ValueObject';
 import { Month } from './Month';
 import { Timestamp } from './Timestamp';
 import { TimestampInterval } from './TimestampInterval';

@@ -1,6 +1,6 @@
 import { InvalidEmailError } from '../errors/InvalidEmailError';
 import { assert } from '../patterns/Assert';
-import { NullObject } from '../patterns/NullObject';
+import { NullObject } from './NullObject';
 import { StringValueObject } from './StringValueObject';
 
 export class Email extends StringValueObject {

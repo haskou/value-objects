@@ -1,7 +1,7 @@
 import { InvalidStringLengthError } from '../errors/InvalidStringLengthError';
 import { assert } from '../patterns/Assert';
-import { NullObject } from '../patterns/NullObject';
-import { ValueObject } from '../patterns/ValueObject';
+import { NullObject } from './NullObject';
+import { ValueObject } from './ValueObject';
 
 export class StringValueObject extends ValueObject<string> {
   constructor(value: string | StringValueObject, maxLength: number = 512) {

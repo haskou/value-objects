@@ -1,5 +1,4 @@
-import { Nullish } from '../types/Nullish';
-import { Primitive } from '../types/Primitive';
+import { Primitive, Nullish } from '../types';
 import { NullObject } from './NullObject';
 
 export abstract class ValueObject<T extends Primitive = Primitive> {

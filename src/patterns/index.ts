@@ -1,3 +1,3 @@
 export * from './Assert';
-export * from './NullObject';
-export * from './ValueObject';
+export * from '../value-objects/NullObject';
+export * from '../value-objects/ValueObject';

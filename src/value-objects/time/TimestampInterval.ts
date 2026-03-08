@@ -1,8 +1,8 @@
 import { InvalidTimestampIntervalError } from '../../errors/InvalidTimestampIntervalError';
 import { PrimitiveOf } from '../../interfaces/PrimitiveOf';
 import { assert } from '../../patterns/Assert';
-import { ValueObject } from '../../patterns/ValueObject';
 import { PositiveNumber } from '../PositiveNumber';
+import { ValueObject } from '../ValueObject';
 import { CalendarDay } from './CalendarDay';
 import { DayOfWeek } from './DayOfWeek';
 import { Duration } from './Duration';

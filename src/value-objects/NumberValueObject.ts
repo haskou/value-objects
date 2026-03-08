@@ -1,7 +1,7 @@
 import { InvalidNumberError } from '../errors/InvalidNumberError';
 import { assert } from '../patterns/Assert';
-import { NullObject } from '../patterns/NullObject';
-import { ValueObject } from '../patterns/ValueObject';
+import { NullObject } from './NullObject';
+import { ValueObject } from './ValueObject';
 
 export class NumberValueObject extends ValueObject<number> {
   constructor(value: number | NumberValueObject) {

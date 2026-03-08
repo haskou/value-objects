@@ -1,8 +1,8 @@
 import { ValueNotInEnumError } from '../errors/ValueNotInEnumError';
 import { assert } from '../patterns/Assert';
-import { NullObject } from '../patterns/NullObject';
-import { ValueObject } from '../patterns/ValueObject';
-import { Primitive } from '../types/Primitive';
+import { Primitive } from '../types';
+import { NullObject } from './NullObject';
+import { ValueObject } from './ValueObject';
 
 export abstract class Enum<
   T extends Primitive = Primitive,

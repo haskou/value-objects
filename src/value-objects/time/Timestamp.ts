@@ -1,5 +1,5 @@
-import { ValueObject } from '../../patterns/ValueObject';
 import { NumberValueObject } from '../NumberValueObject';
+import { ValueObject } from '../ValueObject';
 import { CalendarDay } from './CalendarDay';
 import { Day } from './Day';
 import { Duration } from './Duration';

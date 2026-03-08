@@ -1,6 +1,6 @@
 import { InvalidPositiveNumberError } from '../errors/InvalidPositiveNumberError';
 import { assert } from '../patterns/Assert';
-import { NullObject } from '../patterns/NullObject';
+import { NullObject } from './NullObject';
 import { NumberValueObject } from './NumberValueObject';
 
 export class PositiveNumber extends NumberValueObject {

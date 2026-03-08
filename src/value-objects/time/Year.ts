@@ -1,5 +1,5 @@
-import { NullObject } from '../../patterns/NullObject';
 import { Integer } from '../Integer';
+import { NullObject } from '../NullObject';
 import { NumberValueObject } from '../NumberValueObject';
 
 export class Year extends Integer {
