@@ -25,9 +25,9 @@
     "test:unit": "jest --passWithNoTests --runInBand",
     "test:coverage": "NODE_ENV=test jest --collect-coverage",
     "build": "rm -rf dist/ && tsc",
-    "publish:patch": "yarn lint && yarn test:coverage && yarn build && yarn version --patch && yarn publish && push",
-    "publish:minor": "yarn lint && yarn test:coverage && yarn build && yarn version --minor && yarn publish && push",
-    "publish:major": "yarn lint && yarn test:coverage && yarn build && yarn version --major && yarn publish && push"
+    "publish:patch": "yarn lint && yarn test:coverage && tsc --declaration --outDir dist && yarn version --patch && yarn publish && git push",
+    "publish:minor": "yarn lint && yarn test:coverage && tsc --declaration --outDir dist && yarn version --minor && yarn publish && git push",
+    "publish:major": "yarn lint && yarn test:coverage && tsc --declaration --outDir dist && yarn version --major && yarn publish && git push"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
