@@ -13,6 +13,7 @@ Comprehensive technical documentation for the Value Objects library.
   - [Year Value Objects](#year-value-objects)
   - [Color Value Objects](#color-value-objects)
   - [Email Value Objects](#email-value-objects)
+  - [ID Value Objects](#id-value-objects)
   - [Hour Value Objects](#hour-value-objects)
   - [Time Value Objects](#time-value-objects)
   - [Enum Value Objects](#enum-value-objects)
@@ -469,6 +470,92 @@ const validEmails = [
   'first.last@subdomain.company.travel',
   'admin123@my-domain.museum'
 ];
+```
+
+### ID Value Objects
+
+#### ShortId
+
+Represents immutable MongoDB ObjectId values with automatic generation and validation.
+
+```typescript
+class ShortId extends ValueObject<string> {
+  public static generate(): ShortId;
+  constructor(value: string | StringValueObject);
+}
+```
+
+**Example:**
+```typescript
+// Generate a new ObjectId
+const id = ShortId.generate();
+console.log(id.toString()); // '507f1f77bcf86cd799439011' (24-character hex string)
+
+// Create from existing ObjectId string
+const existingId = new ShortId('507f1f77bcf86cd799439011');
+
+// From StringValueObject
+const idString = new StringValueObject('507f1f77bcf86cd799439011');
+const idFromString = new ShortId(idString);
+
+// String representation
+console.log(existingId.toString()); // '507f1f77bcf86cd799439011'
+console.log(existingId.valueOf());  // '507f1f77bcf86cd799439011'
+
+// Equality comparison
+const id1 = new ShortId('507f1f77bcf86cd799439011');
+const id2 = new ShortId('507f1f77bcf86cd799439011');
+console.log(id1.isEqual(id2)); // true
+
+// Validation
+try {
+  new ShortId('invalid-id');        // Throws InvalidFormatError
+  new ShortId('short');             // Throws InvalidLengthError
+} catch (error) {
+  console.error('Invalid ObjectId format');
+}
+```
+
+#### UUID
+
+Represents immutable UUID (Universally Unique Identifier) values with automatic generation and validation.
+
+```typescript
+class UUID extends ValueObject<string> {
+  public static generate(): UUID;
+  constructor(value: string | StringValueObject);
+}
+```
+
+**Example:**
+```typescript
+// Generate a new UUID v4
+const uuid = UUID.generate();
+console.log(uuid.toString()); // '550e8400-e29b-41d4-a716-446655440000' (36-character string)
+
+// Create from existing UUID string
+const existingUuid = new UUID('550e8400-e29b-41d4-a716-446655440000');
+
+// From StringValueObject
+const uuidString = new StringValueObject('550e8400-e29b-41d4-a716-446655440000');
+const uuidFromString = new UUID(uuidString);
+
+// String representation
+console.log(existingUuid.toString()); // '550e8400-e29b-41d4-a716-446655440000'
+console.log(existingUuid.valueOf());  // '550e8400-e29b-41d4-a716-446655440000'
+
+// Equality comparison
+const uuid1 = new UUID('550e8400-e29b-41d4-a716-446655440000');
+const uuid2 = new UUID('550e8400-e29b-41d4-a716-446655440000');
+console.log(uuid1.isEqual(uuid2)); // true
+
+// Validation
+try {
+  new UUID('invalid-uuid');         // Throws InvalidFormatError
+  new UUID('short-uuid');           // Throws InvalidLengthError
+} catch (error) {
+  console.error('Invalid UUID format');
+}
 ```
 
 ### Hour Value Objects
