@@ -5,6 +5,7 @@ import { PrimitiveOf } from '../../interfaces';
 import { StringValueObject } from '../StringValueObject';
 import { CryptoPayload } from './CryptoPayload';
 import { EncryptedKeyPair } from './EncryptedKeyPair';
+import { EncryptedPayload } from './EncryptedPayload';
 import { PrivateKey } from './PrivateKey';
 import { PublicKey } from './PublicKey';
 import { Signature } from './Signature';
@@ -59,5 +60,13 @@ export class KeyPair {
       privateKey: this.privateKey.valueOf(),
       publicKey: this.publicKey.valueOf(),
     };
+  }
+
+  public encrypt(payload: CryptoPayload): EncryptedPayload {
+    return this.publicKey.encrypt(payload);
+  }
+
+  public decrypt(encryptedPayload: EncryptedPayload): Buffer {
+    return this.privateKey.decrypt(encryptedPayload);
   }
 }

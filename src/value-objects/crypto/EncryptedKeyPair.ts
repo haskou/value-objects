@@ -1,6 +1,7 @@
 import { PrimitiveOf } from '../../interfaces';
 import { StringValueObject } from '../StringValueObject';
 import { CryptoPayload } from './CryptoPayload';
+import { EncryptedPayload } from './EncryptedPayload';
 import { EncryptedPrivateKey } from './EncryptedPrivateKey';
 import { PrivateKey } from './PrivateKey';
 import { PublicKey } from './PublicKey';
@@ -55,5 +56,18 @@ export class EncryptedKeyPair {
       encryptedPrivateKey: this.encryptedPrivateKey.valueOf(),
       publicKey: this.publicKey.valueOf(),
     };
+  }
+
+  public encrypt(payload: CryptoPayload): EncryptedPayload {
+    return this.publicKey.encrypt(payload);
+  }
+
+  public async decrypt(
+    encryptedPayload: EncryptedPayload,
+    password: string | StringValueObject,
+  ): Promise<Buffer> {
+    const privateKey = await this.encryptedPrivateKey.decrypt(password);
+
+    return privateKey.decrypt(encryptedPayload);
   }
 }

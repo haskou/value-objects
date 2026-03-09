@@ -4,7 +4,6 @@ import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
 import { ValueObject } from '../ValueObject';
 
-// TODO: Test
 export class Signature extends ValueObject<string> {
   private static readonly LENGTH = 88;
   private static readonly PATTERN = /^[A-Za-z0-9+/]{86}==$/;

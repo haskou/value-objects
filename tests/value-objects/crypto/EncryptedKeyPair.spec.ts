@@ -1,5 +1,6 @@
 import {
   EncryptedKeyPair,
+  EncryptedPayload,
   EncryptedPrivateKey,
   KeyPair,
   PublicKey,
@@ -148,6 +149,63 @@ describe('EncryptedKeyPair', () => {
       const sig = keyPair.sign(payload);
 
       expect(encrypted.isValidSignature(payload, sig)).toBeTrue();
+    });
+  });
+
+  describe('encrypt', () => {
+    it('should encrypt a payload and return an EncryptedPayload', async () => {
+      const encrypted = await keyPair.encryptKeyPair(password);
+      const result = encrypted.encrypt('secret data');
+
+      expect(result).toBeInstanceOf(EncryptedPayload);
+      expect(result.valueOf()).not.toBe('secret data');
+    });
+
+    it('should accept a StringValueObject as payload', async () => {
+      const encrypted = await keyPair.encryptKeyPair(password);
+      const payload = new StringValueObject('vo-secret');
+      const result = encrypted.encrypt(payload);
+
+      expect(result).toBeInstanceOf(EncryptedPayload);
+    });
+  });
+
+  describe('decrypt', () => {
+    it('should decrypt an EncryptedPayload with the correct password', async () => {
+      const encrypted = await keyPair.encryptKeyPair(password);
+      const cipherPayload = encrypted.encrypt('round-trip encrypted');
+      const decrypted = await encrypted.decrypt(cipherPayload, password);
+
+      expect(decrypted).toBeInstanceOf(Buffer);
+      expect(decrypted.toString()).toBe('round-trip encrypted');
+    });
+
+    it('should fail to decrypt with the wrong password', async () => {
+      const encrypted = await keyPair.encryptKeyPair(password);
+      const cipherPayload = encrypted.encrypt('fail test');
+
+      await expect(
+        encrypted.decrypt(cipherPayload, 'wrong-password'),
+      ).toReject();
+    });
+
+    it('should accept a StringValueObject as password', async () => {
+      const encrypted = await keyPair.encryptKeyPair(password);
+      const cipherPayload = encrypted.encrypt('vo-password');
+      const passwordVO = new StringValueObject(password);
+      const decrypted = await encrypted.decrypt(cipherPayload, passwordVO);
+
+      expect(decrypted.toString()).toBe('vo-password');
+    });
+
+    it('should produce output matching what KeyPair.decrypt returns', async () => {
+      const payload = 'cross-decrypt';
+      const cipherPayload = keyPair.encrypt(payload);
+
+      const encrypted = await keyPair.encryptKeyPair(password);
+      const decrypted = await encrypted.decrypt(cipherPayload, password);
+
+      expect(decrypted.toString()).toBe(payload);
     });
   });
 });

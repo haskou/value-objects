@@ -22,8 +22,10 @@ const config: Config.InitialOptions = {
   testEnvironment: 'node',
   testPathIgnorePatterns: ['<rootDir>/node_modules/', 'index.ts'],
   transform: {
+    '^.+\\.js$': 'ts-jest',
     '^.+\\.ts': 'ts-jest',
   },
+  transformIgnorePatterns: ['node_modules/(?!(@noble/curves|@noble/hashes)/)'],
   verbose: true,
 };
 

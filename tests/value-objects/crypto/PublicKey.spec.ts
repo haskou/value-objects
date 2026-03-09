@@ -1,9 +1,11 @@
 import * as crypto from 'node:crypto';
 
 import {
+  EncryptedPayload,
   InvalidFormatError,
   InvalidLengthError,
   Key,
+  PrivateKey,
   PublicKey,
   Signature,
   StringValueObject,
@@ -109,6 +111,48 @@ describe('PublicKey', () => {
       const signature = Signature.fromBuffer(sigBuf);
 
       expect(key.isValidSignature(payloadVO, signature)).toBeTrue();
+    });
+  });
+
+  describe('encrypt', () => {
+    it('should encrypt a string payload and return an EncryptedPayload', () => {
+      const key = new PublicKey(publicPem);
+      const encrypted = key.encrypt('hello world');
+
+      expect(encrypted).toBeInstanceOf(EncryptedPayload);
+      expect(encrypted.valueOf()).not.toBe('hello world');
+    });
+
+    it('should produce a base64-encoded string', () => {
+      const key = new PublicKey(publicPem);
+      const encrypted = key.encrypt('test data');
+
+      expect(() => Buffer.from(encrypted.valueOf(), 'base64')).not.toThrow();
+    });
+
+    it('should produce different ciphertext for the same payload (OAEP padding)', () => {
+      const key = new PublicKey(publicPem);
+      const encrypted1 = key.encrypt('same payload');
+      const encrypted2 = key.encrypt('same payload');
+
+      expect(encrypted1.isEqual(encrypted2)).toBeFalse();
+    });
+
+    it('should accept a StringValueObject as payload', () => {
+      const key = new PublicKey(publicPem);
+      const payload = new StringValueObject('hello');
+      const encrypted = key.encrypt(payload);
+
+      expect(encrypted).toBeInstanceOf(EncryptedPayload);
+    });
+
+    it('should produce output that can be decrypted by the corresponding PrivateKey', () => {
+      const pubKey = new PublicKey(publicPem);
+      const privKey = new PrivateKey(privatePem);
+      const encrypted = pubKey.encrypt('round-trip test');
+      const decrypted = privKey.decrypt(encrypted);
+
+      expect(decrypted.toString()).toBe('round-trip test');
     });
   });
 

@@ -16,6 +16,7 @@ Comprehensive technical documentation for the Value Objects library.
   - [ID Value Objects](#id-value-objects)
   - [Hash Value Objects](#hash-value-objects)
   - [Cryptography Value Objects](#cryptography-value-objects)
+    - [Encrypting and Decrypting Payloads](#encrypting-and-decrypting-payloads)
   - [Media Value Objects](#media-value-objects)
   - [Hour Value Objects](#hour-value-objects)
   - [Time Value Objects](#time-value-objects)
@@ -642,7 +643,7 @@ try {
 
 ### Cryptography Value Objects
 
-All cryptography value objects use **Ed25519** elliptic curve keys in PEM format.
+All cryptography value objects use **Ed25519** elliptic curve keys in PEM format. Payload encryption uses an **ECIES** hybrid scheme: Ed25519 keys are converted to X25519 (via `@noble/curves`), an ephemeral ECDH shared secret derives an AES-256-GCM key, and the payload is symmetrically encrypted.
 
 #### Key
 
@@ -654,13 +655,14 @@ abstract class Key extends ValueObject<string> {}
 
 #### PrivateKey
 
-Represents an immutable Ed25519 private key in PEM (PKCS8) format. Used for signing messages.
+Represents an immutable Ed25519 private key in PEM (PKCS8) format. Used for signing messages and decrypting payloads.
 
 ```typescript
 class PrivateKey extends Key {
   public static fromPEM(pem: string | StringValueObject): PrivateKey;
   constructor(value: string | StringValueObject);
   public sign(payload: CryptoPayload): Signature;
+  public decrypt(encryptedPayload: EncryptedPayload): Buffer;
 }
 ```
 
@@ -673,17 +675,22 @@ const sameKey = PrivateKey.fromPEM(pemString);
 // Sign a message
 const signature = privateKey.sign('hello world');
 console.log(signature.valueOf()); // Base64-encoded 88-character signature
+
+// Decrypt a payload encrypted with the corresponding public key
+const decrypted = privateKey.decrypt(encryptedPayload);
+console.log(decrypted.toString()); // Original plaintext
 ```
 
 #### PublicKey
 
-Represents an immutable Ed25519 public key in PEM (SPKI) format. Used for verifying signatures.
+Represents an immutable Ed25519 public key in PEM (SPKI) format. Used for verifying signatures and encrypting payloads.
 
 ```typescript
 class PublicKey extends Key {
   public static fromPEM(pem: string | StringValueObject): PublicKey;
   constructor(value: string | StringValueObject);
   public isValidSignature(payload: CryptoPayload, signature: Signature): boolean;
+  public encrypt(payload: CryptoPayload): EncryptedPayload;
 }
 ```
 
@@ -695,6 +702,10 @@ const publicKey = new PublicKey(pemString);
 // Verify a signature
 const valid = publicKey.isValidSignature('hello world', signature);
 console.log(valid); // true
+
+// Encrypt a payload (only the corresponding private key can decrypt it)
+const encrypted = publicKey.encrypt('sensitive data');
+console.log(encrypted.valueOf()); // 'ephemeralPub.iv.cipherText.tag' (base64, dot-separated)
 ```
 
 #### Signature
@@ -726,7 +737,7 @@ try {
 
 #### KeyPair
 
-Manages a public/private Ed25519 key pair with generation, signing, verification, serialization, and encryption.
+Manages a public/private Ed25519 key pair with generation, signing, verification, encryption, decryption, and serialization.
 
 ```typescript
 class KeyPair {
@@ -735,6 +746,8 @@ class KeyPair {
   constructor(publicKey: PublicKey, privateKey: PrivateKey);
   public sign(payload: CryptoPayload): Signature;
   public isValidSignature(payload: CryptoPayload, signature: Signature): boolean;
+  public encrypt(payload: CryptoPayload): EncryptedPayload;
+  public decrypt(encryptedPayload: EncryptedPayload): Buffer;
   public encryptKeyPair(password: string | StringValueObject): Promise<EncryptedKeyPair>;
   public toPrimitives(): { publicKey: string; privateKey: string };
 }
@@ -748,14 +761,18 @@ const keyPair = await KeyPair.generate();
 // Sign and verify
 const signature = keyPair.sign('important message');
 console.log(keyPair.isValidSignature('important message', signature)); // true
-console.log(keyPair.isValidSignature('tampered message', signature));  // false
+
+// Encrypt and decrypt payloads
+const encrypted = keyPair.encrypt('secret data');
+const decrypted = keyPair.decrypt(encrypted);
+console.log(decrypted.toString()); // 'secret data'
 
 // Serialize and restore
 const primitives = keyPair.toPrimitives();
 const restored = KeyPair.fromPrimitives(primitives);
 
 // Encrypt the private key with a password
-const encrypted = await keyPair.encryptKeyPair('strong-password');
+const encryptedKeyPair = await keyPair.encryptKeyPair('strong-password');
 ```
 
 #### EncryptedPrivateKey
@@ -795,7 +812,7 @@ try {
 
 #### EncryptedKeyPair
 
-Manages a public key paired with an encrypted private key. Allows signing and verification without exposing the raw private key — the password is required at signing time.
+Manages a public key paired with an encrypted private key. Allows signing, verification, encryption, and decryption without exposing the raw private key — the password is required for signing and decryption.
 
 ```typescript
 class EncryptedKeyPair {
@@ -806,8 +823,10 @@ class EncryptedKeyPair {
   ): Promise<EncryptedKeyPair>;
   public static fromPrimitives(primitives: PrimitiveOf<EncryptedKeyPair>): EncryptedKeyPair;
   constructor(publicKey: PublicKey, encryptedPrivateKey: EncryptedPrivateKey);
-  public sign(payload: CryptoPayload, password: string | StringValueObject): Signature;
+  public sign(payload: CryptoPayload, password: string | StringValueObject): Promise<Signature>;
   public isValidSignature(payload: CryptoPayload, signature: Signature): boolean;
+  public encrypt(payload: CryptoPayload): EncryptedPayload;
+  public decrypt(encryptedPayload: EncryptedPayload, password: string | StringValueObject): Promise<Buffer>;
   public toPrimitives(): { publicKey: string; encryptedPrivateKey: string };
 }
 ```
@@ -815,11 +834,18 @@ class EncryptedKeyPair {
 **Example:**
 ```typescript
 // Create from a KeyPair
-const keyPair = KeyPair.generate();
+const keyPair = await KeyPair.generate();
 const encrypted = await keyPair.encryptKeyPair('password');
 
+// Encrypt a payload (no password needed — uses public key)
+const cipherPayload = encrypted.encrypt('confidential data');
+
+// Decrypt (requires the password to unlock the private key internally)
+const plaintext = await encrypted.decrypt(cipherPayload, 'password');
+console.log(plaintext.toString()); // 'confidential data'
+
 // Sign (requires the password)
-const sig = encrypted.sign('message', 'password');
+const sig = await encrypted.sign('message', 'password');
 
 // Verify (no password needed)
 console.log(encrypted.isValidSignature('message', sig)); // true
@@ -828,6 +854,65 @@ console.log(encrypted.isValidSignature('message', sig)); // true
 const primitives = encrypted.toPrimitives();
 const restored = EncryptedKeyPair.fromPrimitives(primitives);
 ```
+
+#### EncryptedPayload
+
+Represents an immutable ECIES-encrypted payload. The format is `ephemeralPub.iv.cipherText.tag` (base64-encoded, dot-separated).
+
+```typescript
+class EncryptedPayload extends ValueObject<string> {}
+```
+
+Created by `PublicKey.encrypt()`, `KeyPair.encrypt()`, or `EncryptedKeyPair.encrypt()`. Decrypted by the corresponding `decrypt()` method.
+
+#### Encrypting and Decrypting Payloads
+
+The library uses an **ECIES** (Elliptic Curve Integrated Encryption Scheme) hybrid approach:
+
+1. The Ed25519 public key is converted to X25519 (Montgomery form)
+2. An ephemeral X25519 key pair is generated
+3. ECDH produces a shared secret, from which an AES-256-GCM key is derived
+4. The payload is symmetrically encrypted
+5. Only the holder of the corresponding Ed25519 private key can decrypt
+
+**With KeyPair (plaintext private key available):**
+```typescript
+const keyPair = await KeyPair.generate();
+
+// Encrypt with public key
+const encrypted = keyPair.encrypt('sensitive data');
+
+// Decrypt with private key
+const decrypted = keyPair.decrypt(encrypted);
+console.log(decrypted.toString()); // 'sensitive data'
+```
+
+**With EncryptedKeyPair (private key protected by password):**
+```typescript
+const encryptedKeyPair = await keyPair.encryptKeyPair('strong-password');
+
+// Encrypt (no password needed)
+const encrypted = encryptedKeyPair.encrypt('confidential');
+
+// Decrypt (password unlocks the private key internally)
+const decrypted = await encryptedKeyPair.decrypt(encrypted, 'strong-password');
+console.log(decrypted.toString()); // 'confidential'
+```
+
+**Low-level with individual keys:**
+```typescript
+const publicKey = new PublicKey(publicPem);
+const privateKey = new PrivateKey(privatePem);
+
+const encrypted = publicKey.encrypt('hello world');
+const decrypted = privateKey.decrypt(encrypted);
+console.log(decrypted.toString()); // 'hello world'
+```
+
+**Important:**
+- Each call to `encrypt()` generates a new ephemeral key, producing different ciphertext even for the same payload.
+- Decrypting with the wrong private key throws an AES-GCM authentication error.
+- The encrypted format is `ephemeralPub.iv.cipherText.tag` (base64, dot-separated).
 
 #### CryptoPayload
 

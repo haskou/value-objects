@@ -2,6 +2,7 @@ import * as crypto from 'node:crypto';
 
 import {
   EncryptedKeyPair,
+  EncryptedPayload,
   KeyPair,
   PrivateKey,
   PublicKey,
@@ -135,6 +136,39 @@ describe('KeyPair', () => {
       const sig = otherPair.sign('message');
 
       expect(keyPair.isValidSignature('message', sig)).toBeFalse();
+    });
+  });
+
+  describe('encrypt', () => {
+    it('should encrypt a payload and return an EncryptedPayload', () => {
+      const encrypted = keyPair.encrypt('secret data');
+
+      expect(encrypted).toBeInstanceOf(EncryptedPayload);
+      expect(encrypted.valueOf()).not.toBe('secret data');
+    });
+
+    it('should accept a StringValueObject as payload', () => {
+      const payload = new StringValueObject('vo-secret');
+      const encrypted = keyPair.encrypt(payload);
+
+      expect(encrypted).toBeInstanceOf(EncryptedPayload);
+    });
+  });
+
+  describe('decrypt', () => {
+    it('should decrypt an EncryptedPayload back to the original data', () => {
+      const encrypted = keyPair.encrypt('round-trip');
+      const decrypted = keyPair.decrypt(encrypted);
+
+      expect(decrypted).toBeInstanceOf(Buffer);
+      expect(decrypted.toString()).toBe('round-trip');
+    });
+
+    it('should fail to decrypt with a different KeyPair', async () => {
+      const encrypted = keyPair.encrypt('private');
+      const otherPair = await KeyPair.generate();
+
+      expect(() => otherPair.decrypt(encrypted)).toThrow();
     });
   });
 

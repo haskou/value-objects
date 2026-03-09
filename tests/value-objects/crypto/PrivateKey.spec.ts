@@ -1,10 +1,12 @@
 import * as crypto from 'node:crypto';
 
 import {
+  EncryptedPayload,
   InvalidFormatError,
   InvalidLengthError,
   Key,
   PrivateKey,
+  PublicKey,
   Signature,
   StringValueObject,
 } from '../../../src';
@@ -119,6 +121,54 @@ describe('PrivateKey', () => {
         Buffer.from(sig.valueOf(), 'base64'),
       );
       expect(valid).toBeTrue();
+    });
+  });
+
+  describe('decrypt', () => {
+    it('should decrypt an EncryptedPayload and return a Buffer', () => {
+      const pubKey = new PublicKey(publicPem);
+      const privKey = new PrivateKey(privatePem);
+      const encrypted = pubKey.encrypt('secret message');
+      const decrypted = privKey.decrypt(encrypted);
+
+      expect(decrypted).toBeInstanceOf(Buffer);
+      expect(decrypted.toString()).toBe('secret message');
+    });
+
+    it('should fail to decrypt with the wrong private key', () => {
+      const pubKey = new PublicKey(publicPem);
+      const encrypted = pubKey.encrypt('secret');
+
+      const otherPair = crypto.generateKeyPairSync('ed25519', {
+        privateKeyEncoding: { format: 'pem', type: 'pkcs8' },
+        publicKeyEncoding: { format: 'pem', type: 'spki' },
+      });
+      const wrongKey = new PrivateKey(otherPair.privateKey);
+
+      expect(() => wrongKey.decrypt(encrypted)).toThrow();
+    });
+
+    it('should handle different payload sizes', () => {
+      const pubKey = new PublicKey(publicPem);
+      const privKey = new PrivateKey(privatePem);
+
+      const short = pubKey.encrypt('a');
+      expect(privKey.decrypt(short).toString()).toBe('a');
+
+      const medium = pubKey.encrypt('hello world, this is a medium payload');
+      expect(privKey.decrypt(medium).toString()).toBe(
+        'hello world, this is a medium payload',
+      );
+    });
+
+    it('should accept an EncryptedPayload built from a StringValueObject', () => {
+      const pubKey = new PublicKey(publicPem);
+      const privKey = new PrivateKey(privatePem);
+      const payload = new StringValueObject('vo-payload');
+      const encrypted = pubKey.encrypt(payload);
+      const decrypted = privKey.decrypt(encrypted);
+
+      expect(decrypted.toString()).toBe('vo-payload');
     });
   });
 

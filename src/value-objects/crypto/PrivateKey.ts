@@ -1,3 +1,4 @@
+import { ed25519, x25519 } from '@noble/curves/ed25519.js';
 import * as crypto from 'node:crypto';
 
 import { InvalidFormatError } from '../../errors/InvalidFormatError';
@@ -6,6 +7,7 @@ import { assert } from '../../patterns';
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
 import { CryptoPayload } from './CryptoPayload';
+import { EncryptedPayload } from './EncryptedPayload';
 import { Key } from './Key';
 import { Signature } from './Signature';
 
@@ -41,5 +43,34 @@ export class PrivateKey extends Key {
     const signatureBuffer = crypto.sign(null, messageBuffer, this.valueOf());
 
     return Signature.fromBuffer(signatureBuffer);
+  }
+
+  public decrypt(encryptedPayload: EncryptedPayload): Buffer {
+    const [ephPubB64, ivB64, cipherTextB64, tagB64] = encryptedPayload
+      .valueOf()
+      .split('.');
+
+    const ephemeralPub = Buffer.from(ephPubB64, 'base64');
+    const iv = Buffer.from(ivB64, 'base64');
+    const cipherText = Buffer.from(cipherTextB64, 'base64');
+    const tag = Buffer.from(tagB64, 'base64');
+
+    const pkcs8Der = crypto
+      .createPrivateKey(this.valueOf())
+      .export({ format: 'der', type: 'pkcs8' });
+    const x25519Priv = ed25519.utils.toMontgomerySecret(pkcs8Der.subarray(16));
+
+    const sharedSecret = x25519.getSharedSecret(x25519Priv, ephemeralPub);
+
+    const aesKey = crypto
+      .createHash('sha256')
+      .update(sharedSecret)
+      .update(ephemeralPub)
+      .digest();
+
+    const decipher = crypto.createDecipheriv('aes-256-gcm', aesKey, iv);
+    decipher.setAuthTag(tag);
+
+    return Buffer.concat([decipher.update(cipherText), decipher.final()]);
   }
 }
