@@ -16,5 +16,8 @@ export * from './InvalidNumberError';
 export * from './InvalidPositiveNumberError';
 export * from './InvalidStringLengthError';
 export * from './InvalidTimestampIntervalError';
+export * from './InvalidKeyError';
+export * from './InvalidLengthError';
+export * from './InvalidSignatureError';
 export * from './NullObjectError';
 export * from './ValueNotInEnumError';

@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 
 import { InvalidHashError } from '../../errors/InvalidHashError';
 import { assert } from '../../patterns';
+import { Media } from '../media/Media';
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
 import { ValueObject } from '../ValueObject';
@@ -11,7 +12,9 @@ export class SHA512Hash extends ValueObject<string> {
     return !!hash.valueOf().match(/^[a-f0-9]{128}$/i);
   }
 
-  public static from(buffer: Buffer | string | StringValueObject): SHA512Hash {
+  public static from(
+    buffer: string | StringValueObject | Media | Buffer,
+  ): SHA512Hash {
     return new SHA512Hash(
       createHash('sha512').update(buffer.valueOf()).digest('hex'),
     );

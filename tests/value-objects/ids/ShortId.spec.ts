@@ -1,6 +1,6 @@
 import { InvalidFormatError } from '../../../src/errors/InvalidFormatError';
 import { InvalidLengthError } from '../../../src/errors/InvalidLengthError';
-import { InvalidValueError } from '../../../src/errors/InvalidValueError';
+import { NullObject } from '../../../src/value-objects/NullObject';
 import { ShortId } from '../../../src/value-objects/ids/ShortId';
 
 describe('ShortId', () => {
@@ -12,6 +12,12 @@ describe('ShortId', () => {
     });
   });
   describe('constructor', () => {
+    it('should return a NullValueObject when a Nullish is received', () => {
+      expect(
+        NullObject.isNullObject(new ShortId(undefined as unknown as string)),
+      ).toBeTrue();
+    });
+
     it('should throw invalid length error when constructor receives a empty string', () => {
       expect(() => new ShortId('')).toThrow(InvalidLengthError);
     });

@@ -83,12 +83,23 @@ your application.
 - **`Longitude`** - Longitude (-180 to 180)
 - **`Coordinates`** - Coordinate pairs
 
-### � Hashes
+### 🔐 Cryptography
+- **`KeyPair`** - Ed25519 key pair generation, signing, and verification
+- **`PrivateKey`** - Ed25519 private key (PEM format) with signing
+- **`PublicKey`** - Ed25519 public key (PEM format) with signature verification
+- **`Signature`** - Base64-encoded ed25519 digital signature
+- **`EncryptedPrivateKey`** - AES-256-GCM encrypted private key (password-based)
+- **`EncryptedKeyPair`** - Key pair with encrypted private key
+
+### 📎 Media
+- **`Media`** - Binary/string content with Buffer, size, and Base64 helpers
+
+### #️ Hashes
 - **`MD5Hash`** - MD5 hashes with helpers
 - **`SHA256Hash`** - SHA‑256 hashes with helpers
 - **`SHA512Hash`** - SHA‑512 hashes with helpers
 
-### �📝 Other
+### 📝 Other
 - **`Enum`** - Base class for typed enumerations
 
 ## 💡 Basic Examples
@@ -130,6 +141,22 @@ const md5 = MD5Hash.from('hello'); // 5d41402abc4b2a76b9719d911017c592
 const sha256 = SHA256Hash.from('hello'); // 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
 const sha512 = SHA512Hash.from('hello'); // 9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca72323c3d99ba5c11d7c7acc6e14b8c5da0c4663475c2e5c3adef46f73bcdec043
 console.log(md5.toBase64());
+
+// Crypto
+const keyPair = KeyPair.generate(); // Ed25519 key pair
+const signature = keyPair.sign('hello world'); // Sign a message
+keyPair.isValidSignature('hello world', signature); // true
+
+// Encrypted key pairs
+const encrypted = await keyPair.encryptKeyPair('my-password');
+const sig = encrypted.sign('message', 'my-password');
+encrypted.isValidSignature('message', sig); // true
+
+// Media
+const media = new Media('hello world');
+console.log(media.getSize()); // 11
+console.log(media.getBase64()); // 'aGVsbG8gd29ybGQ='
+console.log(media.getBuffer()); // <Buffer 68 65 6c 6c 6f ...>
 ```
 
 ## 📚 Technical Documentation

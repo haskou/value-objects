@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 
 import { InvalidHashError } from '../../errors/InvalidHashError';
 import { assert } from '../../patterns';
+import { Media } from '../media/Media';
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
 import { Hash } from './Hash';
@@ -11,7 +12,9 @@ export class MD5Hash extends Hash {
     return !!hash.valueOf().match(/^[a-f0-9]{32}$/);
   }
 
-  public static from(buffer: Buffer | string | StringValueObject): MD5Hash {
+  public static from(
+    buffer: string | StringValueObject | Media | Buffer,
+  ): MD5Hash {
     return new MD5Hash(
       crypto.createHash('md5').update(buffer.valueOf()).digest('hex'),
     );

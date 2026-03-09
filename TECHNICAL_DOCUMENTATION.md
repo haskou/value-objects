@@ -14,6 +14,9 @@ Comprehensive technical documentation for the Value Objects library.
   - [Color Value Objects](#color-value-objects)
   - [Email Value Objects](#email-value-objects)
   - [ID Value Objects](#id-value-objects)
+  - [Hash Value Objects](#hash-value-objects)
+  - [Cryptography Value Objects](#cryptography-value-objects)
+  - [Media Value Objects](#media-value-objects)
   - [Hour Value Objects](#hour-value-objects)
   - [Time Value Objects](#time-value-objects)
   - [Enum Value Objects](#enum-value-objects)
@@ -635,6 +638,236 @@ try {
 } catch (err) {
   console.error('Invalid SHA512 hash');
 }
+```
+
+### Cryptography Value Objects
+
+All cryptography value objects use **Ed25519** elliptic curve keys in PEM format.
+
+#### Key
+
+Abstract base class for cryptographic keys. Extends `ValueObject<string>`.
+
+```typescript
+abstract class Key extends ValueObject<string> {}
+```
+
+#### PrivateKey
+
+Represents an immutable Ed25519 private key in PEM (PKCS8) format. Used for signing messages.
+
+```typescript
+class PrivateKey extends Key {
+  public static fromPEM(pem: string | StringValueObject): PrivateKey;
+  constructor(value: string | StringValueObject);
+  public sign(payload: CryptoPayload): Signature;
+}
+```
+
+**Example:**
+```typescript
+// Create from PEM string
+const privateKey = new PrivateKey(pemString);
+const sameKey = PrivateKey.fromPEM(pemString);
+
+// Sign a message
+const signature = privateKey.sign('hello world');
+console.log(signature.valueOf()); // Base64-encoded 88-character signature
+```
+
+#### PublicKey
+
+Represents an immutable Ed25519 public key in PEM (SPKI) format. Used for verifying signatures.
+
+```typescript
+class PublicKey extends Key {
+  public static fromPEM(pem: string | StringValueObject): PublicKey;
+  constructor(value: string | StringValueObject);
+  public isValidSignature(payload: CryptoPayload, signature: Signature): boolean;
+}
+```
+
+**Example:**
+```typescript
+// Create from PEM string
+const publicKey = new PublicKey(pemString);
+
+// Verify a signature
+const valid = publicKey.isValidSignature('hello world', signature);
+console.log(valid); // true
+```
+
+#### Signature
+
+Represents an immutable Ed25519 digital signature as a base64-encoded string (88 characters).
+
+```typescript
+class Signature extends ValueObject<string> {
+  public static fromBuffer(buffer: Buffer): Signature;
+  constructor(value: string | StringValueObject);
+}
+```
+
+**Example:**
+```typescript
+// Created by PrivateKey.sign()
+const signature = privateKey.sign('data');
+
+// Or from a raw buffer
+const sigFromBuffer = Signature.fromBuffer(signatureBuffer);
+
+// Validation
+try {
+  new Signature('too-short'); // Throws InvalidSignatureError
+} catch (error) {
+  console.error('Signature must be 88 characters (base64)');
+}
+```
+
+#### KeyPair
+
+Manages a public/private Ed25519 key pair with generation, signing, verification, serialization, and encryption.
+
+```typescript
+class KeyPair {
+  public static generate(): KeyPair;
+  public static fromPrimitives(primitives: PrimitiveOf<KeyPair>): KeyPair;
+  constructor(publicKey: PublicKey, privateKey: PrivateKey);
+  public sign(payload: CryptoPayload): Signature;
+  public isValidSignature(payload: CryptoPayload, signature: Signature): boolean;
+  public encryptKeyPair(password: string | StringValueObject): Promise<EncryptedKeyPair>;
+  public toPrimitives(): { publicKey: string; privateKey: string };
+}
+```
+
+**Example:**
+```typescript
+// Generate a new ed25519 key pair
+const keyPair = KeyPair.generate();
+
+// Sign and verify
+const signature = keyPair.sign('important message');
+console.log(keyPair.isValidSignature('important message', signature)); // true
+console.log(keyPair.isValidSignature('tampered message', signature));  // false
+
+// Serialize and restore
+const primitives = keyPair.toPrimitives();
+const restored = KeyPair.fromPrimitives(primitives);
+
+// Encrypt the private key with a password
+const encrypted = await keyPair.encryptKeyPair('strong-password');
+```
+
+#### EncryptedPrivateKey
+
+Represents an immutable AES-256-GCM encrypted private key. Uses PBKDF2 with SHA-256 (100,000 iterations) for password-based key derivation.
+
+The encrypted format is: `cipherText.iv.salt.tag` (base64-encoded, dot-separated).
+
+```typescript
+class EncryptedPrivateKey extends ValueObject<string> {
+  public static async create(
+    privateKey: PrivateKey,
+    password: string | StringValueObject,
+  ): Promise<EncryptedPrivateKey>;
+  constructor(encryptedPrivateKey: string | StringValueObject);
+  public decrypt(password: string | StringValueObject): PrivateKey;
+}
+```
+
+**Example:**
+```typescript
+// Encrypt a private key
+const encrypted = await EncryptedPrivateKey.create(privateKey, 'my-password');
+console.log(encrypted.valueOf()); // 'base64CipherText.base64IV.base64Salt.base64Tag'
+
+// Decrypt it back
+const decrypted = encrypted.decrypt('my-password');
+console.log(decrypted.valueOf()); // Original PEM private key
+
+// Wrong password throws an error
+try {
+  encrypted.decrypt('wrong-password'); // Throws (AES-GCM authentication fails)
+} catch (error) {
+  console.error('Invalid password');
+}
+```
+
+#### EncryptedKeyPair
+
+Manages a public key paired with an encrypted private key. Allows signing and verification without exposing the raw private key — the password is required at signing time.
+
+```typescript
+class EncryptedKeyPair {
+  public static async encryptKeyPair(
+    publicKey: PublicKey,
+    privateKey: PrivateKey,
+    password: string | StringValueObject,
+  ): Promise<EncryptedKeyPair>;
+  public static fromPrimitives(primitives: PrimitiveOf<EncryptedKeyPair>): EncryptedKeyPair;
+  constructor(publicKey: PublicKey, encryptedPrivateKey: EncryptedPrivateKey);
+  public sign(payload: CryptoPayload, password: string | StringValueObject): Signature;
+  public isValidSignature(payload: CryptoPayload, signature: Signature): boolean;
+  public toPrimitives(): { publicKey: string; encryptedPrivateKey: string };
+}
+```
+
+**Example:**
+```typescript
+// Create from a KeyPair
+const keyPair = KeyPair.generate();
+const encrypted = await keyPair.encryptKeyPair('password');
+
+// Sign (requires the password)
+const sig = encrypted.sign('message', 'password');
+
+// Verify (no password needed)
+console.log(encrypted.isValidSignature('message', sig)); // true
+
+// Serialize and restore
+const primitives = encrypted.toPrimitives();
+const restored = EncryptedKeyPair.fromPrimitives(primitives);
+```
+
+#### CryptoPayload
+
+Type alias for values that can be signed or verified:
+
+```typescript
+type CryptoPayload = string | StringValueObject | Buffer | Media;
+```
+
+### Media Value Objects
+
+#### Media
+
+Represents immutable binary or string content with Buffer, size, and Base64 conversion utilities.
+
+```typescript
+class Media extends ValueObject<string> {
+  constructor(value: string | Buffer);
+  public getBuffer(): Buffer;
+  public getSize(): number;
+  public getBase64(): string;
+}
+```
+
+**Example:**
+```typescript
+// From a string
+const media = new Media('hello world');
+console.log(media.valueOf());     // 'hello world'
+console.log(media.getSize());     // 11
+console.log(media.getBase64());   // 'aGVsbG8gd29ybGQ='
+console.log(media.getBuffer());   // <Buffer 68 65 6c 6c 6f 20 77 6f 72 6c 64>
+
+// From a Buffer
+const fromBuffer = new Media(Buffer.from('binary data'));
+console.log(fromBuffer.getSize()); // 11
+
+// Null safety
+const nullMedia = new Media(undefined as unknown as string);
+console.log(NullObject.isNullObject(nullMedia)); // true
 ```
 
 ### Hour Value Objects

@@ -1,5 +1,6 @@
 import { InvalidFormatError } from '../../../src/errors/InvalidFormatError';
 import { InvalidLengthError } from '../../../src/errors/InvalidLengthError';
+import { NullObject } from '../../../src/value-objects/NullObject';
 import { UUID } from '../../../src/value-objects/ids/UUID';
 
 describe('UUID', () => {
@@ -11,6 +12,12 @@ describe('UUID', () => {
     });
   });
   describe('constructor', () => {
+    it('should return a NullValueObject when a Nullish is received', () => {
+      expect(
+        NullObject.isNullObject(new UUID(undefined as unknown as string)),
+      ).toBeTrue();
+    });
+
     it('should throw invalid length error when constructor receives a empty string', () => {
       expect(() => new UUID('')).toThrow(InvalidLengthError);
     });
