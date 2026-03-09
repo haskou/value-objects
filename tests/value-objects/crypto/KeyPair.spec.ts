@@ -12,27 +12,27 @@ import {
 describe('KeyPair', () => {
   let keyPair: KeyPair;
 
-  beforeAll(() => {
-    keyPair = KeyPair.generate();
+  beforeAll(async () => {
+    keyPair = await KeyPair.generate();
   });
 
   describe('generate', () => {
-    it('should generate a KeyPair instance', () => {
-      const pair = KeyPair.generate();
+    it('should generate a KeyPair instance', async () => {
+      const pair = await KeyPair.generate();
       expect(pair).toBeInstanceOf(KeyPair);
     });
 
-    it('should generate PEM-encoded keys', () => {
-      const pair = KeyPair.generate();
+    it('should generate PEM-encoded keys', async () => {
+      const pair = await KeyPair.generate();
       const primitives = pair.toPrimitives();
 
       expect(primitives.publicKey).toContain('BEGIN PUBLIC KEY');
       expect(primitives.privateKey).toContain('BEGIN PRIVATE KEY');
     });
 
-    it('should generate unique key pairs each time', () => {
-      const pair1 = KeyPair.generate();
-      const pair2 = KeyPair.generate();
+    it('should generate unique key pairs each time', async () => {
+      const pair1 = await KeyPair.generate();
+      const pair2 = await KeyPair.generate();
 
       expect(pair1.toPrimitives().publicKey).not.toBe(
         pair2.toPrimitives().publicKey,
@@ -130,8 +130,8 @@ describe('KeyPair', () => {
       expect(keyPair.isValidSignature('tampered', sig)).toBeFalse();
     });
 
-    it('should return false for a wrong signature', () => {
-      const otherPair = KeyPair.generate();
+    it('should return false for a wrong signature', async () => {
+      const otherPair = await KeyPair.generate();
       const sig = otherPair.sign('message');
 
       expect(keyPair.isValidSignature('message', sig)).toBeFalse();
@@ -155,7 +155,7 @@ describe('KeyPair', () => {
     it('should produce functional EncryptedKeyPair that can sign/verify', async () => {
       const encrypted = await keyPair.encryptKeyPair('pwd');
       const payload = 'message';
-      const sig = encrypted.sign(payload, 'pwd');
+      const sig = await encrypted.sign(payload, 'pwd');
 
       expect(encrypted.isValidSignature(payload, sig)).toBeTrue();
     });

@@ -93,7 +93,7 @@ describe('EncryptedPrivateKey', () => {
       const privateKey = new PrivateKey(privatePem);
       const encrypted = await EncryptedPrivateKey.create(privateKey, password);
 
-      const decrypted = encrypted.decrypt(password);
+      const decrypted = await encrypted.decrypt(password);
 
       expect(decrypted).toBeInstanceOf(PrivateKey);
       expect(decrypted.valueOf()).toBe(privatePem);
@@ -103,14 +103,14 @@ describe('EncryptedPrivateKey', () => {
       const privateKey = new PrivateKey(privatePem);
       const encrypted = await EncryptedPrivateKey.create(privateKey, password);
 
-      expect(() => encrypted.decrypt('wrong-password')).toThrow();
+      await expect(encrypted.decrypt('wrong-password')).toReject();
     });
 
     it('should decrypt to a functional PrivateKey that can sign', async () => {
       const privateKey = new PrivateKey(privatePem);
       const encrypted = await EncryptedPrivateKey.create(privateKey, password);
 
-      const decrypted = encrypted.decrypt(password);
+      const decrypted = await encrypted.decrypt(password);
       const sig = decrypted.sign('test payload');
 
       const valid = crypto.verify(
@@ -130,7 +130,7 @@ describe('EncryptedPrivateKey', () => {
         passwordVO,
       );
 
-      const decrypted = encrypted.decrypt(passwordVO);
+      const decrypted = await encrypted.decrypt(passwordVO);
 
       expect(decrypted.valueOf()).toBe(privatePem);
     });

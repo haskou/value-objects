@@ -12,7 +12,7 @@ describe('EncryptedKeyPair', () => {
   const password = 'encryption-password';
 
   beforeAll(async () => {
-    keyPair = KeyPair.generate();
+    keyPair = await KeyPair.generate();
   });
 
   describe('constructor', () => {
@@ -85,7 +85,7 @@ describe('EncryptedKeyPair', () => {
 
       const recreated = EncryptedKeyPair.fromPrimitives(primitives);
       const payload = 'verify after round-trip';
-      const sig = recreated.sign(payload, password);
+      const sig = await recreated.sign(payload, password);
 
       expect(recreated.isValidSignature(payload, sig)).toBeTrue();
     });
@@ -94,7 +94,7 @@ describe('EncryptedKeyPair', () => {
   describe('sign', () => {
     it('should produce a valid Signature', async () => {
       const encrypted = await keyPair.encryptKeyPair(password);
-      const sig = encrypted.sign('hello world', password);
+      const sig = await encrypted.sign('hello world', password);
 
       expect(sig).toBeInstanceOf(Signature);
       expect(sig.valueOf()).toHaveLength(88);
@@ -103,15 +103,15 @@ describe('EncryptedKeyPair', () => {
     it('should accept a StringValueObject as password', async () => {
       const encrypted = await keyPair.encryptKeyPair(password);
       const passwordVO = new StringValueObject(password);
-      const sig = encrypted.sign('data', passwordVO);
+      const sig = await encrypted.sign('data', passwordVO);
 
       expect(sig).toBeInstanceOf(Signature);
     });
 
     it('should produce different signatures for different payloads', async () => {
       const encrypted = await keyPair.encryptKeyPair(password);
-      const sig1 = encrypted.sign('msg-a', password);
-      const sig2 = encrypted.sign('msg-b', password);
+      const sig1 = await encrypted.sign('msg-a', password);
+      const sig2 = await encrypted.sign('msg-b', password);
 
       expect(sig1.isEqual(sig2)).toBeFalse();
     });
@@ -121,14 +121,14 @@ describe('EncryptedKeyPair', () => {
     it('should return true for a valid signature', async () => {
       const encrypted = await keyPair.encryptKeyPair(password);
       const payload = 'signed data';
-      const sig = encrypted.sign(payload, password);
+      const sig = await encrypted.sign(payload, password);
 
       expect(encrypted.isValidSignature(payload, sig)).toBeTrue();
     });
 
     it('should return false for a tampered payload', async () => {
       const encrypted = await keyPair.encryptKeyPair(password);
-      const sig = encrypted.sign('original', password);
+      const sig = await encrypted.sign('original', password);
 
       expect(encrypted.isValidSignature('tampered', sig)).toBeFalse();
     });
@@ -137,7 +137,7 @@ describe('EncryptedKeyPair', () => {
       const encrypted = await keyPair.encryptKeyPair(password);
       const otherPair = await KeyPair.generate();
       const otherEncrypted = await otherPair.encryptKeyPair(password);
-      const sig = otherEncrypted.sign('message', password);
+      const sig = await otherEncrypted.sign('message', password);
 
       expect(encrypted.isValidSignature('message', sig)).toBeFalse();
     });

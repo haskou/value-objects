@@ -1,8 +1,12 @@
 import * as crypto from 'node:crypto';
+import { promisify } from 'node:util';
 
 import { StringValueObject } from '../StringValueObject';
 import { ValueObject } from '../ValueObject';
 import { PrivateKey } from './PrivateKey';
+
+const pbkdf2 = promisify(crypto.pbkdf2);
+const randomBytes = promisify(crypto.randomBytes);
 
 export class EncryptedPrivateKey extends ValueObject<string> {
   private static readonly ITERATIONS = 100000;
@@ -15,33 +19,28 @@ export class EncryptedPrivateKey extends ValueObject<string> {
     privateKey: PrivateKey,
     password: string | StringValueObject,
   ): Promise<EncryptedPrivateKey> {
-    const salt = crypto.randomBytes(EncryptedPrivateKey.SALT_ENTROPY);
+    const salt = await randomBytes(EncryptedPrivateKey.SALT_ENTROPY);
+    const key = await pbkdf2(
+      password.valueOf(),
+      salt,
+      EncryptedPrivateKey.ITERATIONS,
+      EncryptedPrivateKey.LENGTH,
+      EncryptedPrivateKey.ALGORITHM,
+    );
+    const iv = await randomBytes(EncryptedPrivateKey.IV_ENTROPY);
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    const encrypted = Buffer.concat([
+      cipher.update(privateKey.valueOf()),
+      cipher.final(),
+    ]);
+    const tag = cipher.getAuthTag();
 
-    const encryptedPrivateKey = await new Promise<string>((resolve) => {
-      const key = crypto.pbkdf2Sync(
-        password.valueOf(),
-        salt,
-        EncryptedPrivateKey.ITERATIONS,
-        EncryptedPrivateKey.LENGTH,
-        EncryptedPrivateKey.ALGORITHM,
-      );
-      const iv = crypto.randomBytes(EncryptedPrivateKey.IV_ENTROPY);
-      const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-      const encrypted = Buffer.concat([
-        cipher.update(privateKey.valueOf()),
-        cipher.final(),
-      ]);
-      const tag = cipher.getAuthTag();
-
-      resolve(
-        [
-          encrypted.toString('base64'),
-          iv.toString('base64'),
-          salt.toString('base64'),
-          tag.toString('base64'),
-        ].join('.'),
-      );
-    });
+    const encryptedPrivateKey = [
+      encrypted.toString('base64'),
+      iv.toString('base64'),
+      salt.toString('base64'),
+      tag.toString('base64'),
+    ].join('.');
 
     return new EncryptedPrivateKey(encryptedPrivateKey);
   }
@@ -50,14 +49,16 @@ export class EncryptedPrivateKey extends ValueObject<string> {
     super(encryptedPrivateKey?.valueOf());
   }
 
-  public decrypt(password: string | StringValueObject): PrivateKey {
+  public async decrypt(
+    password: string | StringValueObject,
+  ): Promise<PrivateKey> {
     const [cipherTextB64, ivB64, saltB64, tagB64] = this.valueOf().split('.');
     const cipherText = Buffer.from(cipherTextB64, 'base64');
     const iv = Buffer.from(ivB64, 'base64');
     const salt = Buffer.from(saltB64, 'base64');
     const tag = Buffer.from(tagB64, 'base64');
 
-    const key = crypto.pbkdf2Sync(
+    const key = await pbkdf2(
       password.valueOf(),
       salt,
       EncryptedPrivateKey.ITERATIONS,

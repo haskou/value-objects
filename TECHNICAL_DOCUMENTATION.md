@@ -730,7 +730,7 @@ Manages a public/private Ed25519 key pair with generation, signing, verification
 
 ```typescript
 class KeyPair {
-  public static generate(): KeyPair;
+  public static async generate(): Promise<KeyPair>;
   public static fromPrimitives(primitives: PrimitiveOf<KeyPair>): KeyPair;
   constructor(publicKey: PublicKey, privateKey: PrivateKey);
   public sign(payload: CryptoPayload): Signature;
@@ -743,7 +743,7 @@ class KeyPair {
 **Example:**
 ```typescript
 // Generate a new ed25519 key pair
-const keyPair = KeyPair.generate();
+const keyPair = await KeyPair.generate();
 
 // Sign and verify
 const signature = keyPair.sign('important message');

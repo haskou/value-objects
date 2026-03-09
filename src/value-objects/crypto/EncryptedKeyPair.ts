@@ -41,11 +41,13 @@ export class EncryptedKeyPair {
     return this.publicKey.isValidSignature(payload, signature);
   }
 
-  public sign(
+  public async sign(
     payload: CryptoPayload,
     password: string | StringValueObject,
-  ): Signature {
-    return this.encryptedPrivateKey.decrypt(password).sign(payload);
+  ): Promise<Signature> {
+    const privateKey = await this.encryptedPrivateKey.decrypt(password);
+
+    return privateKey.sign(payload);
   }
 
   public toPrimitives() {
