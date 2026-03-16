@@ -10,6 +10,7 @@ import { StringValueObject } from '../StringValueObject';
 import { CryptoPayload } from './CryptoPayload';
 import { EncryptedPayload } from './EncryptedPayload';
 import { Key } from './Key';
+import { PublicKey } from './PublicKey';
 import { Signature } from './Signature';
 
 export class PrivateKey extends Key {
@@ -47,6 +48,14 @@ export class PrivateKey extends Key {
       new InvalidLengthError(value, PrivateKey.LENGTH),
     );
     assert(PrivateKey.PATTERN.test(value), new InvalidFormatError(value));
+  }
+
+  public getPublicKey(): PublicKey {
+    const pemPublicKey = crypto
+      .createPublicKey(this.valueOf())
+      .export({ format: 'pem', type: 'spki' });
+
+    return PublicKey.fromPEM(pemPublicKey.toString());
   }
 
   public sign(payload: CryptoPayload): Signature {

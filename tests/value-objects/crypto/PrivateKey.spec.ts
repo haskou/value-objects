@@ -84,6 +84,17 @@ describe('PrivateKey', () => {
     });
   });
 
+  describe('getPublicKey', () => {
+    it('should derive the matching public key in PEM format', () => {
+      const privateKey = new PrivateKey(privatePem);
+
+      const derivedPublicKey = privateKey.getPublicKey();
+
+      expect(derivedPublicKey).toBeInstanceOf(PublicKey);
+      expect(derivedPublicKey.valueOf()).toBe(publicPem);
+    });
+  });
+
   describe('sign', () => {
     it('should produce a valid Signature from a string payload', () => {
       const key = new PrivateKey(privatePem);
