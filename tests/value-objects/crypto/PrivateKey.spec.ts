@@ -75,6 +75,15 @@ describe('PrivateKey', () => {
     });
   });
 
+  describe('generate', () => {
+    it('should generate a valid Ed25519 private key', () => {
+      const key = PrivateKey.generate();
+
+      expect(key).toBeInstanceOf(PrivateKey);
+      expect(key.valueOf()).toContain('BEGIN PRIVATE KEY');
+    });
+  });
+
   describe('sign', () => {
     it('should produce a valid Signature from a string payload', () => {
       const key = new PrivateKey(privatePem);

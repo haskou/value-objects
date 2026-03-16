@@ -1,4 +1,5 @@
 import { ed25519, x25519 } from '@noble/curves/ed25519.js';
+import { generateKeyPairSync } from 'crypto';
 import * as crypto from 'node:crypto';
 
 import { InvalidFormatError } from '../../errors/InvalidFormatError';
@@ -18,6 +19,16 @@ export class PrivateKey extends Key {
 
   public static fromPEM(pem: string | StringValueObject): PrivateKey {
     return new PrivateKey(pem.valueOf());
+  }
+
+  public static generate(): PrivateKey {
+    const { privateKey } = generateKeyPairSync('ed25519');
+    const pemPrivateKey = privateKey.export({
+      format: 'pem',
+      type: 'pkcs8',
+    });
+
+    return new PrivateKey(pemPrivateKey.toString());
   }
 
   constructor(value: string | StringValueObject) {
