@@ -101,6 +101,7 @@ your application.
 
 ### 📝 Other
 - **`Enum`** - Base class for typed enumerations
+- **`UniqueObjectArray`** - Iterable collection that keeps comparable items unique
 
 ## 💡 Basic Examples
 
@@ -157,6 +158,15 @@ const media = new Media('hello world');
 console.log(media.getSize()); // 11
 console.log(media.getBase64()); // 'aGVsbG8gd29ybGQ='
 console.log(media.getBuffer()); // <Buffer 68 65 6c 6c 6f ...>
+
+// Unique collections
+const weekdays = UniqueObjectArray.fromArray([
+  new DayOfWeek(EDaysOfWeek.MONDAY),
+  new DayOfWeek(EDaysOfWeek.TUESDAY),
+  new DayOfWeek(EDaysOfWeek.MONDAY),
+]);
+console.log(weekdays.length()); // 2
+console.log(weekdays.toArray().map((day) => day.toString())); // ['monday', 'tuesday']
 ```
 
 ## 📚 Technical Documentation

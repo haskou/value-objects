@@ -18,6 +18,7 @@ Comprehensive technical documentation for the Value Objects library.
   - [Cryptography Value Objects](#cryptography-value-objects)
     - [Encrypting and Decrypting Payloads](#encrypting-and-decrypting-payloads)
   - [Media Value Objects](#media-value-objects)
+  - [Collection Utilities](#collection-utilities)
   - [Hour Value Objects](#hour-value-objects)
   - [Time Value Objects](#time-value-objects)
   - [Enum Value Objects](#enum-value-objects)
@@ -953,6 +954,45 @@ console.log(fromBuffer.getSize()); // 11
 // Null safety
 const nullMedia = new Media(undefined as unknown as string);
 console.log(NullObject.isNullObject(nullMedia)); // true
+```
+
+### Collection Utilities
+
+#### UniqueObjectArray
+
+Provides an iterable collection that keeps only unique items based on each item's `isEqual()` implementation.
+
+```typescript
+interface ComparableItem {
+  isEqual(item: unknown): boolean;
+}
+
+class UniqueObjectArray<T extends ComparableItem> implements Iterable<T> {
+  public static fromArray<T extends ComparableItem>(array: T[]): UniqueObjectArray<T>;
+  public includes(item: T): boolean;
+  public push(item: T): boolean;
+  public remove(item: T): boolean;
+  public length(): number;
+  public toArray(): T[];
+  public [Symbol.iterator](): Iterator<T>;
+}
+```
+
+**Example:**
+```typescript
+const weekdays = UniqueObjectArray.fromArray([
+  new DayOfWeek(EDaysOfWeek.MONDAY),
+  new DayOfWeek(EDaysOfWeek.TUESDAY),
+  new DayOfWeek(EDaysOfWeek.MONDAY),
+]);
+
+console.log(weekdays.length()); // 2
+console.log(weekdays.includes(new DayOfWeek(EDaysOfWeek.MONDAY))); // true
+
+weekdays.push(new DayOfWeek(EDaysOfWeek.THURSDAY));
+weekdays.remove(new DayOfWeek(EDaysOfWeek.TUESDAY));
+
+console.log([...weekdays].map((day) => day.toString())); // ['monday', 'thursday']
 ```
 
 ### Hour Value Objects

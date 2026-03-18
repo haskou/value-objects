@@ -12,4 +12,5 @@ export * from './NumberValueObject';
 export * from './PositiveNumber';
 export * from './StringValueObject';
 export * from './NullObject';
+export * from './UniqueObjectArray';
 export * from './ValueObject';
