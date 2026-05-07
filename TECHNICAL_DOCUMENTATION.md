@@ -810,10 +810,6 @@ if (encrypted.needsReEncryption()) {
   const reEncrypted = await EncryptedPrivateKey.create(decrypted, 'my-password');
 }
 
-// For enhanced security ("paranoia mode"), you can use higher scrypt parameters:
-// N=131072, r=8, p=1 (requires ~256 MiB memory per derivation)
-// Note: This may be slow on resource-constrained environments.
-
 // Wrong password throws an error
 try {
   encrypted.decrypt('wrong-password'); // Throws (AES-GCM authentication fails)
