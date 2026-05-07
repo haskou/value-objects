@@ -88,7 +88,7 @@ your application.
 - **`PrivateKey`** - Ed25519 private key (PEM format) with signing
 - **`PublicKey`** - Ed25519 public key (PEM format) with signature verification
 - **`Signature`** - Base64-encoded ed25519 digital signature
-- **`EncryptedPrivateKey`** - AES-256-GCM encrypted private key (PBKDF2-based, password-protected)
+- **`EncryptedPrivateKey`** - AES-256-GCM encrypted private key (scrypt-based, password-protected)
 - **`EncryptedKeyPair`** - Key pair with encrypted private key
 
 ### 📎 Media
@@ -161,9 +161,9 @@ console.log(media.getBuffer()); // <Buffer 68 65 6c 6c 6f ...>
 
 // Unique collections
 const weekdays = UniqueObjectArray.fromArray([
-  new DayOfWeek(EDaysOfWeek.MONDAY),
-  new DayOfWeek(EDaysOfWeek.TUESDAY),
-  new DayOfWeek(EDaysOfWeek.MONDAY),
+  DayOfWeek.MONDAY,
+  DayOfWeek.TUESDAY,
+  DayOfWeek.MONDAY,
 ]);
 console.log(weekdays.length()); // 2
 console.log(weekdays.toArray().map((day) => day.toString())); // ['monday', 'tuesday']

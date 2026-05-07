@@ -778,9 +778,9 @@ const encryptedKeyPair = await keyPair.encryptKeyPair('strong-password');
 
 #### EncryptedPrivateKey
 
-Represents an immutable AES-256-GCM encrypted private key. Uses PBKDF2 with SHA-256 (600,000 iterations) for password-based key derivation, with versioning for future upgrades. Supports backward compatibility with legacy PBKDF2-based encryption.
+Represents an immutable AES-256-GCM encrypted private key. Uses scrypt (N=16384, r=8, p=1) for password-based key derivation, with versioning for future upgrades. Supports backward compatibility with the legacy 4-part encrypted format.
 
-The encrypted format is: `v1.pbkdf2-sha256.iterations.salt.iv.cipherText.tag` (base64-encoded, dot-separated). Legacy format: `cipherText.iv.salt.tag`.
+The encrypted format is: `v2.scrypt.N16384.r8.p1.salt.iv.tag.cipherText` (base64-encoded, dot-separated). Legacy format: `cipherText.iv.salt.tag`.
 
 ```typescript
 class EncryptedPrivateKey extends ValueObject<string> {
@@ -790,6 +790,7 @@ class EncryptedPrivateKey extends ValueObject<string> {
   ): Promise<EncryptedPrivateKey>;
   constructor(encryptedPrivateKey: string | StringValueObject);
   public decrypt(password: string | StringValueObject): PrivateKey;
+  public needsReEncryption(): boolean;
 }
 ```
 
@@ -797,11 +798,21 @@ class EncryptedPrivateKey extends ValueObject<string> {
 ```typescript
 // Encrypt a private key
 const encrypted = await EncryptedPrivateKey.create(privateKey, 'my-password');
-console.log(encrypted.valueOf()); // 'v1.pbkdf2-sha256.600000.base64Salt.base64IV.base64CipherText.base64Tag'
+console.log(encrypted.valueOf()); // 'v2.scrypt.N16384.r8.p1.base64Salt.base64IV.base64Tag.base64CipherText'
 
 // Decrypt it back
 const decrypted = encrypted.decrypt('my-password');
 console.log(decrypted.valueOf()); // Original PEM private key
+
+// Check if re-encryption is needed
+if (encrypted.needsReEncryption()) {
+  // Re-encrypt with stronger parameters
+  const reEncrypted = await EncryptedPrivateKey.create(decrypted, 'my-password');
+}
+
+// For enhanced security ("paranoia mode"), you can use higher scrypt parameters:
+// N=131072, r=8, p=1 (requires ~256 MiB memory per derivation)
+// Note: This may be slow on resource-constrained environments.
 
 // Wrong password throws an error
 try {
@@ -981,16 +992,16 @@ class UniqueObjectArray<T extends ComparableItem> implements Iterable<T> {
 **Example:**
 ```typescript
 const weekdays = UniqueObjectArray.fromArray([
-  new DayOfWeek(EDaysOfWeek.MONDAY),
-  new DayOfWeek(EDaysOfWeek.TUESDAY),
-  new DayOfWeek(EDaysOfWeek.MONDAY),
+  DayOfWeek.MONDAY,
+  DayOfWeek.TUESDAY,
+  DayOfWeek.MONDAY,
 ]);
 
 console.log(weekdays.length()); // 2
-console.log(weekdays.includes(new DayOfWeek(EDaysOfWeek.MONDAY))); // true
+console.log(weekdays.includes(DayOfWeek.MONDAY)); // true
 
-weekdays.push(new DayOfWeek(EDaysOfWeek.THURSDAY));
-weekdays.remove(new DayOfWeek(EDaysOfWeek.TUESDAY));
+weekdays.push(DayOfWeek.THURSDAY);
+weekdays.remove(DayOfWeek.TUESDAY);
 
 console.log([...weekdays].map((day) => day.toString())); // ['monday', 'thursday']
 ```
