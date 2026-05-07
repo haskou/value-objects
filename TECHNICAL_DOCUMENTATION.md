@@ -778,9 +778,9 @@ const encryptedKeyPair = await keyPair.encryptKeyPair('strong-password');
 
 #### EncryptedPrivateKey
 
-Represents an immutable AES-256-GCM encrypted private key. Uses PBKDF2 with SHA-256 (100,000 iterations) for password-based key derivation.
+Represents an immutable AES-256-GCM encrypted private key. Uses PBKDF2 with SHA-256 (600,000 iterations) for password-based key derivation, with versioning for future upgrades. Supports backward compatibility with legacy PBKDF2-based encryption.
 
-The encrypted format is: `cipherText.iv.salt.tag` (base64-encoded, dot-separated).
+The encrypted format is: `v1.pbkdf2-sha256.iterations.salt.iv.cipherText.tag` (base64-encoded, dot-separated). Legacy format: `cipherText.iv.salt.tag`.
 
 ```typescript
 class EncryptedPrivateKey extends ValueObject<string> {
@@ -797,7 +797,7 @@ class EncryptedPrivateKey extends ValueObject<string> {
 ```typescript
 // Encrypt a private key
 const encrypted = await EncryptedPrivateKey.create(privateKey, 'my-password');
-console.log(encrypted.valueOf()); // 'base64CipherText.base64IV.base64Salt.base64Tag'
+console.log(encrypted.valueOf()); // 'v1.pbkdf2-sha256.600000.base64Salt.base64IV.base64CipherText.base64Tag'
 
 // Decrypt it back
 const decrypted = encrypted.decrypt('my-password');

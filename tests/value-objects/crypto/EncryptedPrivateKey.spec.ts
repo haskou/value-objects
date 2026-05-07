@@ -60,12 +60,12 @@ describe('EncryptedPrivateKey', () => {
       expect(encrypted.valueOf()).not.toBe(privatePem);
     });
 
-    it('should produce a 4-part dot-separated string', async () => {
+    it('should produce a 7-part dot-separated string', async () => {
       const privateKey = new PrivateKey(privatePem);
       const encrypted = await EncryptedPrivateKey.create(privateKey, password);
 
       const parts = encrypted.valueOf().split('.');
-      expect(parts).toHaveLength(4);
+      expect(parts).toHaveLength(7);
     });
 
     it('should produce different ciphertexts each time due to random salt/iv', async () => {
@@ -104,6 +104,12 @@ describe('EncryptedPrivateKey', () => {
       const encrypted = await EncryptedPrivateKey.create(privateKey, password);
 
       await expect(encrypted.decrypt('wrong-password')).toReject();
+    });
+
+    it('should fail to decrypt invalid format', async () => {
+      const invalidEncrypted = new EncryptedPrivateKey('invalid.format');
+
+      await expect(invalidEncrypted.decrypt(password)).toReject();
     });
 
     it('should decrypt to a functional PrivateKey that can sign', async () => {

@@ -88,7 +88,7 @@ your application.
 - **`PrivateKey`** - Ed25519 private key (PEM format) with signing
 - **`PublicKey`** - Ed25519 public key (PEM format) with signature verification
 - **`Signature`** - Base64-encoded ed25519 digital signature
-- **`EncryptedPrivateKey`** - AES-256-GCM encrypted private key (password-based)
+- **`EncryptedPrivateKey`** - AES-256-GCM encrypted private key (PBKDF2-based, password-protected)
 - **`EncryptedKeyPair`** - Key pair with encrypted private key
 
 ### 📎 Media
