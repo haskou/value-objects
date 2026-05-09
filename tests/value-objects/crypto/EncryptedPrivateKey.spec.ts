@@ -5,6 +5,7 @@ import {
   PrivateKey,
   StringValueObject,
 } from '../../../src';
+import { CryptoDerivation } from '../../../src/value-objects/crypto/encrypted-private-key/CryptoDerivation';
 import { NullObject } from '../../../src/value-objects/NullObject';
 
 describe('EncryptedPrivateKey', () => {
@@ -110,6 +111,38 @@ describe('EncryptedPrivateKey', () => {
       const invalidEncrypted = new EncryptedPrivateKey('invalid.format');
 
       await expect(invalidEncrypted.decrypt(password)).toReject();
+    });
+
+    it('should reject tampered scrypt parameters before deriving a key', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      parts[2] = 'N1073741824';
+      const tampered = new EncryptedPrivateKey(parts.join('.'));
+      const scryptSpy = jest.spyOn(CryptoDerivation, 'scryptAsync');
+
+      await expect(tampered.decrypt(password)).rejects.toThrow(
+        'Invalid encrypted private key format',
+      );
+
+      expect(scryptSpy).not.toHaveBeenCalled();
+      scryptSpy.mockRestore();
+    });
+
+    it('should reject malformed numeric scrypt parameters', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      parts[2] = 'N16384junk';
+      const tampered = new EncryptedPrivateKey(parts.join('.'));
+      const scryptSpy = jest.spyOn(CryptoDerivation, 'scryptAsync');
+
+      await expect(tampered.decrypt(password)).rejects.toThrow(
+        'Invalid encrypted private key format',
+      );
+
+      expect(scryptSpy).not.toHaveBeenCalled();
+      scryptSpy.mockRestore();
     });
 
     it('should decrypt to a functional PrivateKey that can sign', async () => {

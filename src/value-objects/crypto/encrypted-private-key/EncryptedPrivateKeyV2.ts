@@ -17,6 +17,14 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
   private static readonly CIPHER = 'aes-256-gcm';
   private static readonly EXPECTED_PARTS = 9;
 
+  private static hasSupportedScryptParameters(parts: string[]): boolean {
+    return (
+      parts[2] === `N${EncryptedPrivateKeyV2.SCRYPT_N}` &&
+      parts[3] === `r${EncryptedPrivateKeyV2.SCRYPT_R}` &&
+      parts[4] === `p${EncryptedPrivateKeyV2.SCRYPT_P}`
+    );
+  }
+
   public static async encrypt(
     privateKey: PrivateKey,
     password: string | StringValueObject,
@@ -62,9 +70,7 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
       parts.length === EncryptedPrivateKeyV2.EXPECTED_PARTS &&
       parts[0] === EncryptedPrivateKeyV2.VERSION &&
       parts[1] === EncryptedPrivateKeyV2.KDF &&
-      parts[2].startsWith('N') &&
-      parts[3].startsWith('r') &&
-      parts[4].startsWith('p')
+      EncryptedPrivateKeyV2.hasSupportedScryptParameters(parts)
     );
   }
 
@@ -72,6 +78,10 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
     parts: string[],
     password: string | StringValueObject,
   ): Promise<PrivateKey> {
+    if (!EncryptedPrivateKeyV2.hasSupportedScryptParameters(parts)) {
+      throw new Error('Unsupported encrypted private key parameters');
+    }
+
     const N = parseInt(parts[2].slice(1), 10);
     const r = parseInt(parts[3].slice(1), 10);
     const p = parseInt(parts[4].slice(1), 10);

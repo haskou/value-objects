@@ -789,7 +789,7 @@ class EncryptedPrivateKey extends ValueObject<string> {
     password: string | StringValueObject,
   ): Promise<EncryptedPrivateKey>;
   constructor(encryptedPrivateKey: string | StringValueObject);
-  public decrypt(password: string | StringValueObject): PrivateKey;
+  public decrypt(password: string | StringValueObject): Promise<PrivateKey>;
   public needsReEncryption(): boolean;
 }
 ```
@@ -801,7 +801,7 @@ const encrypted = await EncryptedPrivateKey.create(privateKey, 'my-password');
 console.log(encrypted.valueOf()); // 'v2.scrypt.N16384.r8.p1.base64Salt.base64IV.base64Tag.base64CipherText'
 
 // Decrypt it back
-const decrypted = encrypted.decrypt('my-password');
+const decrypted = await encrypted.decrypt('my-password');
 console.log(decrypted.valueOf()); // Original PEM private key
 
 // Check if re-encryption is needed
