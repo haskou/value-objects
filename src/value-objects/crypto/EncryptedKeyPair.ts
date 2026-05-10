@@ -1,3 +1,5 @@
+import type { Buffer } from 'buffer';
+
 import { PrimitiveOf } from '../../interfaces';
 import { StringValueObject } from '../StringValueObject';
 import { CryptoPayload } from './CryptoPayload';

@@ -1,6 +1,7 @@
-import * as crypto from 'node:crypto';
+import { Buffer } from 'buffer';
 
 import { StringValueObject } from '../../StringValueObject';
+import { BrowserCrypto } from '../BrowserCrypto';
 import { PrivateKey } from '../PrivateKey';
 import { CryptoDerivation } from './CryptoDerivation';
 import { EncryptedPrivateKeyVersion } from './EncryptedPrivateKeyVersion';
@@ -34,17 +35,7 @@ export class EncryptedPrivateKeyLegacy extends EncryptedPrivateKeyVersion {
       EncryptedPrivateKeyLegacy.LEGACY_ALGORITHM,
     );
 
-    const decipher = crypto.createDecipheriv(
-      EncryptedPrivateKeyLegacy.CIPHER,
-      key,
-      iv,
-    );
-    decipher.setAuthTag(tag);
-
-    const decrypted = Buffer.concat([
-      decipher.update(cipherText),
-      decipher.final(),
-    ]);
+    const decrypted = BrowserCrypto.decryptAes256Gcm(key, iv, cipherText, tag);
 
     return new PrivateKey(decrypted.toString());
   }

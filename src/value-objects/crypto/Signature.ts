@@ -1,3 +1,5 @@
+import type { Buffer } from 'buffer';
+
 import { InvalidSignatureError } from '../../errors/InvalidSignatureError';
 import { assert } from '../../patterns';
 import { NullObject } from '../NullObject';

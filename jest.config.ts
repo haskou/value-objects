@@ -25,7 +25,9 @@ const config: Config.InitialOptions = {
     '^.+\\.js$': 'ts-jest',
     '^.+\\.ts': 'ts-jest',
   },
-  transformIgnorePatterns: ['node_modules/(?!(@noble/curves|@noble/hashes)/)'],
+  transformIgnorePatterns: [
+    'node_modules/(?!(@noble/ciphers|@noble/curves|@noble/hashes)/)',
+  ],
   verbose: true,
 };
 

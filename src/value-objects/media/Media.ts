@@ -1,3 +1,5 @@
+import { Buffer } from 'buffer';
+
 import { NullObject } from '../NullObject';
 import { ValueObject } from '../ValueObject';
 

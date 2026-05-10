@@ -1,6 +1,7 @@
-import * as crypto from 'node:crypto';
+import { Buffer } from 'buffer';
 
 import { StringValueObject } from '../../StringValueObject';
+import { BrowserCrypto } from '../BrowserCrypto';
 import { PrivateKey } from '../PrivateKey';
 import { CryptoDerivation } from './CryptoDerivation';
 import { EncryptedPrivateKeyVersion } from './EncryptedPrivateKeyVersion';
@@ -45,12 +46,11 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
     const iv = await CryptoDerivation.randomBytesAsync(
       EncryptedPrivateKeyV2.IV_ENTROPY,
     );
-    const cipher = crypto.createCipheriv(EncryptedPrivateKeyV2.CIPHER, key, iv);
-    const encrypted = Buffer.concat([
-      cipher.update(privateKey.valueOf()),
-      cipher.final(),
-    ]);
-    const tag = cipher.getAuthTag();
+    const { cipherText, tag } = BrowserCrypto.encryptAes256Gcm(
+      key,
+      iv,
+      Buffer.from(privateKey.valueOf()),
+    );
 
     return [
       EncryptedPrivateKeyV2.VERSION,
@@ -60,8 +60,8 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
       `p${EncryptedPrivateKeyV2.SCRYPT_P}`,
       salt.toString('base64'),
       iv.toString('base64'),
-      tag.toString('base64'),
-      encrypted.toString('base64'),
+      Buffer.from(tag).toString('base64'),
+      Buffer.from(cipherText).toString('base64'),
     ].join('.');
   }
 
@@ -97,17 +97,7 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
       { N, p, r },
     );
 
-    const decipher = crypto.createDecipheriv(
-      EncryptedPrivateKeyV2.CIPHER,
-      key,
-      iv,
-    );
-    decipher.setAuthTag(tag);
-
-    const decrypted = Buffer.concat([
-      decipher.update(cipherText),
-      decipher.final(),
-    ]);
+    const decrypted = BrowserCrypto.decryptAes256Gcm(key, iv, cipherText, tag);
 
     return new PrivateKey(decrypted.toString());
   }

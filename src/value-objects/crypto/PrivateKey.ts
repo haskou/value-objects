@@ -1,12 +1,11 @@
-import { ed25519, x25519 } from '@noble/curves/ed25519.js';
-import { generateKeyPairSync } from 'crypto';
-import * as crypto from 'node:crypto';
+import { Buffer } from 'buffer';
 
 import { InvalidFormatError } from '../../errors/InvalidFormatError';
 import { InvalidLengthError } from '../../errors/InvalidLengthError';
 import { assert } from '../../patterns';
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
+import { BrowserCrypto } from './BrowserCrypto';
 import { CryptoPayload } from './CryptoPayload';
 import { EncryptedPayload } from './EncryptedPayload';
 import { Key } from './Key';
@@ -23,13 +22,7 @@ export class PrivateKey extends Key {
   }
 
   public static generate(): PrivateKey {
-    const { privateKey } = generateKeyPairSync('ed25519');
-    const pemPrivateKey = privateKey.export({
-      format: 'pem',
-      type: 'pkcs8',
-    });
-
-    return new PrivateKey(pemPrivateKey.toString());
+    return new PrivateKey(BrowserCrypto.randomPrivateKeyPem());
   }
 
   constructor(value: string | StringValueObject) {
@@ -51,16 +44,12 @@ export class PrivateKey extends Key {
   }
 
   public getPublicKey(): PublicKey {
-    const pemPublicKey = crypto
-      .createPublicKey(this.valueOf())
-      .export({ format: 'pem', type: 'spki' });
-
-    return PublicKey.fromPEM(pemPublicKey.toString());
+    return PublicKey.fromPEM(BrowserCrypto.getPublicKey(this.valueOf()));
   }
 
   public sign(payload: CryptoPayload): Signature {
     const messageBuffer = Buffer.from(payload.valueOf());
-    const signatureBuffer = crypto.sign(null, messageBuffer, this.valueOf());
+    const signatureBuffer = BrowserCrypto.sign(messageBuffer, this.valueOf());
 
     return Signature.fromBuffer(signatureBuffer);
   }
@@ -75,22 +64,18 @@ export class PrivateKey extends Key {
     const cipherText = Buffer.from(cipherTextB64, 'base64');
     const tag = Buffer.from(tagB64, 'base64');
 
-    const pkcs8Der = crypto
-      .createPrivateKey(this.valueOf())
-      .export({ format: 'der', type: 'pkcs8' });
-    const x25519Priv = ed25519.utils.toMontgomerySecret(pkcs8Der.subarray(16));
+    const x25519Priv = BrowserCrypto.privateKeyToX25519(this.valueOf());
 
-    const sharedSecret = x25519.getSharedSecret(x25519Priv, ephemeralPub);
+    const sharedSecret = BrowserCrypto.x25519SharedSecret(
+      x25519Priv,
+      ephemeralPub,
+    );
 
-    const aesKey = crypto
-      .createHash('sha256')
-      .update(sharedSecret)
-      .update(ephemeralPub)
-      .digest();
+    const aesKey = BrowserCrypto.deriveEncryptionKey(
+      sharedSecret,
+      ephemeralPub,
+    );
 
-    const decipher = crypto.createDecipheriv('aes-256-gcm', aesKey, iv);
-    decipher.setAuthTag(tag);
-
-    return Buffer.concat([decipher.update(cipherText), decipher.final()]);
+    return BrowserCrypto.decryptAes256Gcm(aesKey, iv, cipherText, tag);
   }
 }

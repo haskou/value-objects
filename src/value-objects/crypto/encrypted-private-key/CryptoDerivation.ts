@@ -1,35 +1,64 @@
-import * as crypto from 'node:crypto';
-import { promisify } from 'node:util';
+import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
+import { scryptAsync } from '@noble/hashes/scrypt.js';
+import { sha256, sha512 } from '@noble/hashes/sha2.js';
+import { Buffer } from 'buffer';
 
-export class CryptoDerivation {
-  private static readonly pbkdf2Fn = promisify(crypto.pbkdf2);
-  private static readonly randomBytesFn = promisify(crypto.randomBytes);
+import { BrowserCrypto } from '../BrowserCrypto';
 
-  public static pbkdf2Async(
+type NodeLikeCrypto = {
+  pbkdf2?: (
     password: string,
     salt: Buffer,
     iterations: number,
     keyLength: number,
     algorithm: string,
-    cryptoModule: typeof crypto = crypto,
+    callback: (err: Error | null, key: Buffer) => void,
+  ) => void;
+  randomBytes?: (
+    size: number,
+    callback: (err: Error | null, bytes: Buffer) => void,
+  ) => void;
+  scrypt?: (
+    password: string,
+    salt: Buffer,
+    keylen: number,
+    options: { N: number; r: number; p: number },
+    callback: (err: Error | null, key: Buffer) => void,
+  ) => void;
+};
+
+export class CryptoDerivation {
+  public static async pbkdf2Async(
+    password: string,
+    salt: Buffer,
+    iterations: number,
+    keyLength: number,
+    algorithm: string,
+    cryptoModule?: NodeLikeCrypto,
   ): Promise<Buffer> {
-    if (cryptoModule === crypto) {
-      return this.pbkdf2Fn(
-        password,
-        salt,
-        iterations,
-        keyLength,
-        algorithm,
-      ) as Promise<Buffer>;
+    if (cryptoModule?.pbkdf2) {
+      return new Promise<Buffer>((resolve, reject) => {
+        cryptoModule.pbkdf2!(
+          password,
+          salt,
+          iterations,
+          keyLength,
+          algorithm,
+          (err, key) => {
+            if (err) reject(err);
+            else resolve(key);
+          },
+        );
+      });
     }
 
-    return promisify(cryptoModule.pbkdf2)(
-      password,
-      salt,
-      iterations,
-      keyLength,
-      algorithm,
-    ) as Promise<Buffer>;
+    const hash = algorithm === 'sha512' ? sha512 : sha256;
+    const key = await pbkdf2Async(hash, password, salt, {
+      c: iterations,
+      dkLen: keyLength,
+    });
+
+    return Buffer.from(key);
   }
 
   public static scryptAsync(
@@ -37,24 +66,35 @@ export class CryptoDerivation {
     salt: Buffer,
     keylen: number,
     options: { N: number; r: number; p: number },
-    cryptoModule: typeof crypto = crypto,
+    cryptoModule?: NodeLikeCrypto,
   ): Promise<Buffer> {
-    return new Promise<Buffer>((resolve, reject) => {
-      cryptoModule.scrypt(password, salt, keylen, options, (err, key) => {
-        if (err) reject(err);
-        else resolve(key);
+    if (cryptoModule?.scrypt) {
+      return new Promise<Buffer>((resolve, reject) => {
+        cryptoModule.scrypt!(password, salt, keylen, options, (err, key) => {
+          if (err) reject(err);
+          else resolve(key);
+        });
       });
-    });
-  }
-
-  public static randomBytesAsync(
-    size: number,
-    cryptoModule: typeof crypto = crypto,
-  ): Promise<Buffer> {
-    if (cryptoModule === crypto) {
-      return this.randomBytesFn(size) as Promise<Buffer>;
     }
 
-    return promisify(cryptoModule.randomBytes)(size) as Promise<Buffer>;
+    return scryptAsync(password, salt, { ...options, dkLen: keylen }).then(
+      Buffer.from,
+    );
+  }
+
+  public static async randomBytesAsync(
+    size: number,
+    cryptoModule?: NodeLikeCrypto,
+  ): Promise<Buffer> {
+    if (cryptoModule?.randomBytes) {
+      return new Promise<Buffer>((resolve, reject) => {
+        cryptoModule.randomBytes!(size, (err, bytes) => {
+          if (err) reject(err);
+          else resolve(bytes);
+        });
+      });
+    }
+
+    return BrowserCrypto.randomBytes(size);
   }
 }
