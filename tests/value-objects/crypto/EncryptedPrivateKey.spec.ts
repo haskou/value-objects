@@ -5,6 +5,7 @@ import {
   PrivateKey,
   StringValueObject,
 } from '../../../src';
+import { CryptoDerivation } from '../../../src/value-objects/crypto/encrypted-private-key/CryptoDerivation';
 import { NullObject } from '../../../src/value-objects/NullObject';
 
 describe('EncryptedPrivateKey', () => {
@@ -60,12 +61,12 @@ describe('EncryptedPrivateKey', () => {
       expect(encrypted.valueOf()).not.toBe(privatePem);
     });
 
-    it('should produce a 4-part dot-separated string', async () => {
+    it('should produce a 9-part dot-separated string', async () => {
       const privateKey = new PrivateKey(privatePem);
       const encrypted = await EncryptedPrivateKey.create(privateKey, password);
 
       const parts = encrypted.valueOf().split('.');
-      expect(parts).toHaveLength(4);
+      expect(parts).toHaveLength(9);
     });
 
     it('should produce different ciphertexts each time due to random salt/iv', async () => {
@@ -106,6 +107,44 @@ describe('EncryptedPrivateKey', () => {
       await expect(encrypted.decrypt('wrong-password')).toReject();
     });
 
+    it('should fail to decrypt invalid format', async () => {
+      const invalidEncrypted = new EncryptedPrivateKey('invalid.format');
+
+      await expect(invalidEncrypted.decrypt(password)).toReject();
+    });
+
+    it('should reject tampered scrypt parameters before deriving a key', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      parts[2] = 'N1073741824';
+      const tampered = new EncryptedPrivateKey(parts.join('.'));
+      const scryptSpy = jest.spyOn(CryptoDerivation, 'scryptAsync');
+
+      await expect(tampered.decrypt(password)).rejects.toThrow(
+        'Invalid encrypted private key format',
+      );
+
+      expect(scryptSpy).not.toHaveBeenCalled();
+      scryptSpy.mockRestore();
+    });
+
+    it('should reject malformed numeric scrypt parameters', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      parts[2] = 'N16384junk';
+      const tampered = new EncryptedPrivateKey(parts.join('.'));
+      const scryptSpy = jest.spyOn(CryptoDerivation, 'scryptAsync');
+
+      await expect(tampered.decrypt(password)).rejects.toThrow(
+        'Invalid encrypted private key format',
+      );
+
+      expect(scryptSpy).not.toHaveBeenCalled();
+      scryptSpy.mockRestore();
+    });
+
     it('should decrypt to a functional PrivateKey that can sign', async () => {
       const privateKey = new PrivateKey(privatePem);
       const encrypted = await EncryptedPrivateKey.create(privateKey, password);
@@ -131,6 +170,61 @@ describe('EncryptedPrivateKey', () => {
       );
 
       const decrypted = await encrypted.decrypt(passwordVO);
+
+      expect(decrypted.valueOf()).toBe(privatePem);
+    });
+
+    it('should indicate if re-encryption is needed', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+
+      expect(encrypted.needsReEncryption()).toBeFalse();
+
+      // Test with legacy format
+      const legacyEncrypted = new EncryptedPrivateKey('ciphertext.iv.salt.tag');
+      expect(legacyEncrypted.needsReEncryption()).toBeTrue();
+    });
+
+    it('should return false for an invalid format when checking re-encryption', () => {
+      const invalidEncrypted = new EncryptedPrivateKey('invalid.format');
+
+      expect(invalidEncrypted.needsReEncryption()).toBeFalse();
+    });
+
+    it('should decrypt a legacy legacy encrypted private key format', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const salt = crypto.randomBytes(16);
+      const iv = crypto.randomBytes(12);
+      const key = await new Promise<Buffer>((resolve, reject) => {
+        crypto.pbkdf2(
+          password,
+          salt,
+          100000,
+          32,
+          'sha256',
+          (err, derivedKey) => {
+            if (err) reject(err);
+            else resolve(derivedKey);
+          },
+        );
+      });
+
+      const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+      const encryptedData = Buffer.concat([
+        cipher.update(privateKey.valueOf()),
+        cipher.final(),
+      ]);
+      const tag = cipher.getAuthTag();
+      const legacyFormat = [
+        encryptedData.toString('base64'),
+        iv.toString('base64'),
+        salt.toString('base64'),
+        tag.toString('base64'),
+      ].join('.');
+
+      const decrypted = await new EncryptedPrivateKey(legacyFormat).decrypt(
+        password,
+      );
 
       expect(decrypted.valueOf()).toBe(privatePem);
     });

@@ -1,46 +1,23 @@
-import * as crypto from 'node:crypto';
-import { promisify } from 'node:util';
-
 import { StringValueObject } from '../StringValueObject';
 import { ValueObject } from '../ValueObject';
+import { EncryptedPrivateKeyLegacy } from './encrypted-private-key/EncryptedPrivateKeyLegacy';
+import { EncryptedPrivateKeyV2 } from './encrypted-private-key/EncryptedPrivateKeyV2';
 import { PrivateKey } from './PrivateKey';
 
-const pbkdf2 = promisify(crypto.pbkdf2);
-const randomBytes = promisify(crypto.randomBytes);
-
 export class EncryptedPrivateKey extends ValueObject<string> {
-  private static readonly ITERATIONS = 100000;
-  private static readonly SALT_ENTROPY = 16;
-  private static readonly IV_ENTROPY = 12;
-  private static readonly LENGTH = 32;
-  private static readonly ALGORITHM = 'sha256';
+  private static readonly versions = [
+    new EncryptedPrivateKeyLegacy(),
+    new EncryptedPrivateKeyV2(),
+  ];
 
   public static async create(
     privateKey: PrivateKey,
     password: string | StringValueObject,
   ): Promise<EncryptedPrivateKey> {
-    const salt = await randomBytes(EncryptedPrivateKey.SALT_ENTROPY);
-    const key = await pbkdf2(
-      password.valueOf(),
-      salt,
-      EncryptedPrivateKey.ITERATIONS,
-      EncryptedPrivateKey.LENGTH,
-      EncryptedPrivateKey.ALGORITHM,
+    const encryptedPrivateKey = await EncryptedPrivateKeyV2.encrypt(
+      privateKey,
+      password,
     );
-    const iv = await randomBytes(EncryptedPrivateKey.IV_ENTROPY);
-    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-    const encrypted = Buffer.concat([
-      cipher.update(privateKey.valueOf()),
-      cipher.final(),
-    ]);
-    const tag = cipher.getAuthTag();
-
-    const encryptedPrivateKey = [
-      encrypted.toString('base64'),
-      iv.toString('base64'),
-      salt.toString('base64'),
-      tag.toString('base64'),
-    ].join('.');
 
     return new EncryptedPrivateKey(encryptedPrivateKey);
   }
@@ -52,29 +29,28 @@ export class EncryptedPrivateKey extends ValueObject<string> {
   public async decrypt(
     password: string | StringValueObject,
   ): Promise<PrivateKey> {
-    const [cipherTextB64, ivB64, saltB64, tagB64] = this.valueOf().split('.');
-    const cipherText = Buffer.from(cipherTextB64, 'base64');
-    const iv = Buffer.from(ivB64, 'base64');
-    const salt = Buffer.from(saltB64, 'base64');
-    const tag = Buffer.from(tagB64, 'base64');
-
-    const key = await pbkdf2(
-      password.valueOf(),
-      salt,
-      EncryptedPrivateKey.ITERATIONS,
-      EncryptedPrivateKey.LENGTH,
-      EncryptedPrivateKey.ALGORITHM,
+    const parts = this.valueOf().split('.');
+    const version = EncryptedPrivateKey.versions.find((handler) =>
+      handler.matches(parts),
     );
 
-    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    if (!version) {
+      throw new Error('Invalid encrypted private key format');
+    }
 
-    decipher.setAuthTag(tag);
+    return version.decrypt(parts, password);
+  }
 
-    const decrypted = Buffer.concat([
-      decipher.update(cipherText),
-      decipher.final(),
-    ]);
+  public needsReEncryption(): boolean {
+    const parts = this.valueOf().split('.');
+    const version = EncryptedPrivateKey.versions.find((handler) =>
+      handler.matches(parts),
+    );
 
-    return new PrivateKey(decrypted.toString());
+    if (!version) {
+      return false;
+    }
+
+    return version.needsReEncryption();
   }
 }

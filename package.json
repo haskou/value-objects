@@ -52,8 +52,11 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@noble/ciphers": "^2.2.0",
     "@noble/curves": "^2.0.1",
+    "@noble/hashes": "^2.0.1",
     "bson-objectid": "^2.0.4",
+    "buffer": "^6.0.3",
     "uuid": "8"
   }
 }

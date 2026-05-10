@@ -1,5 +1,4 @@
-import * as crypto from 'node:crypto';
-import { promisify } from 'node:util';
+import type { Buffer } from 'buffer';
 
 import { PrimitiveOf } from '../../interfaces';
 import { StringValueObject } from '../StringValueObject';
@@ -10,16 +9,12 @@ import { PrivateKey } from './PrivateKey';
 import { PublicKey } from './PublicKey';
 import { Signature } from './Signature';
 
-const generateKeyPair = promisify(crypto.generateKeyPair);
-
 export class KeyPair {
-  public static async generate(): Promise<KeyPair> {
-    const { privateKey, publicKey } = await generateKeyPair('ed25519', {
-      privateKeyEncoding: { format: 'pem', type: 'pkcs8' },
-      publicKeyEncoding: { format: 'pem', type: 'spki' },
-    });
+  public static generate(): Promise<KeyPair> {
+    const privateKey = PrivateKey.generate();
+    const publicKey = privateKey.getPublicKey();
 
-    return new KeyPair(new PublicKey(publicKey), new PrivateKey(privateKey));
+    return Promise.resolve(new KeyPair(publicKey, privateKey));
   }
 
   public static fromPrimitives(primitives: PrimitiveOf<KeyPair>): KeyPair {

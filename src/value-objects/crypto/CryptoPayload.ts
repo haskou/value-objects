@@ -1,3 +1,5 @@
+import type { Buffer } from 'buffer';
+
 import { Media } from '../media';
 import { StringValueObject } from '../StringValueObject';
 

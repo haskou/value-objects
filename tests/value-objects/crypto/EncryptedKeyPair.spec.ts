@@ -53,7 +53,7 @@ describe('EncryptedKeyPair', () => {
       expect(primitives).toHaveProperty('publicKey');
       expect(primitives).toHaveProperty('encryptedPrivateKey');
       expect(primitives.publicKey).toContain('BEGIN PUBLIC KEY');
-      expect(primitives.encryptedPrivateKey.split('.')).toHaveLength(4);
+      expect(primitives.encryptedPrivateKey.split('.')).toHaveLength(9);
     });
   });
 
