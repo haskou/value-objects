@@ -2,7 +2,7 @@ import { Buffer } from 'buffer';
 
 import { InvalidHashError } from '../../errors/InvalidHashError';
 import { assert } from '../../patterns';
-import { BrowserCrypto } from '../crypto/BrowserCrypto';
+import { CryptoAdapter } from '../crypto/CryptoAdapter';
 import { Media } from '../media/Media';
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
@@ -16,7 +16,7 @@ export class MD5Hash extends Hash {
   public static from(
     buffer: string | StringValueObject | Media | Buffer,
   ): MD5Hash {
-    return new MD5Hash(BrowserCrypto.hash('md5', buffer.valueOf()));
+    return new MD5Hash(CryptoAdapter.hash('md5', buffer.valueOf()));
   }
 
   constructor(source: string | StringValueObject) {

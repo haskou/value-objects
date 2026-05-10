@@ -3,7 +3,7 @@ import { scryptAsync } from '@noble/hashes/scrypt.js';
 import { sha256, sha512 } from '@noble/hashes/sha2.js';
 import { Buffer } from 'buffer';
 
-import { BrowserCrypto } from '../BrowserCrypto';
+import { CryptoAdapter } from '../CryptoAdapter';
 
 type NodeLikeCrypto = {
   pbkdf2?: (
@@ -95,6 +95,6 @@ export class CryptoDerivation {
       });
     }
 
-    return BrowserCrypto.randomBytes(size);
+    return CryptoAdapter.randomBytes(size);
   }
 }

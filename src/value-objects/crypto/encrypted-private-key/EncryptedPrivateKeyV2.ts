@@ -1,7 +1,7 @@
 import { Buffer } from 'buffer';
 
 import { StringValueObject } from '../../StringValueObject';
-import { BrowserCrypto } from '../BrowserCrypto';
+import { CryptoAdapter } from '../CryptoAdapter';
 import { PrivateKey } from '../PrivateKey';
 import { CryptoDerivation } from './CryptoDerivation';
 import { EncryptedPrivateKeyVersion } from './EncryptedPrivateKeyVersion';
@@ -46,7 +46,7 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
     const iv = await CryptoDerivation.randomBytesAsync(
       EncryptedPrivateKeyV2.IV_ENTROPY,
     );
-    const { cipherText, tag } = BrowserCrypto.encryptAes256Gcm(
+    const { cipherText, tag } = CryptoAdapter.encryptAes256Gcm(
       key,
       iv,
       Buffer.from(privateKey.valueOf()),
@@ -97,7 +97,7 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
       { N, p, r },
     );
 
-    const decrypted = BrowserCrypto.decryptAes256Gcm(key, iv, cipherText, tag);
+    const decrypted = CryptoAdapter.decryptAes256Gcm(key, iv, cipherText, tag);
 
     return new PrivateKey(decrypted.toString());
   }

@@ -5,7 +5,7 @@ import { InvalidLengthError } from '../../errors/InvalidLengthError';
 import { assert } from '../../patterns';
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
-import { BrowserCrypto } from './BrowserCrypto';
+import { CryptoAdapter } from './CryptoAdapter';
 import { CryptoPayload } from './CryptoPayload';
 import { EncryptedPayload } from './EncryptedPayload';
 import { Key } from './Key';
@@ -22,7 +22,7 @@ export class PrivateKey extends Key {
   }
 
   public static generate(): PrivateKey {
-    return new PrivateKey(BrowserCrypto.randomPrivateKeyPem());
+    return new PrivateKey(CryptoAdapter.randomPrivateKeyPem());
   }
 
   constructor(value: string | StringValueObject) {
@@ -44,12 +44,12 @@ export class PrivateKey extends Key {
   }
 
   public getPublicKey(): PublicKey {
-    return PublicKey.fromPEM(BrowserCrypto.getPublicKey(this.valueOf()));
+    return PublicKey.fromPEM(CryptoAdapter.getPublicKey(this.valueOf()));
   }
 
   public sign(payload: CryptoPayload): Signature {
     const messageBuffer = Buffer.from(payload.valueOf());
-    const signatureBuffer = BrowserCrypto.sign(messageBuffer, this.valueOf());
+    const signatureBuffer = CryptoAdapter.sign(messageBuffer, this.valueOf());
 
     return Signature.fromBuffer(signatureBuffer);
   }
@@ -64,18 +64,18 @@ export class PrivateKey extends Key {
     const cipherText = Buffer.from(cipherTextB64, 'base64');
     const tag = Buffer.from(tagB64, 'base64');
 
-    const x25519Priv = BrowserCrypto.privateKeyToX25519(this.valueOf());
+    const x25519Priv = CryptoAdapter.privateKeyToX25519(this.valueOf());
 
-    const sharedSecret = BrowserCrypto.x25519SharedSecret(
+    const sharedSecret = CryptoAdapter.x25519SharedSecret(
       x25519Priv,
       ephemeralPub,
     );
 
-    const aesKey = BrowserCrypto.deriveEncryptionKey(
+    const aesKey = CryptoAdapter.deriveEncryptionKey(
       sharedSecret,
       ephemeralPub,
     );
 
-    return BrowserCrypto.decryptAes256Gcm(aesKey, iv, cipherText, tag);
+    return CryptoAdapter.decryptAes256Gcm(aesKey, iv, cipherText, tag);
   }
 }

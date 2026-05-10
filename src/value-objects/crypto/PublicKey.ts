@@ -5,7 +5,7 @@ import { InvalidLengthError } from '../../errors/InvalidLengthError';
 import { assert } from '../../patterns';
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
-import { BrowserCrypto } from './BrowserCrypto';
+import { CryptoAdapter } from './CryptoAdapter';
 import { CryptoPayload } from './CryptoPayload';
 import { EncryptedPayload } from './EncryptedPayload';
 import { Key } from './Key';
@@ -44,7 +44,7 @@ export class PublicKey extends Key {
   ): boolean {
     const messageBuffer = Buffer.from(payload.valueOf());
     const signatureBuffer = Buffer.from(signature.valueOf(), 'base64');
-    const valid = BrowserCrypto.verify(
+    const valid = CryptoAdapter.verify(
       signatureBuffer,
       messageBuffer,
       this.valueOf(),
@@ -56,22 +56,22 @@ export class PublicKey extends Key {
   public encrypt(payload: CryptoPayload): EncryptedPayload {
     const messageBuffer = Buffer.from(payload.valueOf());
 
-    const x25519Pub = BrowserCrypto.publicKeyToX25519(this.valueOf());
+    const x25519Pub = CryptoAdapter.publicKeyToX25519(this.valueOf());
 
-    const ephemeralPriv = BrowserCrypto.x25519RandomPrivateKey();
-    const ephemeralPub = BrowserCrypto.x25519PublicKey(ephemeralPriv);
-    const sharedSecret = BrowserCrypto.x25519SharedSecret(
+    const ephemeralPriv = CryptoAdapter.x25519RandomPrivateKey();
+    const ephemeralPub = CryptoAdapter.x25519PublicKey(ephemeralPriv);
+    const sharedSecret = CryptoAdapter.x25519SharedSecret(
       ephemeralPriv,
       x25519Pub,
     );
 
-    const aesKey = BrowserCrypto.deriveEncryptionKey(
+    const aesKey = CryptoAdapter.deriveEncryptionKey(
       sharedSecret,
       ephemeralPub,
     );
 
-    const iv = BrowserCrypto.randomBytes(12);
-    const { cipherText, tag } = BrowserCrypto.encryptAes256Gcm(
+    const iv = CryptoAdapter.randomBytes(12);
+    const { cipherText, tag } = CryptoAdapter.encryptAes256Gcm(
       aesKey,
       iv,
       messageBuffer,

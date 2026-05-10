@@ -16,7 +16,7 @@ const gcmTagLength = 16;
 
 type HashAlgorithm = 'md5' | 'sha256' | 'sha512';
 
-export class BrowserCrypto {
+export class CryptoAdapter {
   private static pemToDer(pem: string): Buffer {
     const base64 = pem
       .replace(/-----BEGIN (?:PRIVATE|PUBLIC) KEY-----/, '')
