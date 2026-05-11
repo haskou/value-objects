@@ -13,6 +13,12 @@ describe('Hour', () => {
         expect(() => new Hour('24:00')).toThrow(InvalidHourError);
       });
 
+      it('should throw error if string format is invalid', () => {
+        expect(() => new Hour('23:')).toThrow(InvalidHourError);
+        expect(() => new Hour('23:10:15')).toThrow(InvalidHourError);
+        expect(() => new Hour('1.5:00')).toThrow(InvalidHourError);
+      });
+
       it('should throw error if minutes is invalid', () => {
         expect(() => new Hour('23:60')).toThrow('Invalid minutes');
         expect(() => new Hour('23:60')).toThrow(InvalidMinutesError);
@@ -32,11 +38,13 @@ describe('Hour', () => {
       it('should throw error if hour is invalid', () => {
         expect(() => new Hour(24, 0)).toThrow('Invalid hour');
         expect(() => new Hour(24, 0)).toThrow(InvalidHourError);
+        expect(() => new Hour(1.5, 0)).toThrow(InvalidHourError);
       });
 
       it('should throw error if minutes is invalid', () => {
         expect(() => new Hour(23, 60)).toThrow('Invalid minutes');
         expect(() => new Hour(23, 60)).toThrow(InvalidMinutesError);
+        expect(() => new Hour(23, 1.5)).toThrow(InvalidMinutesError);
       });
 
       it('should work with 0 hour', () => {
@@ -99,6 +107,18 @@ describe('Hour', () => {
 
     it('should add more than 2 hours', () => {
       expect(new Hour('23:59').addMinutes(120).toString()).toEqual('01:59');
+    });
+
+    it('should wrap additions spanning multiple days', () => {
+      expect(new Hour('23:59').addMinutes(24 * 60 + 2).toString()).toEqual(
+        '00:01',
+      );
+    });
+
+    it('should wrap subtractions spanning multiple days', () => {
+      expect(new Hour('00:00').addMinutes(-(24 * 60 + 1)).toString()).toEqual(
+        '23:59',
+      );
     });
   });
 
