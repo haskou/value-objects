@@ -190,6 +190,30 @@ describe('PrivateKey', () => {
 
       expect(decrypted.toString()).toBe('vo-payload');
     });
+
+    it('should throw InvalidFormatError for malformed encrypted payload format', () => {
+      const privKey = new PrivateKey(privatePem);
+      const malformed = new EncryptedPayload('only-one-field');
+
+      expect(() => privKey.decrypt(malformed)).toThrow(InvalidFormatError);
+    });
+
+    it('should throw InvalidFormatError for invalid field lengths', () => {
+      const privKey = new PrivateKey(privatePem);
+      const malformed = new EncryptedPayload('YQ==.YQ==.YQ==.YQ==');
+
+      expect(() => privKey.decrypt(malformed)).toThrow(InvalidFormatError);
+    });
+
+    it('should throw InvalidLengthError for oversized ciphertext', () => {
+      const privKey = new PrivateKey(privatePem);
+      const oversizedCipher = Buffer.alloc(1024 * 1024 + 1).toString('base64');
+      const payload = new EncryptedPayload(
+        `${Buffer.alloc(32).toString('base64')}.${Buffer.alloc(12).toString('base64')}.${oversizedCipher}.${Buffer.alloc(16).toString('base64')}`,
+      );
+
+      expect(() => privKey.decrypt(payload)).toThrow(InvalidLengthError);
+    });
   });
 
   describe('inheritance and Key behavior', () => {
