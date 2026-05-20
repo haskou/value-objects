@@ -14,6 +14,14 @@ import { Signature } from './Signature';
 
 export class PrivateKey extends Key {
   private static readonly LENGTH = 119;
+  private static readonly ENCRYPTED_PAYLOAD_PARTS = 4;
+  private static readonly EPHEMERAL_PUBLIC_KEY_LENGTH = 32;
+  private static readonly IV_LENGTH = 12;
+  private static readonly TAG_LENGTH = 16;
+  private static readonly MAX_CIPHERTEXT_LENGTH = 1024 * 1024;
+  private static readonly BASE64_PATTERN =
+    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+
   private static readonly PATTERN =
     /^-----BEGIN PRIVATE KEY-----\n[A-Za-z0-9+/=]+\n-----END PRIVATE KEY-----\n$/;
 
@@ -55,14 +63,48 @@ export class PrivateKey extends Key {
   }
 
   public decrypt(encryptedPayload: EncryptedPayload): Buffer {
-    const [ephPubB64, ivB64, cipherTextB64, tagB64] = encryptedPayload
-      .valueOf()
-      .split('.');
+    const decodeBase64 = (value: string): Buffer => {
+      assert(
+        value.length > 0 &&
+          value.length % 4 === 0 &&
+          PrivateKey.BASE64_PATTERN.test(value),
+        new InvalidFormatError(encryptedPayload.valueOf()),
+      );
 
-    const ephemeralPub = Buffer.from(ephPubB64, 'base64');
-    const iv = Buffer.from(ivB64, 'base64');
-    const cipherText = Buffer.from(cipherTextB64, 'base64');
-    const tag = Buffer.from(tagB64, 'base64');
+      return Buffer.from(value, 'base64');
+    };
+
+    const parts = encryptedPayload.valueOf().split('.');
+    assert(
+      parts.length === PrivateKey.ENCRYPTED_PAYLOAD_PARTS,
+      new InvalidFormatError(encryptedPayload.valueOf()),
+    );
+
+    const [ephPubB64, ivB64, cipherTextB64, tagB64] = parts;
+    const ephemeralPub = decodeBase64(ephPubB64);
+    const iv = decodeBase64(ivB64);
+    const cipherText = decodeBase64(cipherTextB64);
+    const tag = decodeBase64(tagB64);
+
+    assert(
+      ephemeralPub.length === PrivateKey.EPHEMERAL_PUBLIC_KEY_LENGTH,
+      new InvalidFormatError(encryptedPayload.valueOf()),
+    );
+    assert(
+      iv.length === PrivateKey.IV_LENGTH,
+      new InvalidFormatError(encryptedPayload.valueOf()),
+    );
+    assert(
+      tag.length === PrivateKey.TAG_LENGTH,
+      new InvalidFormatError(encryptedPayload.valueOf()),
+    );
+    assert(
+      cipherText.length <= PrivateKey.MAX_CIPHERTEXT_LENGTH,
+      new InvalidLengthError(
+        cipherText.length,
+        PrivateKey.MAX_CIPHERTEXT_LENGTH,
+      ),
+    );
 
     const x25519Priv = CryptoAdapter.privateKeyToX25519(this.valueOf());
 
