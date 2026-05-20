@@ -3,6 +3,7 @@ import { Buffer } from 'buffer';
 import { InvalidFormatError } from '../../errors/InvalidFormatError';
 import { InvalidLengthError } from '../../errors/InvalidLengthError';
 import { assert } from '../../patterns';
+import { Media } from '../media';
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
 import { CryptoAdapter } from './CryptoAdapter';
@@ -42,7 +43,10 @@ export class PublicKey extends Key {
     payload: CryptoPayload,
     signature: Signature,
   ): boolean {
-    const messageBuffer = Buffer.from(payload.valueOf());
+    const messageBuffer =
+      payload instanceof Media
+        ? payload.getBuffer()
+        : Buffer.from(payload.valueOf());
     const signatureBuffer = Buffer.from(signature.valueOf(), 'base64');
     const valid = CryptoAdapter.verify(
       signatureBuffer,
@@ -54,7 +58,10 @@ export class PublicKey extends Key {
   }
 
   public encrypt(payload: CryptoPayload): EncryptedPayload {
-    const messageBuffer = Buffer.from(payload.valueOf());
+    const messageBuffer =
+      payload instanceof Media
+        ? payload.getBuffer()
+        : Buffer.from(payload.valueOf());
 
     const x25519Pub = CryptoAdapter.publicKeyToX25519(this.valueOf());
 

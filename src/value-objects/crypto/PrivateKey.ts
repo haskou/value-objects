@@ -3,6 +3,7 @@ import { Buffer } from 'buffer';
 import { InvalidFormatError } from '../../errors/InvalidFormatError';
 import { InvalidLengthError } from '../../errors/InvalidLengthError';
 import { assert } from '../../patterns';
+import { Media } from '../media';
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
 import { CryptoAdapter } from './CryptoAdapter';
@@ -48,7 +49,10 @@ export class PrivateKey extends Key {
   }
 
   public sign(payload: CryptoPayload): Signature {
-    const messageBuffer = Buffer.from(payload.valueOf());
+    const messageBuffer =
+      payload instanceof Media
+        ? payload.getBuffer()
+        : Buffer.from(payload.valueOf());
     const signatureBuffer = CryptoAdapter.sign(messageBuffer, this.valueOf());
 
     return Signature.fromBuffer(signatureBuffer);
