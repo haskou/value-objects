@@ -13,6 +13,7 @@ import { Signature } from './Signature';
 
 export class PublicKey extends Key {
   private static readonly LENGTH = 113;
+  private static readonly MAX_PAYLOAD_LENGTH = 1024 * 1024;
   private static readonly PATTERN =
     /^-----BEGIN PUBLIC KEY-----\n[A-Za-z0-9+/=]+\n-----END PUBLIC KEY-----\n$/;
 
@@ -55,6 +56,13 @@ export class PublicKey extends Key {
 
   public encrypt(payload: CryptoPayload): EncryptedPayload {
     const messageBuffer = Buffer.from(payload.valueOf());
+    assert(
+      messageBuffer.length <= PublicKey.MAX_PAYLOAD_LENGTH,
+      new InvalidLengthError(
+        messageBuffer.length,
+        PublicKey.MAX_PAYLOAD_LENGTH,
+      ),
+    );
 
     const x25519Pub = CryptoAdapter.publicKeyToX25519(this.valueOf());
 

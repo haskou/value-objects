@@ -155,6 +155,16 @@ describe('PrivateKey', () => {
       expect(decrypted.toString()).toBe('secret message');
     });
 
+    it('should decrypt an empty payload', () => {
+      const pubKey = new PublicKey(publicPem);
+      const privKey = new PrivateKey(privatePem);
+      const encrypted = pubKey.encrypt('');
+      const decrypted = privKey.decrypt(encrypted);
+
+      expect(decrypted).toBeInstanceOf(Buffer);
+      expect(decrypted).toHaveLength(0);
+    });
+
     it('should fail to decrypt with the wrong private key', () => {
       const pubKey = new PublicKey(publicPem);
       const encrypted = pubKey.encrypt('secret');
@@ -207,7 +217,9 @@ describe('PrivateKey', () => {
 
     it('should throw InvalidLengthError for oversized ciphertext', () => {
       const privKey = new PrivateKey(privatePem);
-      const oversizedCipher = Buffer.alloc(1024 * 1024 + 1).toString('base64');
+      const oversizedCipher = 'A'.repeat(
+        Math.ceil((1024 * 1024 + 1) / 3) * 4,
+      );
       const payload = new EncryptedPayload(
         `${Buffer.alloc(32).toString('base64')}.${Buffer.alloc(12).toString('base64')}.${oversizedCipher}.${Buffer.alloc(16).toString('base64')}`,
       );
