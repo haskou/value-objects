@@ -3,6 +3,7 @@ import {
   SHA256Hash,
   NullObject,
   InvalidHashError,
+  Media,
   StringValueObject,
 } from '../../../src';
 
@@ -99,6 +100,13 @@ describe('SHA256Hash', () => {
         const input = Buffer.from('hello');
         const expected = computeSHA256(input);
         const hash = SHA256Hash.from(input);
+        expect(hash.valueOf()).toBe(expected);
+      });
+
+      it('should compute SHA256 hash from raw Media bytes', () => {
+        const input = Buffer.from([0xff, 0xfe, 0xfd, 0x00, 0x80]);
+        const expected = computeSHA256(input);
+        const hash = SHA256Hash.from(new Media(input));
         expect(hash.valueOf()).toBe(expected);
       });
 

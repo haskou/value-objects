@@ -23,6 +23,17 @@ describe('Media', () => {
       expect(media).toBeInstanceOf(Media);
       expect(media.valueOf()).toBe(testContent);
     });
+
+    it('should preserve non-text bytes from a Buffer', () => {
+      const source = Buffer.from([0xff, 0xfe, 0xfd, 0x00, 0x80]);
+      const media = new Media(source);
+
+      source[0] = 0x00;
+
+      expect(media.getBuffer()).toEqual(
+        Buffer.from([0xff, 0xfe, 0xfd, 0x00, 0x80]),
+      );
+    });
   });
 
   describe('getBuffer', () => {

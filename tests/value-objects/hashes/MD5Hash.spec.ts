@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 
 import {
   InvalidHashError,
+  Media,
   MD5Hash,
   NullObject,
   StringValueObject,
@@ -95,6 +96,13 @@ describe('MD5Hash', () => {
         const input = Buffer.from('hello');
         const expected = computeMD5(input);
         const hash = MD5Hash.from(input);
+        expect(hash.valueOf()).toBe(expected);
+      });
+
+      it('should compute MD5 hash from raw Media bytes', () => {
+        const input = Buffer.from([0xff, 0xfe, 0xfd, 0x00, 0x80]);
+        const expected = computeMD5(input);
+        const hash = MD5Hash.from(new Media(input));
         expect(hash.valueOf()).toBe(expected);
       });
 

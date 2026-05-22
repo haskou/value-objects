@@ -5,6 +5,7 @@ import {
   InvalidFormatError,
   InvalidLengthError,
   Key,
+  Media,
   PrivateKey,
   PublicKey,
   Signature,
@@ -137,6 +138,20 @@ describe('PrivateKey', () => {
       const valid = crypto.verify(
         null,
         Buffer.from('hello'),
+        publicPem,
+        Buffer.from(sig.valueOf(), 'base64'),
+      );
+      expect(valid).toBeTrue();
+    });
+
+    it('should sign raw Media bytes', () => {
+      const key = new PrivateKey(privatePem);
+      const payload = Buffer.from([0xff, 0xfe, 0xfd, 0x00, 0x80]);
+      const sig = key.sign(new Media(payload));
+
+      const valid = crypto.verify(
+        null,
+        payload,
         publicPem,
         Buffer.from(sig.valueOf(), 'base64'),
       );

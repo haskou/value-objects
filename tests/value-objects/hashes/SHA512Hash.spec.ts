@@ -3,6 +3,7 @@ import {
   SHA512Hash,
   NullObject,
   InvalidHashError,
+  Media,
   StringValueObject,
 } from '../../../src';
 
@@ -99,6 +100,13 @@ describe('SHA512Hash', () => {
         const input = Buffer.from('hello');
         const expected = computeSHA512(input);
         const hash = SHA512Hash.from(input);
+        expect(hash.valueOf()).toBe(expected);
+      });
+
+      it('should compute SHA512 hash from raw Media bytes', () => {
+        const input = Buffer.from([0xff, 0xfe, 0xfd, 0x00, 0x80]);
+        const expected = computeSHA512(input);
+        const hash = SHA512Hash.from(new Media(input));
         expect(hash.valueOf()).toBe(expected);
       });
 
