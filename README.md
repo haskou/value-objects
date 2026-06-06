@@ -198,10 +198,23 @@ npm test
 npm run build
 ```
 
+## 🌿 Release Branches
+
+Publishing is handled by CI when a pull request is merged into the default
+branch (`master`, or `main` after a branch rename). Use these branch prefixes
+to choose the npm version bump:
+
+- `fix/*` - patch release
+- `feat/*` - minor release
+- `break/*` - major release
+
+Branches without one of these prefixes still run CI, but they do not publish
+to npm. Publishing uses npm Trusted Publishing from the `ci.yml` workflow.
+
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a branch: `git checkout -b my-feature`
+2. Create a branch: `git checkout -b feat/my-feature`
 3. Make your changes and add tests
 4. Run tests: `npm test`
 5. Submit a pull request
