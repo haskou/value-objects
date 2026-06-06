@@ -1,4 +1,7 @@
-[![npm version](https://badge.fury.io/js/@haskou%2Fvalue-objects.svg)](https://badge.fury.io/js/@haskou%2Fvalue-objects)
+[![CI](https://github.com/haskou/value-objects/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/haskou/value-objects/actions/workflows/ci.yml?query=branch%3Amaster)
+[![codecov](https://codecov.io/gh/haskou/value-objects/branch/master/graph/badge.svg)](https://codecov.io/gh/haskou/value-objects)
+[![npm version](https://img.shields.io/npm/v/@haskou/value-objects.svg)](https://www.npmjs.com/package/@haskou/value-objects)
+[![license](https://img.shields.io/npm/l/@haskou/value-objects.svg)](LICENSE.txt)
 
 # Value Objects
 
