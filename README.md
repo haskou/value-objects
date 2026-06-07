@@ -1,4 +1,7 @@
-[![npm version](https://badge.fury.io/js/@haskou%2Fvalue-objects.svg)](https://badge.fury.io/js/@haskou%2Fvalue-objects)
+[![CI](https://github.com/haskou/value-objects/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/haskou/value-objects/actions/workflows/ci.yml?query=branch%3Amaster)
+[![codecov](https://codecov.io/gh/haskou/value-objects/branch/master/graph/badge.svg)](https://codecov.io/gh/haskou/value-objects)
+[![npm version](https://img.shields.io/npm/v/@haskou/value-objects.svg)](https://www.npmjs.com/package/@haskou/value-objects)
+[![license](https://img.shields.io/npm/l/@haskou/value-objects.svg)](LICENSE.txt)
 
 # Value Objects
 
@@ -195,10 +198,23 @@ npm test
 npm run build
 ```
 
+## 🌿 Release Branches
+
+Publishing is handled by CI when a pull request is merged into the default
+branch (`master`, or `main` after a branch rename). Use these branch prefixes
+to choose the npm version bump:
+
+- `fix/*` - patch release
+- `feat/*` - minor release
+- `break/*` - major release
+
+Branches without one of these prefixes still run CI, but they do not publish
+to npm. Publishing uses npm Trusted Publishing from the `ci.yml` workflow.
+
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a branch: `git checkout -b my-feature`
+2. Create a branch: `git checkout -b feat/my-feature`
 3. Make your changes and add tests
 4. Run tests: `npm test`
 5. Submit a pull request

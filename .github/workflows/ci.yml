@@ -1,0 +1,152 @@
+name: CI
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - closed
+    branches:
+      - master
+      - main
+  push:
+    branches:
+      - master
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test and coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run lint and tests with coverage
+        run: yarn lint && yarn test:coverage
+
+      - name: Build package
+        run: yarn build
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./tests/coverage/lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: read
+      id-token: write
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      (
+        github.event.pull_request.base.ref == 'master' ||
+        github.event.pull_request.base.ref == 'main'
+      ) &&
+      (
+        github.event.pull_request.head.ref == 'feat' ||
+        startsWith(github.event.pull_request.head.ref, 'feat/') ||
+        github.event.pull_request.head.ref == 'fix' ||
+        startsWith(github.event.pull_request.head.ref, 'fix/') ||
+        github.event.pull_request.head.ref == 'break' ||
+        startsWith(github.event.pull_request.head.ref, 'break/')
+      )
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build package
+        run: yarn build
+
+      - name: Compute release version
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          package_name="$(node -p "require('./package.json').name")"
+          current_version="$(npm view "$package_name" version)"
+          branch_name="${HEAD_BRANCH}"
+
+          case "$branch_name" in
+            fix|fix/*)
+              bump="patch"
+              ;;
+            feat|feat/*)
+              bump="minor"
+              ;;
+            break|break/*)
+              bump="major"
+              ;;
+            *)
+              echo "Unsupported release branch: $branch_name"
+              exit 1
+              ;;
+          esac
+
+          next_version="$(
+            node - "$current_version" "$bump" <<'NODE'
+          const [version, bump] = process.argv.slice(2);
+          const parts = version.split('.').map(Number);
+
+          if (parts.length !== 3 || parts.some((part) => !Number.isInteger(part))) {
+            throw new Error(`Unsupported npm version: ${version}`);
+          }
+
+          if (bump === 'patch') parts[2] += 1;
+          if (bump === 'minor') {
+            parts[1] += 1;
+            parts[2] = 0;
+          }
+          if (bump === 'major') {
+            parts[0] += 1;
+            parts[1] = 0;
+            parts[2] = 0;
+          }
+
+          process.stdout.write(parts.join('.'));
+          NODE
+          )"
+
+          npm version "$next_version" --no-git-tag-version
+
+          echo "package_name=$package_name" >> "$GITHUB_OUTPUT"
+          echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
+          echo "next_version=$next_version" >> "$GITHUB_OUTPUT"
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+
+      - name: Publish package
+        run: npm publish --access public --tag latest
