@@ -6,38 +6,59 @@ import { StringValueObject } from '../StringValueObject';
 export class Hour extends StringValueObject {
   private readonly minutes: string;
   private readonly hours: string;
-  private static addTrailZero(value: string): string {
-    return Number(value) < 10 ? `0${Number(value)}` : value;
+
+  private static addTrailZero(value: number): string {
+    return value < 10 ? `0${value}` : value.toString();
+  }
+
+  private static normalizeMinutes(totalMinutes: number): number {
+    const minutesPerDay = 24 * 60;
+
+    return ((totalMinutes % minutesPerDay) + minutesPerDay) % minutesPerDay;
+  }
+
+  private static parseFromNumber(value: number, minutes: number): string[] {
+    assert(
+      Number.isInteger(value) && value >= 0 && value <= 23,
+      new InvalidHourError(),
+    );
+    assert(
+      Number.isInteger(minutes) && minutes >= 0 && minutes <= 59,
+      new InvalidMinutesError(),
+    );
+
+    return [Hour.addTrailZero(value), Hour.addTrailZero(minutes)];
+  }
+
+  private static parseFromString(value: string): string[] {
+    const parts = value.split(':');
+
+    assert(parts.length === 2 && parts[1] !== '', new InvalidHourError());
+
+    const [hours, minutes] = parts;
+
+    assert(/^\d{1,2}$/.test(hours), new InvalidHourError());
+    assert(/^\d{1,2}$/.test(minutes), new InvalidMinutesError());
+
+    const parsedHours = Number(hours);
+    const parsedMinutes = Number(minutes);
+
+    assert(parsedHours >= 0 && parsedHours <= 23, new InvalidHourError());
+    assert(
+      parsedMinutes >= 0 && parsedMinutes <= 59,
+      new InvalidMinutesError(),
+    );
+
+    return [Hour.addTrailZero(parsedHours), Hour.addTrailZero(parsedMinutes)];
   }
 
   constructor(value: string);
   constructor(value: number, minutes?: number);
   constructor(value: string | number, minutes?: number) {
-    let parsedHours: string;
-    let parsedMinutes: string;
-
-    if (typeof value === 'number' && minutes !== undefined) {
-      assert(Number(value) >= 0 && Number(value) <= 23, new InvalidHourError());
-      assert(
-        Number(minutes) >= 0 && Number(minutes) <= 59,
-        new InvalidMinutesError(),
-      );
-
-      parsedHours = Hour.addTrailZero(value.toString());
-      parsedMinutes = Hour.addTrailZero(minutes.toString());
-    } else {
-      assert(typeof value === 'string', new InvalidHourError());
-      assert((value as string).includes(':'), new InvalidHourError());
-      const [hours, minutes] = (value as string).split(':');
-
-      assert(Number(hours) >= 0 && Number(hours) <= 23, new InvalidHourError());
-      assert(
-        Number(minutes) >= 0 && Number(minutes) <= 59,
-        new InvalidMinutesError(),
-      );
-      parsedHours = Hour.addTrailZero(hours);
-      parsedMinutes = Hour.addTrailZero(minutes);
-    }
+    const [parsedHours, parsedMinutes] =
+      typeof value === 'number' && minutes !== undefined
+        ? Hour.parseFromNumber(value, minutes)
+        : Hour.parseFromString(value as string);
 
     super(`${parsedHours}:${parsedMinutes}`);
     this.hours = parsedHours;
@@ -45,21 +66,12 @@ export class Hour extends StringValueObject {
   }
 
   public addMinutes(minutes: number): Hour {
-    const totalMinutes = Number(this.minutes) + minutes;
-    let newHour = Number(this.hours) + Math.floor(totalMinutes / 60);
-    let newMinutes = totalMinutes % 60;
+    const currentMinutes = Number(this.hours) * 60 + Number(this.minutes);
+    const normalizedMinutes = Hour.normalizeMinutes(currentMinutes + minutes);
+    const newHour = Math.floor(normalizedMinutes / 60);
+    const newMinutes = normalizedMinutes % 60;
 
-    if (newHour > 23) {
-      newHour = newHour - 24;
-    } else if (newHour < 0) {
-      newHour = 24 + newHour;
-    }
-
-    if (newMinutes < 0) {
-      newMinutes = 60 + newMinutes;
-    }
-
-    return new Hour(`${newHour}:${newMinutes}`);
+    return new Hour(newHour, newMinutes);
   }
 
   public diffInMinutes(other: Hour): number {
