@@ -4,7 +4,6 @@ import { assert } from '../../patterns/Assert';
 import { StringValueObject } from '../StringValueObject';
 
 export class Hour extends StringValueObject {
-  private static readonly FORMAT_REGEX = /^\d{1,2}:\d{1,2}$/;
   private readonly minutes: string;
   private readonly hours: string;
 
@@ -32,8 +31,15 @@ export class Hour extends StringValueObject {
   }
 
   private static parseFromString(value: string): string[] {
-    assert(Hour.FORMAT_REGEX.test(value), new InvalidHourError());
-    const [hours, minutes] = value.split(':');
+    const parts = value.split(':');
+
+    assert(parts.length === 2 && parts[1] !== '', new InvalidHourError());
+
+    const [hours, minutes] = parts;
+
+    assert(/^\d{1,2}$/.test(hours), new InvalidHourError());
+    assert(/^\d{1,2}$/.test(minutes), new InvalidMinutesError());
+
     const parsedHours = Number(hours);
     const parsedMinutes = Number(minutes);
 

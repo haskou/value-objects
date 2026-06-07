@@ -22,6 +22,8 @@ describe('Hour', () => {
       it('should throw error if minutes is invalid', () => {
         expect(() => new Hour('23:60')).toThrow('Invalid minutes');
         expect(() => new Hour('23:60')).toThrow(InvalidMinutesError);
+        expect(() => new Hour('12:xx')).toThrow(InvalidMinutesError);
+        expect(() => new Hour('12:3a')).toThrow(InvalidMinutesError);
       });
 
       it('should work with 0 hour', () => {
