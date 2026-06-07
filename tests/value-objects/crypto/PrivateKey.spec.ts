@@ -215,6 +215,22 @@ describe('PrivateKey', () => {
       expect(() => privKey.decrypt(malformed)).toThrow(InvalidFormatError);
     });
 
+    it('should validate fixed-size field lengths before decoding them', () => {
+      const privKey = new PrivateKey(privatePem);
+      const oversizedEphemeralPublicKey = Buffer.alloc(1024 * 1024).toString(
+        'base64',
+      );
+      const payload = new EncryptedPayload(
+        `${oversizedEphemeralPublicKey}.${Buffer.alloc(12).toString('base64')}.${Buffer.alloc(0).toString('base64')}.${Buffer.alloc(16).toString('base64')}`,
+      );
+      const bufferFromSpy = jest.spyOn(Buffer, 'from');
+
+      expect(() => privKey.decrypt(payload)).toThrow(InvalidFormatError);
+      expect(bufferFromSpy).not.toHaveBeenCalled();
+
+      bufferFromSpy.mockRestore();
+    });
+
     it('should throw InvalidLengthError for oversized ciphertext', () => {
       const privKey = new PrivateKey(privatePem);
       const oversizedCipher = 'A'.repeat(

@@ -44,6 +44,18 @@ export class PrivateKey extends Key {
     );
   }
 
+  private static ensureBase64DecodedLength(
+    value: string,
+    encryptedPayload: EncryptedPayload,
+    length: number,
+  ): void {
+    PrivateKey.ensureIsBase64(value, encryptedPayload);
+    assert(
+      PrivateKey.getBase64DecodedLength(value) === length,
+      new InvalidFormatError(encryptedPayload.valueOf()),
+    );
+  }
+
   private static decodeBase64(
     value: string,
     encryptedPayload: EncryptedPayload,
@@ -110,23 +122,26 @@ export class PrivateKey extends Key {
       ),
     );
 
+    PrivateKey.ensureBase64DecodedLength(
+      ephPubB64,
+      encryptedPayload,
+      PrivateKey.EPHEMERAL_PUBLIC_KEY_LENGTH,
+    );
+    PrivateKey.ensureBase64DecodedLength(
+      ivB64,
+      encryptedPayload,
+      PrivateKey.IV_LENGTH,
+    );
+    PrivateKey.ensureBase64DecodedLength(
+      tagB64,
+      encryptedPayload,
+      PrivateKey.TAG_LENGTH,
+    );
+
     const ephemeralPub = PrivateKey.decodeBase64(ephPubB64, encryptedPayload);
     const iv = PrivateKey.decodeBase64(ivB64, encryptedPayload);
     const cipherText = Buffer.from(cipherTextB64, 'base64');
     const tag = PrivateKey.decodeBase64(tagB64, encryptedPayload);
-
-    assert(
-      ephemeralPub.length === PrivateKey.EPHEMERAL_PUBLIC_KEY_LENGTH,
-      new InvalidFormatError(encryptedPayload.valueOf()),
-    );
-    assert(
-      iv.length === PrivateKey.IV_LENGTH,
-      new InvalidFormatError(encryptedPayload.valueOf()),
-    );
-    assert(
-      tag.length === PrivateKey.TAG_LENGTH,
-      new InvalidFormatError(encryptedPayload.valueOf()),
-    );
     const x25519Priv = CryptoAdapter.privateKeyToX25519(this.valueOf());
 
     const sharedSecret = CryptoAdapter.x25519SharedSecret(
