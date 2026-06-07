@@ -166,6 +166,13 @@ describe('PublicKey', () => {
       expect(decrypted).toEqual(payload);
     });
 
+    it('should throw InvalidLengthError for oversized payloads', () => {
+      const key = new PublicKey(publicPem);
+      const payload = Buffer.alloc(1024 * 1024 + 1);
+
+      expect(() => key.encrypt(payload)).toThrow(InvalidLengthError);
+    });
+
     it('should produce output that can be decrypted by the corresponding PrivateKey', () => {
       const pubKey = new PublicKey(publicPem);
       const privKey = new PrivateKey(privatePem);

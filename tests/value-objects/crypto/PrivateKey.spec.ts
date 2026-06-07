@@ -170,6 +170,16 @@ describe('PrivateKey', () => {
       expect(decrypted.toString()).toBe('secret message');
     });
 
+    it('should decrypt an empty payload', () => {
+      const pubKey = new PublicKey(publicPem);
+      const privKey = new PrivateKey(privatePem);
+      const encrypted = pubKey.encrypt('');
+      const decrypted = privKey.decrypt(encrypted);
+
+      expect(decrypted).toBeInstanceOf(Buffer);
+      expect(decrypted).toHaveLength(0);
+    });
+
     it('should fail to decrypt with the wrong private key', () => {
       const pubKey = new PublicKey(publicPem);
       const encrypted = pubKey.encrypt('secret');
@@ -204,6 +214,48 @@ describe('PrivateKey', () => {
       const decrypted = privKey.decrypt(encrypted);
 
       expect(decrypted.toString()).toBe('vo-payload');
+    });
+
+    it('should throw InvalidFormatError for malformed encrypted payload format', () => {
+      const privKey = new PrivateKey(privatePem);
+      const malformed = new EncryptedPayload('only-one-field');
+
+      expect(() => privKey.decrypt(malformed)).toThrow(InvalidFormatError);
+    });
+
+    it('should throw InvalidFormatError for invalid field lengths', () => {
+      const privKey = new PrivateKey(privatePem);
+      const malformed = new EncryptedPayload('YQ==.YQ==.YQ==.YQ==');
+
+      expect(() => privKey.decrypt(malformed)).toThrow(InvalidFormatError);
+    });
+
+    it('should validate fixed-size field lengths before decoding them', () => {
+      const privKey = new PrivateKey(privatePem);
+      const oversizedEphemeralPublicKey = Buffer.alloc(1024 * 1024).toString(
+        'base64',
+      );
+      const payload = new EncryptedPayload(
+        `${oversizedEphemeralPublicKey}.${Buffer.alloc(12).toString('base64')}.${Buffer.alloc(0).toString('base64')}.${Buffer.alloc(16).toString('base64')}`,
+      );
+      const bufferFromSpy = jest.spyOn(Buffer, 'from');
+
+      expect(() => privKey.decrypt(payload)).toThrow(InvalidFormatError);
+      expect(bufferFromSpy).not.toHaveBeenCalled();
+
+      bufferFromSpy.mockRestore();
+    });
+
+    it('should throw InvalidLengthError for oversized ciphertext', () => {
+      const privKey = new PrivateKey(privatePem);
+      const oversizedCipher = 'A'.repeat(
+        Math.ceil((1024 * 1024 + 1) / 3) * 4,
+      );
+      const payload = new EncryptedPayload(
+        `${Buffer.alloc(32).toString('base64')}.${Buffer.alloc(12).toString('base64')}.${oversizedCipher}.${Buffer.alloc(16).toString('base64')}`,
+      );
+
+      expect(() => privKey.decrypt(payload)).toThrow(InvalidLengthError);
     });
   });
 
