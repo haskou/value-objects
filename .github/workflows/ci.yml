@@ -111,13 +111,6 @@ jobs:
 
           echo "already_released=false" >> "$GITHUB_OUTPUT"
 
-          if git log --format=%s --grep="$release_marker" -n 1 HEAD | grep -q "$release_marker"; then
-            echo "Release for PR #${PR_NUMBER} already exists."
-            echo "already_released=true" >> "$GITHUB_OUTPUT"
-            echo "should_publish=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
           case "$branch_name" in
             fix|fix/*)
               bump="patch"
@@ -133,6 +126,29 @@ jobs:
               exit 1
               ;;
           esac
+
+          release_subject="$(git log --format=%s --grep="$release_marker" -n 1 HEAD || true)"
+
+          if [ -n "$release_subject" ] && grep -q "$release_marker" <<< "$release_subject"; then
+            next_version="$(
+              node - "$release_subject" "$current_version" <<'NODE'
+          const [subject, fallbackVersion] = process.argv.slice(2);
+          const match = subject.match(/Release v([^ ]+) for #\d+/);
+
+          process.stdout.write(match?.[1] ?? fallbackVersion);
+          NODE
+            )"
+
+            echo "Release for PR #${PR_NUMBER} already exists."
+            echo "already_released=true" >> "$GITHUB_OUTPUT"
+            echo "package_name=$package_name" >> "$GITHUB_OUTPUT"
+            echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
+            echo "published_version=$published_version" >> "$GITHUB_OUTPUT"
+            echo "next_version=$next_version" >> "$GITHUB_OUTPUT"
+            echo "bump=$bump" >> "$GITHUB_OUTPUT"
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           next_version="$(
             node - "$current_version" "$bump" <<'NODE'
@@ -188,6 +204,7 @@ jobs:
           echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
           echo "published_version=$published_version" >> "$GITHUB_OUTPUT"
           echo "next_version=$next_version" >> "$GITHUB_OUTPUT"
+          echo "bump=$bump" >> "$GITHUB_OUTPUT"
           echo "should_publish=$should_publish" >> "$GITHUB_OUTPUT"
         env:
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
@@ -232,3 +249,50 @@ jobs:
           NEXT_VERSION: ${{ steps.release.outputs.next_version }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Create GitHub release notes
+        if: steps.release.outputs.next_version != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="v${NEXT_VERSION}"
+          release_notes="$(mktemp)"
+          pr_title="$(gh pr view "$PR_NUMBER" --json title --jq '.title')"
+          pr_body="$(gh pr view "$PR_NUMBER" --json body --jq '.body // ""')"
+          pr_url="$(gh pr view "$PR_NUMBER" --json url --jq '.url')"
+
+          {
+            echo "## Changes"
+            echo
+            printf -- "- %s\n" "$pr_title"
+            echo
+            echo "## Release details"
+            echo
+            printf -- "- npm: https://www.npmjs.com/package/%s/v/%s\n" "$PACKAGE_NAME" "$NEXT_VERSION"
+            printf -- "- Pull request: %s\n" "$pr_url"
+            printf -- "- Source branch: \`%s\`\n" "$HEAD_BRANCH"
+            printf -- "- Version bump: \`%s\`\n" "$BUMP"
+          } > "$release_notes"
+
+          if [ -n "$pr_body" ]; then
+            {
+              echo
+              echo "## Pull request notes"
+              echo
+              printf '%s\n' "$pr_body" | sed '/^------$/,$d'
+            } >> "$release_notes"
+          fi
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" --title "$tag" --notes-file "$release_notes"
+          else
+            gh release create "$tag" --verify-tag --title "$tag" --notes-file "$release_notes"
+          fi
+        env:
+          BUMP: ${{ steps.release.outputs.bump }}
+          GH_TOKEN: ${{ github.token }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          NEXT_VERSION: ${{ steps.release.outputs.next_version }}
+          PACKAGE_NAME: ${{ steps.release.outputs.package_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
