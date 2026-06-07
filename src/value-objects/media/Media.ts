@@ -29,4 +29,16 @@ export class Media extends ValueObject<string> {
   public getBase64(): string {
     return this.getBuffer().toString('base64');
   }
+
+  public isEqual(other: unknown): boolean {
+    if (other instanceof Media) {
+      return this.getBuffer().equals(other.getBuffer());
+    }
+
+    if (Buffer.isBuffer(other)) {
+      return this.getBuffer().equals(other);
+    }
+
+    return super.isEqual(other);
+  }
 }
