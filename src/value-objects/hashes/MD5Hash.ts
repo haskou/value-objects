@@ -16,7 +16,12 @@ export class MD5Hash extends Hash {
   public static from(
     buffer: string | StringValueObject | Media | Buffer,
   ): MD5Hash {
-    return new MD5Hash(CryptoAdapter.hash('md5', buffer.valueOf()));
+    return new MD5Hash(
+      CryptoAdapter.hash(
+        'md5',
+        buffer instanceof Media ? buffer.getBuffer() : buffer.valueOf(),
+      ),
+    );
   }
 
   constructor(source: string | StringValueObject) {

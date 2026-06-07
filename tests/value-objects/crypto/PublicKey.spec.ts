@@ -5,6 +5,7 @@ import {
   InvalidFormatError,
   InvalidLengthError,
   Key,
+  Media,
   PrivateKey,
   PublicKey,
   Signature,
@@ -112,6 +113,15 @@ describe('PublicKey', () => {
 
       expect(key.isValidSignature(payloadVO, signature)).toBeTrue();
     });
+
+    it('should verify signatures against raw Media bytes', () => {
+      const key = new PublicKey(publicPem);
+      const payload = Buffer.from([0xff, 0xfe, 0xfd, 0x00, 0x80]);
+      const sigBuf = crypto.sign(null, payload, privatePem);
+      const signature = Signature.fromBuffer(sigBuf);
+
+      expect(key.isValidSignature(new Media(payload), signature)).toBeTrue();
+    });
   });
 
   describe('encrypt', () => {
@@ -144,6 +154,16 @@ describe('PublicKey', () => {
       const encrypted = key.encrypt(payload);
 
       expect(encrypted).toBeInstanceOf(EncryptedPayload);
+    });
+
+    it('should encrypt raw Media bytes', () => {
+      const pubKey = new PublicKey(publicPem);
+      const privKey = new PrivateKey(privatePem);
+      const payload = Buffer.from([0xff, 0xfe, 0xfd, 0x00, 0x80]);
+      const encrypted = pubKey.encrypt(new Media(payload));
+      const decrypted = privKey.decrypt(encrypted);
+
+      expect(decrypted).toEqual(payload);
     });
 
     it('should throw InvalidLengthError for oversized payloads', () => {

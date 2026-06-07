@@ -16,7 +16,12 @@ export class SHA256Hash extends ValueObject<string> {
   public static from(
     buffer: string | StringValueObject | Media | Buffer,
   ): SHA256Hash {
-    return new SHA256Hash(CryptoAdapter.hash('sha256', buffer.valueOf()));
+    return new SHA256Hash(
+      CryptoAdapter.hash(
+        'sha256',
+        buffer instanceof Media ? buffer.getBuffer() : buffer.valueOf(),
+      ),
+    );
   }
 
   constructor(source: string | StringValueObject) {

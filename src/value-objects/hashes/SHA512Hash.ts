@@ -16,7 +16,12 @@ export class SHA512Hash extends ValueObject<string> {
   public static from(
     buffer: string | StringValueObject | Media | Buffer,
   ): SHA512Hash {
-    return new SHA512Hash(CryptoAdapter.hash('sha512', buffer.valueOf()));
+    return new SHA512Hash(
+      CryptoAdapter.hash(
+        'sha512',
+        buffer instanceof Media ? buffer.getBuffer() : buffer.valueOf(),
+      ),
+    );
   }
 
   constructor(source: string | StringValueObject) {
