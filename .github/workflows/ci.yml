@@ -222,9 +222,11 @@ jobs:
             git tag -a "v${NEXT_VERSION}" -m "Release v${NEXT_VERSION} for #${PR_NUMBER}"
           fi
 
-          auth_header="AUTHORIZATION: bearer ${GITHUB_TOKEN}"
-          git -c http.https://github.com/.extraheader="$auth_header" push origin "HEAD:${BASE_BRANCH}"
-          git -c http.https://github.com/.extraheader="$auth_header" push origin "v${NEXT_VERSION}"
+          auth_header="$(
+            node -e "process.stdout.write('AUTHORIZATION: basic ' + Buffer.from('x-access-token:' + process.env.GITHUB_TOKEN).toString('base64'))"
+          )"
+          git -c "http.https://github.com/.extraheader=$auth_header" push origin "HEAD:${BASE_BRANCH}"
+          git -c "http.https://github.com/.extraheader=$auth_header" push origin "v${NEXT_VERSION}"
         env:
           BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
           NEXT_VERSION: ${{ steps.release.outputs.next_version }}
