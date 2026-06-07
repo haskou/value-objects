@@ -53,8 +53,11 @@ jobs:
     name: Publish to npm
     runs-on: ubuntu-latest
     needs: test
+    concurrency:
+      group: publish-${{ github.repository }}-${{ github.event.pull_request.base.ref }}
+      cancel-in-progress: false
     permissions:
-      contents: read
+      contents: write
       id-token: write
     if: >-
       github.event_name == 'pull_request' &&
@@ -76,6 +79,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.base.ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -97,8 +103,19 @@ jobs:
           set -euo pipefail
 
           package_name="$(node -p "require('./package.json').name")"
-          current_version="$(npm view "$package_name" version)"
+          current_version="$(node -p "require('./package.json').version")"
+          published_version="$(npm view "$package_name" version)"
           branch_name="${HEAD_BRANCH}"
+          release_marker="for #${PR_NUMBER}"
+
+          echo "already_released=false" >> "$GITHUB_OUTPUT"
+
+          if git log --format=%s --grep="$release_marker" -n 1 HEAD | grep -q "$release_marker"; then
+            echo "Release for PR #${PR_NUMBER} already exists."
+            echo "already_released=true" >> "$GITHUB_OUTPUT"
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           case "$branch_name" in
             fix|fix/*)
@@ -142,11 +159,71 @@ jobs:
 
           npm version "$next_version" --no-git-tag-version
 
+          should_publish="true"
+
+          if [ "$published_version" = "$next_version" ]; then
+            should_publish="false"
+          fi
+
+          if [ "$should_publish" = "true" ]; then
+            node - "$published_version" "$next_version" <<'NODE'
+          const [publishedVersion, nextVersion] = process.argv.slice(2);
+          const parse = (version) => version.split('.').map(Number);
+          const [publishedMajor, publishedMinor, publishedPatch] = parse(publishedVersion);
+          const [nextMajor, nextMinor, nextPatch] = parse(nextVersion);
+          const published = [publishedMajor, publishedMinor, publishedPatch];
+          const next = [nextMajor, nextMinor, nextPatch];
+          const comparison = published.findIndex((part, index) => part !== next[index]);
+
+          if (comparison !== -1 && published[comparison] > next[comparison]) {
+            throw new Error(
+              `Published npm version ${publishedVersion} is newer than computed release ${nextVersion}`,
+            );
+          }
+          NODE
+          fi
+
           echo "package_name=$package_name" >> "$GITHUB_OUTPUT"
           echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
+          echo "published_version=$published_version" >> "$GITHUB_OUTPUT"
           echo "next_version=$next_version" >> "$GITHUB_OUTPUT"
+          echo "should_publish=$should_publish" >> "$GITHUB_OUTPUT"
         env:
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
 
       - name: Publish package
+        if: >-
+          steps.release.outputs.already_released != 'true' &&
+          steps.release.outputs.should_publish == 'true'
         run: npm publish --access public --tag latest
+
+      - name: Commit release version
+        if: steps.release.outputs.already_released != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add package.json
+
+          if git diff --cached --quiet; then
+            echo "No package.json version changes to commit."
+          else
+            git commit -m "chore(release): 🔖 Release v${NEXT_VERSION} for #${PR_NUMBER}"
+          fi
+
+          if git rev-parse "v${NEXT_VERSION}" >/dev/null 2>&1; then
+            echo "Tag v${NEXT_VERSION} already exists."
+          else
+            git tag -a "v${NEXT_VERSION}" -m "Release v${NEXT_VERSION} for #${PR_NUMBER}"
+          fi
+
+          git push origin "HEAD:${BASE_BRANCH}"
+          git push origin "v${NEXT_VERSION}"
+        env:
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          NEXT_VERSION: ${{ steps.release.outputs.next_version }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}

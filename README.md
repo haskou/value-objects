@@ -210,6 +210,8 @@ to choose the npm version bump:
 
 Branches without one of these prefixes still run CI, but they do not publish
 to npm. Publishing uses npm Trusted Publishing from the `ci.yml` workflow.
+After a successful publish, CI commits the release version to the default
+branch and creates the matching `vX.Y.Z` Git tag.
 
 ## 🤝 Contributing
 
