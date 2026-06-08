@@ -924,6 +924,9 @@ console.log(decrypted.toString()); // 'hello world'
 - Decrypting with the wrong private key throws an AES-GCM authentication error.
 - The encrypted format is `ephemeralPub.iv.cipherText.tag` (base64, dot-separated).
 - Payload encryption is capped at 1 MiB before encryption.
+- Payload encryption does not authenticate the sender. AES-GCM authenticates
+  ciphertext integrity for the derived key, but the payload does not include a
+  sender key or signature.
 - This payload encryption format is library-specific, not HPKE, and is not post-quantum.
 
 #### CryptoPayload

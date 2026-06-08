@@ -116,8 +116,9 @@ Technical notes:
   agreement are post-quantum secure.
 - Payload encryption uses fresh ephemeral key material and a random IV per
   encryption, but captured payloads can still be decrypted later if the
-  recipient private key is compromised. Treat it as authenticated public-key
-  encryption for small messages, not as a forward-secret transport protocol.
+  recipient private key is compromised. Treat it as recipient-addressed
+  encryption with ciphertext integrity, not as sender-authenticated encryption
+  or a forward-secret transport protocol.
 - The payload encryption format is library-specific, not HPKE, and has not been
   independently audited as a protocol.
 
