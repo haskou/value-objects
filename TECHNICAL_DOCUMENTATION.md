@@ -644,7 +644,7 @@ try {
 
 ### Cryptography Value Objects
 
-All cryptography value objects use **Ed25519** elliptic curve keys in PEM format. Payload encryption uses an **ECIES** hybrid scheme: Ed25519 keys are converted to X25519 (via `@noble/curves`), an ephemeral ECDH shared secret derives an AES-256-GCM key, and the payload is symmetrically encrypted.
+Cryptographic key value objects use **Ed25519** elliptic curve keys in PEM format for signing and verification. Payload encryption uses a library-specific hybrid public-key encryption scheme: Ed25519 key material is converted to X25519 (Montgomery form via `@noble/curves`), an ephemeral X25519 shared secret is combined with the ephemeral public key and hashed with SHA-256 to derive a 256-bit AES key, and the payload is encrypted with AES-256-GCM. This format is not HPKE, is not post-quantum, and is not documented here as an independently audited protocol.
 
 #### Key
 
@@ -656,7 +656,7 @@ abstract class Key extends ValueObject<string> {}
 
 #### PrivateKey
 
-Represents an immutable Ed25519 private key in PEM (PKCS8) format. Used for signing messages and decrypting payloads.
+Represents an immutable Ed25519 private key in PEM (PKCS8) format. Used for signing messages; also accepted by payload decryption for data addressed to the matching key pair.
 
 ```typescript
 class PrivateKey extends Key {
@@ -684,7 +684,7 @@ console.log(decrypted.toString()); // Original plaintext
 
 #### PublicKey
 
-Represents an immutable Ed25519 public key in PEM (SPKI) format. Used for verifying signatures and encrypting payloads.
+Represents an immutable Ed25519 public key in PEM (SPKI) format. Used for verifying signatures; also accepted by payload encryption to address data to the matching key pair.
 
 ```typescript
 class PublicKey extends Key {
@@ -704,7 +704,7 @@ const publicKey = new PublicKey(pemString);
 const valid = publicKey.isValidSignature('hello world', signature);
 console.log(valid); // true
 
-// Encrypt a payload (only the corresponding private key can decrypt it)
+// Encrypt a payload for the corresponding private key
 const encrypted = publicKey.encrypt('sensitive data');
 console.log(encrypted.valueOf()); // 'ephemeralPub.iv.cipherText.tag' (base64, dot-separated)
 ```
@@ -738,7 +738,7 @@ try {
 
 #### KeyPair
 
-Manages a public/private Ed25519 key pair with generation, signing, verification, encryption, decryption, and serialization.
+Manages a public/private Ed25519 key pair with generation, signing, verification, payload encryption/decryption, and serialization.
 
 ```typescript
 class KeyPair {
@@ -778,7 +778,7 @@ const encryptedKeyPair = await keyPair.encryptKeyPair('strong-password');
 
 #### EncryptedPrivateKey
 
-Represents an immutable AES-256-GCM encrypted private key. Uses scrypt (N=16384, r=8, p=1) for password-based key derivation, with versioning for future upgrades. Supports backward compatibility with the legacy 4-part encrypted format.
+Represents an immutable password-protected private key container. New encrypted private keys use scrypt (N=16384, r=8, p=1), a 16-byte salt, a 32-byte derived key, and AES-256-GCM with a 12-byte IV and 16-byte authentication tag. The class also supports the legacy 4-part format, which decrypts with PBKDF2-SHA256 using 100000 iterations and AES-256-GCM.
 
 The encrypted format is: `v2.scrypt.N16384.r8.p1.salt.iv.tag.cipherText` (base64-encoded, dot-separated). Legacy format: `cipherText.iv.salt.tag`.
 
@@ -812,7 +812,7 @@ if (encrypted.needsReEncryption()) {
 
 // Wrong password throws an error
 try {
-  encrypted.decrypt('wrong-password'); // Throws (AES-GCM authentication fails)
+  await encrypted.decrypt('wrong-password'); // Throws (AES-GCM authentication fails)
 } catch (error) {
   console.error('Invalid password');
 }
@@ -865,7 +865,7 @@ const restored = EncryptedKeyPair.fromPrimitives(primitives);
 
 #### EncryptedPayload
 
-Represents an immutable ECIES-encrypted payload. The format is `ephemeralPub.iv.cipherText.tag` (base64-encoded, dot-separated).
+Represents an immutable dot-separated Base64 container returned by the library-specific payload encryption scheme. The format is `ephemeralPub.iv.cipherText.tag`.
 
 ```typescript
 class EncryptedPayload extends ValueObject<string> {}
@@ -875,13 +875,15 @@ Created by `PublicKey.encrypt()`, `KeyPair.encrypt()`, or `EncryptedKeyPair.encr
 
 #### Encrypting and Decrypting Payloads
 
-The library uses an **ECIES** (Elliptic Curve Integrated Encryption Scheme) hybrid approach:
+The library uses a classical hybrid public-key encryption approach:
 
 1. The Ed25519 public key is converted to X25519 (Montgomery form)
 2. An ephemeral X25519 key pair is generated
-3. ECDH produces a shared secret, from which an AES-256-GCM key is derived
-4. The payload is symmetrically encrypted
-5. Only the holder of the corresponding Ed25519 private key can decrypt
+3. X25519 produces a shared secret
+4. SHA-256 over the shared secret and ephemeral public key derives a 256-bit AES key
+5. AES-256-GCM encrypts the payload with a 12-byte random IV and 16-byte authentication tag
+6. The output is `ephemeralPub.iv.cipherText.tag` with Base64-encoded fields
+7. Decryption requires the corresponding Ed25519 private key material converted to X25519
 
 **With KeyPair (plaintext private key available):**
 ```typescript
@@ -921,10 +923,12 @@ console.log(decrypted.toString()); // 'hello world'
 - Each call to `encrypt()` generates a new ephemeral key, producing different ciphertext even for the same payload.
 - Decrypting with the wrong private key throws an AES-GCM authentication error.
 - The encrypted format is `ephemeralPub.iv.cipherText.tag` (base64, dot-separated).
+- Payload encryption is capped at 1 MiB before encryption.
+- This payload encryption format is library-specific, not HPKE, and is not post-quantum.
 
 #### CryptoPayload
 
-Type alias for values that can be signed or verified:
+Type alias for values that can be signed, verified, or encrypted:
 
 ```typescript
 type CryptoPayload = string | StringValueObject | Buffer | Media;

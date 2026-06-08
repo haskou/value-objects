@@ -87,12 +87,39 @@ your application.
 - **`Coordinates`** - Coordinate pairs
 
 ### 🔐 Cryptography
-- **`KeyPair`** - Ed25519 key pair generation, signing, and verification
-- **`PrivateKey`** - Ed25519 private key (PEM format) with signing
-- **`PublicKey`** - Ed25519 public key (PEM format) with signature verification
-- **`Signature`** - Base64-encoded ed25519 digital signature
-- **`EncryptedPrivateKey`** - AES-256-GCM encrypted private key (scrypt-based, password-protected)
+- **`KeyPair`** - Ed25519 key pair generation for signing and verification
+- **`PrivateKey`** - Ed25519 private key (PEM format) for signing; also accepted by payload decryption for data addressed to the matching key pair
+- **`PublicKey`** - Ed25519 public key (PEM format) for signature verification; also accepted by payload encryption to address data to the matching key pair
+- **`Signature`** - Base64-encoded Ed25519 digital signature
+- **`EncryptedPayload`** - Dot-separated Base64 container returned by payload encryption
+- **`EncryptedPrivateKey`** - Password-protected private key encryption using scrypt + AES-256-GCM
 - **`EncryptedKeyPair`** - Key pair with encrypted private key
+
+Technical notes:
+
+- Payload encryption is a classical hybrid scheme. It generates an ephemeral
+  X25519 key pair, converts the recipient Ed25519 key material to Montgomery
+  form for X25519 key agreement, derives a shared secret, then derives a
+  256-bit AES key with SHA-256 and encrypts the payload with AES-256-GCM.
+- The encrypted payload format is
+  `ephemeralPublicKey.iv.cipherText.authTag`, with Base64-encoded fields,
+  32-byte ephemeral public keys, 12-byte random IVs, and 16-byte
+  authentication tags. Tampered ciphertext, IVs, tags, or key-agreement data
+  fail authentication during decryption.
+- Payload encryption is intended for small payloads and is currently capped at
+  1 MiB before encryption.
+- Encrypted private keys use a separate password-based scheme:
+  `scrypt(N=16384,r=8,p=1)` with a 16-byte salt, then AES-256-GCM with a
+  12-byte IV and 16-byte authentication tag.
+- This is not a post-quantum cryptography scheme. Ed25519 and X25519 are
+  classical elliptic-curve primitives, so neither signatures nor payload key
+  agreement are post-quantum secure.
+- Payload encryption uses fresh ephemeral key material and a random IV per
+  encryption, but captured payloads can still be decrypted later if the
+  recipient private key is compromised. Treat it as authenticated public-key
+  encryption for small messages, not as a forward-secret transport protocol.
+- The payload encryption format is library-specific, not HPKE, and has not been
+  independently audited as a protocol.
 
 ### 📎 Media
 - **`Media`** - Binary/string content with Buffer, size, and Base64 helpers
