@@ -6,6 +6,7 @@ import {
   StringValueObject,
 } from '../../../src';
 import { CryptoDerivation } from '../../../src/value-objects/crypto/encrypted-private-key/CryptoDerivation';
+import { EncryptedPrivateKeyV2 } from '../../../src/value-objects/crypto/encrypted-private-key/EncryptedPrivateKeyV2';
 import { NullObject } from '../../../src/value-objects/NullObject';
 
 describe('EncryptedPrivateKey', () => {
@@ -143,6 +144,17 @@ describe('EncryptedPrivateKey', () => {
 
       expect(scryptSpy).not.toHaveBeenCalled();
       scryptSpy.mockRestore();
+    });
+
+    it('should reject unsupported v2 parameters inside the v2 decryptor', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      parts[4] = 'p2';
+
+      await expect(
+        new EncryptedPrivateKeyV2().decrypt(parts, password),
+      ).rejects.toThrow('Unsupported encrypted private key parameters');
     });
 
     it('should decrypt to a functional PrivateKey that can sign', async () => {

@@ -15,7 +15,7 @@ npm install @haskou/value-objects
 ```
 
 ```typescript
-import { Email, PositiveNumber, Color, Hour } from 'value-objects';
+import { Email, PositiveNumber, Color, Hour } from '@haskou/value-objects';
 
 // ✅ Automatic validation on construction
 const email = new Email('user@example.com');     // Valid
@@ -88,24 +88,38 @@ your application.
 
 ### 🔐 Cryptography
 - **`KeyPair`** - Ed25519 key pair generation for signing and verification
-- **`PrivateKey`** - Ed25519 private key (PEM format) for signing; also accepted by payload decryption for data addressed to the matching key pair
-- **`PublicKey`** - Ed25519 public key (PEM format) for signature verification; also accepted by payload encryption to address data to the matching key pair
+- **`PrivateKey`** - Ed25519 private key (PEM format) for signing; also accepted by asymmetric payload decryption for data addressed to the matching key pair
+- **`PublicKey`** - Ed25519 public key (PEM format) for signature verification; also accepted by asymmetric payload encryption to address data to the matching key pair
 - **`Signature`** - Base64-encoded Ed25519 digital signature
-- **`EncryptedPayload`** - Dot-separated Base64 container returned by payload encryption
+- **`EncryptedPayload`** - Base container for dot-separated encrypted payload formats
+- **`AsymmetricEncryptedPayload`** - Payload encrypted for an Ed25519/X25519 recipient key pair
+- **`SymmetricEncryptedPayload`** - Payload encrypted with a symmetric AES-256-GCM key
+- **`SymmetricKey`** - 32-byte AES-256-GCM key, randomly generated or deterministically derived from a password and salt with scrypt
 - **`EncryptedPrivateKey`** - Password-protected private key encryption using scrypt + AES-256-GCM
 - **`EncryptedKeyPair`** - Key pair with encrypted private key
 
 Technical notes:
 
-- Payload encryption is a classical hybrid scheme. It generates an ephemeral
+- Asymmetric payload encryption is a classical hybrid scheme. It generates an ephemeral
   X25519 key pair, converts the recipient Ed25519 key material to Montgomery
   form for X25519 key agreement, derives a shared secret, then derives a
   256-bit AES key with SHA-256 and encrypts the payload with AES-256-GCM.
-- The encrypted payload format is
-  `ephemeralPublicKey.iv.cipherText.authTag`, with Base64-encoded fields,
+- The asymmetric payload format is
+  `ephemeralPublicKey.iv.cipherText.tag`, with Base64-encoded fields,
   32-byte ephemeral public keys, 12-byte random IVs, and 16-byte
   authentication tags. Tampered ciphertext, IVs, tags, or key-agreement data
   fail authentication during decryption.
+- Symmetric payload encryption uses a 32-byte AES-256-GCM key directly. The
+  payload format is `v1.aes-256-gcm.iv.cipherText.tag`, with Base64-encoded
+  IV, ciphertext, and tag fields.
+- `SymmetricKey.generate()` creates a random 256-bit key. `SymmetricKey.fromPassword()`
+  derives the same 256-bit key from the same password, salt, and scrypt
+  parameters. Encryption itself is still randomized because each payload uses a
+  fresh 12-byte IV.
+- A 32-byte key provides the AES-256 key size. Real security depends on using
+  either a high-entropy random key or a strong password with a unique,
+  non-empty salt. AES-GCM also requires that IVs do not repeat for the same key;
+  the library generates a random 96-bit IV for each encryption.
 - Payload encryption is intended for small payloads and is currently capped at
   1 MiB before encryption.
 - Encrypted private keys use a separate password-based scheme:
@@ -175,14 +189,25 @@ const sha512 = SHA512Hash.from('hello'); // 9b71d224bd62f3785d96d46ad3ea3d73319b
 console.log(md5.toBase64());
 
 // Crypto
-const keyPair = KeyPair.generate(); // Ed25519 key pair
+const keyPair = await KeyPair.generate(); // Ed25519 key pair
 const signature = keyPair.sign('hello world'); // Sign a message
 keyPair.isValidSignature('hello world', signature); // true
 
 // Encrypted key pairs
 const encrypted = await keyPair.encryptKeyPair('my-password');
-const sig = encrypted.sign('message', 'my-password');
+const sig = await encrypted.sign('message', 'my-password');
 encrypted.isValidSignature('message', sig); // true
+
+// Symmetric payload encryption
+const symmetricKey = SymmetricKey.generate();
+const symmetricPayload = symmetricKey.encrypt('secret data');
+const plaintext = symmetricKey.decrypt(symmetricPayload);
+console.log(plaintext.toString()); // 'secret data'
+
+// Deterministic key derivation from a password and explicit salt
+const derivedKey = await SymmetricKey.fromPassword('my-password', {
+  salt: 'stable-application-salt',
+});
 
 // Media
 const media = new Media('hello world');

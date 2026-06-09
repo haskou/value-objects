@@ -1,6 +1,7 @@
 import * as crypto from 'node:crypto';
 
 import {
+  AsymmetricEncryptedPayload,
   EncryptedPayload,
   InvalidFormatError,
   InvalidLengthError,
@@ -129,7 +130,9 @@ describe('PublicKey', () => {
       const key = new PublicKey(publicPem);
       const encrypted = key.encrypt('hello world');
 
+      expect(encrypted).toBeInstanceOf(AsymmetricEncryptedPayload);
       expect(encrypted).toBeInstanceOf(EncryptedPayload);
+      expect(encrypted.getScheme()).toBe('asymmetric');
       expect(encrypted.valueOf()).not.toBe('hello world');
     });
 
