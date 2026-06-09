@@ -832,6 +832,12 @@ Represents an immutable password-protected private key container. New encrypted 
 
 The encrypted format is: `v2.scrypt.N16384.r8.p1.salt.iv.tag.cipherText` (base64-encoded, dot-separated). Legacy format: `cipherText.iv.salt.tag`.
 
+The v2 implementation derives a `SymmetricKey` from the password, salt, and
+scrypt parameters, then reuses the same AES-256-GCM payload primitive used by
+`SymmetricKey`. `EncryptedPrivateKey` keeps its own serialized container because
+it must persist the KDF name, KDF parameters, and salt needed to decrypt the
+private key later.
+
 ```typescript
 class EncryptedPrivateKey extends ValueObject<string> {
   public static async create(

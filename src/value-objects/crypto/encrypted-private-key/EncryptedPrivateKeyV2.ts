@@ -1,8 +1,9 @@
 import { Buffer } from 'buffer';
 
 import { StringValueObject } from '../../StringValueObject';
-import { CryptoAdapter } from '../CryptoAdapter';
 import { PrivateKey } from '../PrivateKey';
+import { SymmetricEncryptedPayload } from '../SymmetricEncryptedPayload';
+import { SymmetricKey } from '../SymmetricKey';
 import { CryptoDerivation } from './CryptoDerivation';
 import { EncryptedPrivateKeyVersion } from './EncryptedPrivateKeyVersion';
 
@@ -13,16 +14,41 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
   private static readonly SCRYPT_R = 8;
   private static readonly SCRYPT_P = 1;
   private static readonly SALT_ENTROPY = 16;
-  private static readonly IV_ENTROPY = 12;
-  private static readonly KEY_LENGTH = 32;
   private static readonly CIPHER = 'aes-256-gcm';
   private static readonly EXPECTED_PARTS = 9;
+  private static readonly SYMMETRIC_PAYLOAD_VERSION = 'v1';
 
   private static hasSupportedScryptParameters(parts: string[]): boolean {
     return (
       parts[2] === `N${EncryptedPrivateKeyV2.SCRYPT_N}` &&
       parts[3] === `r${EncryptedPrivateKeyV2.SCRYPT_R}` &&
       parts[4] === `p${EncryptedPrivateKeyV2.SCRYPT_P}`
+    );
+  }
+
+  private static async deriveSymmetricKey(
+    password: string | StringValueObject,
+    salt: Buffer,
+    options: { N: number; p: number; r: number },
+  ): Promise<SymmetricKey> {
+    return SymmetricKey.fromPassword(password, { ...options, salt });
+  }
+
+  private static toSymmetricPayload(
+    parts: string[],
+  ): SymmetricEncryptedPayload {
+    const iv = parts[6];
+    const tag = parts[7];
+    const cipherText = parts[8];
+
+    return new SymmetricEncryptedPayload(
+      [
+        EncryptedPrivateKeyV2.SYMMETRIC_PAYLOAD_VERSION,
+        EncryptedPrivateKeyV2.CIPHER,
+        iv,
+        cipherText,
+        tag,
+      ].join('.'),
     );
   }
 
@@ -33,24 +59,18 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
     const salt = await CryptoDerivation.randomBytesAsync(
       EncryptedPrivateKeyV2.SALT_ENTROPY,
     );
-    const key = await CryptoDerivation.scryptAsync(
-      password.valueOf(),
-      salt,
-      EncryptedPrivateKeyV2.KEY_LENGTH,
-      {
-        N: EncryptedPrivateKeyV2.SCRYPT_N,
-        p: EncryptedPrivateKeyV2.SCRYPT_P,
-        r: EncryptedPrivateKeyV2.SCRYPT_R,
-      },
-    );
-    const iv = await CryptoDerivation.randomBytesAsync(
-      EncryptedPrivateKeyV2.IV_ENTROPY,
-    );
-    const { cipherText, tag } = CryptoAdapter.encryptAes256Gcm(
-      key,
-      iv,
-      Buffer.from(privateKey.valueOf()),
-    );
+    const key = await EncryptedPrivateKeyV2.deriveSymmetricKey(password, salt, {
+      N: EncryptedPrivateKeyV2.SCRYPT_N,
+      p: EncryptedPrivateKeyV2.SCRYPT_P,
+      r: EncryptedPrivateKeyV2.SCRYPT_R,
+    });
+    const symmetricPayload = key
+      .encrypt(privateKey.valueOf())
+      .valueOf()
+      .split('.');
+    const iv = symmetricPayload[2];
+    const cipherText = symmetricPayload[3];
+    const tag = symmetricPayload[4];
 
     return [
       EncryptedPrivateKeyV2.VERSION,
@@ -59,9 +79,9 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
       `r${EncryptedPrivateKeyV2.SCRYPT_R}`,
       `p${EncryptedPrivateKeyV2.SCRYPT_P}`,
       salt.toString('base64'),
-      iv.toString('base64'),
-      Buffer.from(tag).toString('base64'),
-      Buffer.from(cipherText).toString('base64'),
+      iv,
+      tag,
+      cipherText,
     ].join('.');
   }
 
@@ -86,18 +106,15 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
     const r = parseInt(parts[3].slice(1), 10);
     const p = parseInt(parts[4].slice(1), 10);
     const salt = Buffer.from(parts[5], 'base64');
-    const iv = Buffer.from(parts[6], 'base64');
-    const tag = Buffer.from(parts[7], 'base64');
-    const cipherText = Buffer.from(parts[8], 'base64');
+    const key = await EncryptedPrivateKeyV2.deriveSymmetricKey(password, salt, {
+      N,
+      p,
+      r,
+    });
 
-    const key = await CryptoDerivation.scryptAsync(
-      password.valueOf(),
-      salt,
-      EncryptedPrivateKeyV2.KEY_LENGTH,
-      { N, p, r },
+    const decrypted = key.decrypt(
+      EncryptedPrivateKeyV2.toSymmetricPayload(parts),
     );
-
-    const decrypted = CryptoAdapter.decryptAes256Gcm(key, iv, cipherText, tag);
 
     return new PrivateKey(decrypted.toString());
   }
