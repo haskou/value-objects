@@ -1,4 +1,10 @@
-import { EncryptedPayload, NullObject, StringValueObject } from '../../../src';
+import {
+  AsymmetricEncryptedPayload,
+  EncryptedPayload,
+  NullObject,
+  StringValueObject,
+  SymmetricEncryptedPayload,
+} from '../../../src';
 
 describe('EncryptedPayload', () => {
   describe('constructor', () => {
@@ -11,6 +17,42 @@ describe('EncryptedPayload', () => {
       const payload = new EncryptedPayload('some-data');
       expect(payload.isEqual('some-data')).toBeTrue();
       expect(payload.toString()).toBe('some-data');
+    });
+  });
+
+  describe('getScheme', () => {
+    it('should identify legacy asymmetric payloads', () => {
+      const payload = new EncryptedPayload('eph.iv.cipher.tag');
+
+      expect(payload.getScheme()).toBe('asymmetric');
+    });
+
+    it('should identify symmetric payloads', () => {
+      const payload = new EncryptedPayload('v1.aes-256-gcm.iv.cipher.tag');
+
+      expect(payload.getScheme()).toBe('symmetric');
+    });
+
+    it('should return unknown for unsupported payload formats', () => {
+      const payload = new EncryptedPayload('some-data');
+
+      expect(payload.getScheme()).toBe('unknown');
+    });
+
+    it('should return unknown for incomplete symmetric payload formats', () => {
+      const payload = new EncryptedPayload('v1.aes-256-gcm');
+
+      expect(payload.getScheme()).toBe('unknown');
+    });
+
+    it('should allow subclasses to expose their fixed scheme', () => {
+      const asymmetric = new AsymmetricEncryptedPayload('some-data');
+      const symmetric = new SymmetricEncryptedPayload('some-data');
+
+      expect(asymmetric).toBeInstanceOf(EncryptedPayload);
+      expect(symmetric).toBeInstanceOf(EncryptedPayload);
+      expect(asymmetric.getScheme()).toBe('asymmetric');
+      expect(symmetric.getScheme()).toBe('symmetric');
     });
   });
 

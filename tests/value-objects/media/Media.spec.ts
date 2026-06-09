@@ -87,6 +87,13 @@ describe('Media', () => {
       expect(media.isEqual(Buffer.from([0xfe]))).toBeFalse();
     });
 
+    it('should delegate non-media and non-buffer comparisons to ValueObject', () => {
+      const media = new Media(testContent);
+
+      expect(media.isEqual(testContent)).toBeTrue();
+      expect(media.isEqual('different')).toBeFalse();
+    });
+
     it('should keep distinct binary payloads in unique collections', () => {
       const medias = UniqueObjectArray.fromArray([
         new Media(Buffer.from([0xff])),

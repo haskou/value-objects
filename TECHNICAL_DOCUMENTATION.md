@@ -17,6 +17,7 @@ Comprehensive technical documentation for the Value Objects library.
   - [Hash Value Objects](#hash-value-objects)
   - [Cryptography Value Objects](#cryptography-value-objects)
     - [Encrypting and Decrypting Payloads](#encrypting-and-decrypting-payloads)
+    - [Symmetric Payload Encryption](#symmetric-payload-encryption)
   - [Media Value Objects](#media-value-objects)
   - [Collection Utilities](#collection-utilities)
   - [Hour Value Objects](#hour-value-objects)
@@ -644,7 +645,7 @@ try {
 
 ### Cryptography Value Objects
 
-Cryptographic key value objects use **Ed25519** elliptic curve keys in PEM format for signing and verification. Payload encryption uses a library-specific hybrid public-key encryption scheme: Ed25519 key material is converted to X25519 (Montgomery form via `@noble/curves`), an ephemeral X25519 shared secret is combined with the ephemeral public key and hashed with SHA-256 to derive a 256-bit AES key, and the payload is encrypted with AES-256-GCM. This format is not HPKE, is not post-quantum, and is not documented here as an independently audited protocol.
+Cryptographic key value objects use **Ed25519** elliptic curve keys in PEM format for signing and verification. Asymmetric payload encryption uses a library-specific hybrid public-key encryption scheme: Ed25519 key material is converted to X25519 (Montgomery form via `@noble/curves`), an ephemeral X25519 shared secret is combined with the ephemeral public key and hashed with SHA-256 to derive a 256-bit AES key, and the payload is encrypted with AES-256-GCM. Symmetric payload encryption uses a caller-held 32-byte AES-256-GCM key directly. These formats are not HPKE, are not post-quantum cryptography schemes, and are not documented here as independently audited protocols.
 
 #### Key
 
@@ -656,7 +657,7 @@ abstract class Key extends ValueObject<string> {}
 
 #### PrivateKey
 
-Represents an immutable Ed25519 private key in PEM (PKCS8) format. Used for signing messages; also accepted by payload decryption for data addressed to the matching key pair.
+Represents an immutable Ed25519 private key in PEM (PKCS8) format. Used for signing messages; also accepted by asymmetric payload decryption for data addressed to the matching key pair.
 
 ```typescript
 class PrivateKey extends Key {
@@ -684,14 +685,14 @@ console.log(decrypted.toString()); // Original plaintext
 
 #### PublicKey
 
-Represents an immutable Ed25519 public key in PEM (SPKI) format. Used for verifying signatures; also accepted by payload encryption to address data to the matching key pair.
+Represents an immutable Ed25519 public key in PEM (SPKI) format. Used for verifying signatures; also accepted by asymmetric payload encryption to address data to the matching key pair.
 
 ```typescript
 class PublicKey extends Key {
   public static fromPEM(pem: string | StringValueObject): PublicKey;
   constructor(value: string | StringValueObject);
   public isValidSignature(payload: CryptoPayload, signature: Signature): boolean;
-  public encrypt(payload: CryptoPayload): EncryptedPayload;
+  public encrypt(payload: CryptoPayload): AsymmetricEncryptedPayload;
 }
 ```
 
@@ -776,11 +777,66 @@ const restored = KeyPair.fromPrimitives(primitives);
 const encryptedKeyPair = await keyPair.encryptKeyPair('strong-password');
 ```
 
+#### SymmetricKey
+
+Represents an immutable 32-byte AES-256-GCM key encoded as Base64. Keys can be generated randomly, loaded from a 32-byte buffer, loaded from Base64, or deterministically derived from a password plus an explicit salt with scrypt (`N=16384`, `r=8`, `p=1` by default).
+
+```typescript
+type SymmetricKeyDerivationOptions = {
+  N?: number;
+  p?: number;
+  r?: number;
+  salt: string | StringValueObject | Buffer;
+};
+
+class SymmetricKey extends ValueObject<string> {
+  public static fromBase64(key: string | StringValueObject): SymmetricKey;
+  public static fromBuffer(key: Buffer): SymmetricKey;
+  public static generate(): SymmetricKey;
+  public static fromPassword(
+    password: string | StringValueObject,
+    options: SymmetricKeyDerivationOptions,
+  ): Promise<SymmetricKey>;
+  constructor(value: string | StringValueObject);
+  public getBuffer(): Buffer;
+  public encrypt(payload: CryptoPayload): SymmetricEncryptedPayload;
+  public decrypt(encryptedPayload: EncryptedPayload): Buffer;
+}
+```
+
+**Example:**
+```typescript
+// Random symmetric key
+const key = SymmetricKey.generate();
+const encrypted = key.encrypt('confidential data');
+const decrypted = key.decrypt(encrypted);
+console.log(decrypted.toString()); // 'confidential data'
+
+// Deterministic key derivation from password + explicit salt
+const derived = await SymmetricKey.fromPassword('strong-password', {
+  salt: 'application-specific-salt',
+});
+
+// The same password, salt, and scrypt parameters derive the same key
+const sameDerived = await SymmetricKey.fromPassword('strong-password', {
+  salt: 'application-specific-salt',
+});
+console.log(derived.isEqual(sameDerived)); // true
+```
+
+The derived key is deterministic, but encryption is not: `encrypt()` generates a fresh 12-byte AES-GCM IV for each payload. Callers must store or reproduce the salt used for `fromPassword()`; it is not embedded in `SymmetricEncryptedPayload`.
+
 #### EncryptedPrivateKey
 
 Represents an immutable password-protected private key container. New encrypted private keys use scrypt (N=16384, r=8, p=1), a 16-byte salt, a 32-byte derived key, and AES-256-GCM with a 12-byte IV and 16-byte authentication tag. The class also supports the legacy 4-part format, which decrypts with PBKDF2-SHA256 using 100000 iterations and AES-256-GCM.
 
 The encrypted format is: `v2.scrypt.N16384.r8.p1.salt.iv.tag.cipherText` (base64-encoded, dot-separated). Legacy format: `cipherText.iv.salt.tag`.
+
+The v2 implementation derives a `SymmetricKey` from the password, salt, and
+scrypt parameters, then reuses the same AES-256-GCM payload primitive used by
+`SymmetricKey`. `EncryptedPrivateKey` keeps its own serialized container because
+it must persist the KDF name, KDF parameters, and salt needed to decrypt the
+private key later.
 
 ```typescript
 class EncryptedPrivateKey extends ValueObject<string> {
@@ -865,17 +921,29 @@ const restored = EncryptedKeyPair.fromPrimitives(primitives);
 
 #### EncryptedPayload
 
-Represents an immutable dot-separated Base64 container returned by the library-specific payload encryption scheme. The format is `ephemeralPub.iv.cipherText.tag`.
+Represents an immutable dot-separated encrypted payload container. It is the base type accepted by decryptors and can classify the known payload shape as `asymmetric`, `symmetric`, or `unknown`.
 
 ```typescript
-class EncryptedPayload extends ValueObject<string> {}
+type EncryptedPayloadScheme = 'asymmetric' | 'symmetric' | 'unknown';
+
+class EncryptedPayload extends ValueObject<string> {
+  public getScheme(): EncryptedPayloadScheme;
+}
+
+class AsymmetricEncryptedPayload extends EncryptedPayload {
+  public getScheme(): EncryptedPayloadScheme;
+}
+
+class SymmetricEncryptedPayload extends EncryptedPayload {
+  public getScheme(): EncryptedPayloadScheme;
+}
 ```
 
-Created by `PublicKey.encrypt()`, `KeyPair.encrypt()`, or `EncryptedKeyPair.encrypt()`. Decrypted by the corresponding `decrypt()` method.
+`AsymmetricEncryptedPayload` is created by `PublicKey.encrypt()`, `KeyPair.encrypt()`, or `EncryptedKeyPair.encrypt()` and decrypted by the corresponding private-key decryptor. `SymmetricEncryptedPayload` is created by `SymmetricKey.encrypt()` and decrypted by `SymmetricKey.decrypt()`.
 
 #### Encrypting and Decrypting Payloads
 
-The library uses a classical hybrid public-key encryption approach:
+The public-key payload API uses a classical hybrid encryption approach:
 
 1. The Ed25519 public key is converted to X25519 (Montgomery form)
 2. An ephemeral X25519 key pair is generated
@@ -922,12 +990,50 @@ console.log(decrypted.toString()); // 'hello world'
 **Important:**
 - Each call to `encrypt()` generates a new ephemeral key, producing different ciphertext even for the same payload.
 - Decrypting with the wrong private key throws an AES-GCM authentication error.
-- The encrypted format is `ephemeralPub.iv.cipherText.tag` (base64, dot-separated).
-- Payload encryption is capped at 1 MiB before encryption.
-- Payload encryption does not authenticate the sender. AES-GCM authenticates
+- The asymmetric encrypted format is `ephemeralPub.iv.cipherText.tag` (base64, dot-separated).
+- Asymmetric payload encryption is capped at 1 MiB before encryption.
+- Asymmetric payload encryption does not authenticate the sender. AES-GCM authenticates
   ciphertext integrity for the derived key, but the payload does not include a
   sender key or signature.
-- This payload encryption format is library-specific, not HPKE, and is not post-quantum.
+- This public-key payload encryption format is library-specific, not HPKE, and is not post-quantum.
+
+#### Symmetric Payload Encryption
+
+`SymmetricKey` encrypts and decrypts payloads with AES-256-GCM using the key bytes held by the value object.
+
+1. A `SymmetricKey` contains exactly 32 bytes (256 bits) encoded as Base64
+2. `encrypt()` generates a fresh 12-byte random IV
+3. AES-256-GCM encrypts the payload and produces a 16-byte authentication tag
+4. The output is `v1.aes-256-gcm.iv.cipherText.tag` with Base64-encoded IV, ciphertext, and tag fields
+5. `decrypt()` validates the version, algorithm, IV length, tag length, Base64 fields, and 1 MiB ciphertext limit before decrypting
+
+**Random key:**
+```typescript
+const key = SymmetricKey.generate();
+const encrypted = key.encrypt('secret data');
+const decrypted = key.decrypt(encrypted);
+console.log(decrypted.toString()); // 'secret data'
+```
+
+**Password-derived key:**
+```typescript
+const key = await SymmetricKey.fromPassword('strong-password', {
+  salt: 'application-specific-salt',
+});
+
+const encrypted = key.encrypt(Buffer.from('secret data'));
+const decrypted = key.decrypt(encrypted);
+console.log(decrypted.toString()); // 'secret data'
+```
+
+**Important:**
+- A 32-byte key is the AES-256 key size. With a uniformly random key, brute-force key search is not practical with current classical computing.
+- Password-derived keys are only as strong as the password and salt policy. Use a unique, non-empty salt per derivation context; callers must store or reproduce that salt because it is not included in `SymmetricEncryptedPayload`.
+- The default password KDF is scrypt with `N=16384`, `r=8`, `p=1`, and a 32-byte output. Custom scrypt parameters are accepted through `SymmetricKey.fromPassword()`.
+- The same password, salt, and scrypt parameters derive the same key. The encrypted payload remains randomized because every encryption uses a fresh 96-bit IV.
+- AES-GCM requires IV uniqueness for a given key. The library generates a random IV for each encryption; avoid manually reusing serialized payload internals as new encryption inputs.
+- Symmetric payload encryption provides confidentiality and ciphertext integrity for holders of the same key. It does not identify which holder encrypted the payload. It is not a post-quantum cryptography scheme; AES-256 is considered to retain a large security margin against Grover-style quadratic speedups, but the KDF and password entropy still matter.
+- Symmetric payload encryption is capped at 1 MiB before encryption.
 
 #### CryptoPayload
 

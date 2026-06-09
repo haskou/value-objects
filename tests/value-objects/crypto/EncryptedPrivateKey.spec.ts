@@ -4,8 +4,11 @@ import {
   EncryptedPrivateKey,
   PrivateKey,
   StringValueObject,
+  SymmetricEncryptedPayload,
+  SymmetricKey,
 } from '../../../src';
 import { CryptoDerivation } from '../../../src/value-objects/crypto/encrypted-private-key/CryptoDerivation';
+import { EncryptedPrivateKeyV2 } from '../../../src/value-objects/crypto/encrypted-private-key/EncryptedPrivateKeyV2';
 import { NullObject } from '../../../src/value-objects/NullObject';
 
 describe('EncryptedPrivateKey', () => {
@@ -143,6 +146,34 @@ describe('EncryptedPrivateKey', () => {
 
       expect(scryptSpy).not.toHaveBeenCalled();
       scryptSpy.mockRestore();
+    });
+
+    it('should reject unsupported v2 parameters inside the v2 decryptor', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      parts[4] = 'p2';
+
+      await expect(
+        new EncryptedPrivateKeyV2().decrypt(parts, password),
+      ).rejects.toThrow('Unsupported encrypted private key parameters');
+    });
+
+    it('should keep v2 AES-GCM fields compatible with SymmetricKey', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      const key = await SymmetricKey.fromPassword(password, {
+        N: 16384,
+        p: 1,
+        r: 8,
+        salt: Buffer.from(parts[5], 'base64'),
+      });
+      const symmetricPayload = new SymmetricEncryptedPayload(
+        ['v1', 'aes-256-gcm', parts[6], parts[8], parts[7]].join('.'),
+      );
+
+      expect(key.decrypt(symmetricPayload).toString()).toBe(privatePem);
     });
 
     it('should decrypt to a functional PrivateKey that can sign', async () => {

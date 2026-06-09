@@ -6,9 +6,9 @@ import { assert } from '../../patterns';
 import { Media } from '../media';
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
+import { AsymmetricEncryptedPayload } from './AsymmetricEncryptedPayload';
 import { CryptoAdapter } from './CryptoAdapter';
 import { CryptoPayload } from './CryptoPayload';
-import { EncryptedPayload } from './EncryptedPayload';
 import { Key } from './Key';
 import { Signature } from './Signature';
 
@@ -58,7 +58,7 @@ export class PublicKey extends Key {
     return valid;
   }
 
-  public encrypt(payload: CryptoPayload): EncryptedPayload {
+  public encrypt(payload: CryptoPayload): AsymmetricEncryptedPayload {
     const messageBuffer =
       payload instanceof Media
         ? payload.getBuffer()
@@ -100,6 +100,6 @@ export class PublicKey extends Key {
       Buffer.from(tag).toString('base64'),
     ].join('.');
 
-    return new EncryptedPayload(result);
+    return new AsymmetricEncryptedPayload(result);
   }
 }
