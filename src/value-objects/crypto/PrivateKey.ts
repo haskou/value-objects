@@ -15,11 +15,16 @@ import { Signature } from './Signature';
 
 export class PrivateKey extends Key {
   private static readonly LENGTH = 119;
-  private static readonly ENCRYPTED_PAYLOAD_PARTS = 4;
+  private static readonly LEGACY_ENCRYPTED_PAYLOAD_PARTS = 4;
+  private static readonly OWASP_ENCRYPTED_PAYLOAD_PARTS = 6;
   private static readonly EPHEMERAL_PUBLIC_KEY_LENGTH = 32;
   private static readonly IV_LENGTH = 12;
   private static readonly TAG_LENGTH = 16;
   private static readonly MAX_CIPHERTEXT_LENGTH = 1024 * 1024;
+  private static readonly PAYLOAD_ALGORITHM = 'x25519-hkdf-sha256-aes-256-gcm';
+
+  private static readonly PAYLOAD_VERSION = 'v2';
+
   private static readonly BASE64_PATTERN =
     /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 
@@ -92,28 +97,14 @@ export class PrivateKey extends Key {
     assert(PrivateKey.PATTERN.test(value), new InvalidFormatError(value));
   }
 
-  public getPublicKey(): PublicKey {
-    return PublicKey.fromPEM(CryptoAdapter.getPublicKey(this.valueOf()));
-  }
-
-  public sign(payload: CryptoPayload): Signature {
-    const messageBuffer =
-      payload instanceof Media
-        ? payload.getBuffer()
-        : Buffer.from(payload.valueOf());
-    const signatureBuffer = CryptoAdapter.sign(messageBuffer, this.valueOf());
-
-    return Signature.fromBuffer(signatureBuffer);
-  }
-
-  public decrypt(encryptedPayload: EncryptedPayload): Buffer {
-    const parts = encryptedPayload.valueOf().split('.');
-    assert(
-      parts.length === PrivateKey.ENCRYPTED_PAYLOAD_PARTS,
-      new InvalidFormatError(encryptedPayload.valueOf()),
-    );
-
-    const [ephPubB64, ivB64, cipherTextB64, tagB64] = parts;
+  private decryptPayload(
+    encryptedPayload: EncryptedPayload,
+    ephPubB64: string,
+    ivB64: string,
+    cipherTextB64: string,
+    tagB64: string,
+    useHkdf: boolean,
+  ): Buffer {
     PrivateKey.ensureIsBase64(cipherTextB64, encryptedPayload, {
       allowEmpty: true,
     });
@@ -153,11 +144,66 @@ export class PrivateKey extends Key {
       ephemeralPub,
     );
 
-    const aesKey = CryptoAdapter.deriveEncryptionKey(
-      sharedSecret,
-      ephemeralPub,
-    );
+    const aesKey = useHkdf
+      ? CryptoAdapter.deriveEncryptionKeyWithHkdf(
+          sharedSecret,
+          ephemeralPub,
+          CryptoAdapter.x25519PublicKey(x25519Priv),
+        )
+      : CryptoAdapter.deriveEncryptionKey(sharedSecret, ephemeralPub);
 
     return CryptoAdapter.decryptAes256Gcm(aesKey, iv, cipherText, tag);
+  }
+
+  public getPublicKey(): PublicKey {
+    return PublicKey.fromPEM(CryptoAdapter.getPublicKey(this.valueOf()));
+  }
+
+  public sign(payload: CryptoPayload): Signature {
+    const messageBuffer =
+      payload instanceof Media
+        ? payload.getBuffer()
+        : Buffer.from(payload.valueOf());
+    const signatureBuffer = CryptoAdapter.sign(messageBuffer, this.valueOf());
+
+    return Signature.fromBuffer(signatureBuffer);
+  }
+
+  public decrypt(encryptedPayload: EncryptedPayload): Buffer {
+    const parts = encryptedPayload.valueOf().split('.');
+
+    if (parts.length === PrivateKey.LEGACY_ENCRYPTED_PAYLOAD_PARTS) {
+      const [ephPubB64, ivB64, cipherTextB64, tagB64] = parts;
+
+      return this.decryptPayload(
+        encryptedPayload,
+        ephPubB64,
+        ivB64,
+        cipherTextB64,
+        tagB64,
+        false,
+      );
+    }
+
+    assert(
+      parts.length === PrivateKey.OWASP_ENCRYPTED_PAYLOAD_PARTS,
+      new InvalidFormatError(encryptedPayload.valueOf()),
+    );
+
+    const [version, algorithm, ephPubB64, ivB64, cipherTextB64, tagB64] = parts;
+    assert(
+      version === PrivateKey.PAYLOAD_VERSION &&
+        algorithm === PrivateKey.PAYLOAD_ALGORITHM,
+      new InvalidFormatError(encryptedPayload.valueOf()),
+    );
+
+    return this.decryptPayload(
+      encryptedPayload,
+      ephPubB64,
+      ivB64,
+      cipherTextB64,
+      tagB64,
+      true,
+    );
   }
 }

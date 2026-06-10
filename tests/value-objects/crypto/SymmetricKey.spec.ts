@@ -8,6 +8,7 @@ import {
   SymmetricEncryptedPayload,
   SymmetricKey,
 } from '../../../src';
+import { CryptoDerivation } from '../../../src/value-objects/crypto/encrypted-private-key/CryptoDerivation';
 
 describe('SymmetricKey', () => {
   const keyBytes = Buffer.alloc(32, 7);
@@ -114,6 +115,48 @@ describe('SymmetricKey', () => {
       );
 
       expect(key.getBuffer()).toHaveLength(32);
+    });
+
+    it('should keep legacy scrypt defaults for fromPassword', async () => {
+      const derivedKey = Buffer.alloc(32, 9);
+      const scryptSpy = jest
+        .spyOn(CryptoDerivation, 'scryptAsync')
+        .mockResolvedValue(derivedKey);
+
+      const key = await SymmetricKey.fromPassword('password', {
+        salt: 'stable-salt',
+      });
+
+      expect(scryptSpy).toHaveBeenCalledWith(
+        'password',
+        Buffer.from('stable-salt'),
+        32,
+        { N: 16384, p: 1, r: 8 },
+      );
+      expect(key.getBuffer()).toEqual(derivedKey);
+
+      scryptSpy.mockRestore();
+    });
+
+    it('should derive with OWASP scrypt parameters when requested', async () => {
+      const derivedKey = Buffer.alloc(32, 10);
+      const scryptSpy = jest
+        .spyOn(CryptoDerivation, 'scryptAsync')
+        .mockResolvedValue(derivedKey);
+
+      const key = await SymmetricKey.fromPasswordUsingOwasp('password', {
+        salt: 'stable-salt',
+      });
+
+      expect(scryptSpy).toHaveBeenCalledWith(
+        'password',
+        Buffer.from('stable-salt'),
+        32,
+        { N: 16384, p: 5, r: 8 },
+      );
+      expect(key.getBuffer()).toEqual(derivedKey);
+
+      scryptSpy.mockRestore();
     });
 
     it('should reject empty derivation salts', async () => {

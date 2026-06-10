@@ -27,6 +27,14 @@ describe('EncryptedPayload', () => {
       expect(payload.getScheme()).toBe('asymmetric');
     });
 
+    it('should identify versioned asymmetric payloads', () => {
+      const payload = new EncryptedPayload(
+        'v2.x25519-hkdf-sha256-aes-256-gcm.eph.iv.cipher.tag',
+      );
+
+      expect(payload.getScheme()).toBe('asymmetric');
+    });
+
     it('should identify symmetric payloads', () => {
       const payload = new EncryptedPayload('v1.aes-256-gcm.iv.cipher.tag');
 

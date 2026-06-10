@@ -9,6 +9,7 @@ import {
 } from '../../../src';
 import { CryptoDerivation } from '../../../src/value-objects/crypto/encrypted-private-key/CryptoDerivation';
 import { EncryptedPrivateKeyV2 } from '../../../src/value-objects/crypto/encrypted-private-key/EncryptedPrivateKeyV2';
+import { EncryptedPrivateKeyV3 } from '../../../src/value-objects/crypto/encrypted-private-key/EncryptedPrivateKeyV3';
 import { NullObject } from '../../../src/value-objects/NullObject';
 
 describe('EncryptedPrivateKey', () => {
@@ -70,6 +71,7 @@ describe('EncryptedPrivateKey', () => {
 
       const parts = encrypted.valueOf().split('.');
       expect(parts).toHaveLength(9);
+      expect(parts.slice(0, 5)).toEqual(['v3', 'scrypt', 'N16384', 'r8', 'p5']);
     });
 
     it('should produce different ciphertexts each time due to random salt/iv', async () => {
@@ -150,8 +152,8 @@ describe('EncryptedPrivateKey', () => {
 
     it('should reject unsupported v2 parameters inside the v2 decryptor', async () => {
       const privateKey = new PrivateKey(privatePem);
-      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
-      const parts = encrypted.valueOf().split('.');
+      const encrypted = await EncryptedPrivateKeyV2.encrypt(privateKey, password);
+      const parts = encrypted.split('.');
       parts[4] = 'p2';
 
       await expect(
@@ -161,8 +163,8 @@ describe('EncryptedPrivateKey', () => {
 
     it('should keep v2 AES-GCM fields compatible with SymmetricKey', async () => {
       const privateKey = new PrivateKey(privatePem);
-      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
-      const parts = encrypted.valueOf().split('.');
+      const encrypted = await EncryptedPrivateKeyV2.encrypt(privateKey, password);
+      const parts = encrypted.split('.');
       const key = await SymmetricKey.fromPassword(password, {
         N: 16384,
         p: 1,
@@ -174,6 +176,44 @@ describe('EncryptedPrivateKey', () => {
       );
 
       expect(key.decrypt(symmetricPayload).toString()).toBe(privatePem);
+    });
+
+    it('should decrypt v2 encrypted private keys for backward compatibility', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKeyV2.encrypt(privateKey, password);
+      const decrypted = await new EncryptedPrivateKey(encrypted).decrypt(
+        password,
+      );
+
+      expect(decrypted.valueOf()).toBe(privatePem);
+    });
+
+    it('should keep v3 AES-GCM fields compatible with SymmetricKey', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      const key = await SymmetricKey.fromPassword(password, {
+        N: 16384,
+        p: 5,
+        r: 8,
+        salt: Buffer.from(parts[5], 'base64'),
+      });
+      const symmetricPayload = new SymmetricEncryptedPayload(
+        ['v1', 'aes-256-gcm', parts[6], parts[8], parts[7]].join('.'),
+      );
+
+      expect(key.decrypt(symmetricPayload).toString()).toBe(privatePem);
+    });
+
+    it('should reject unsupported v3 parameters inside the v3 decryptor', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      parts[4] = 'p1';
+
+      await expect(
+        new EncryptedPrivateKeyV3().decrypt(parts, password),
+      ).rejects.toThrow('Unsupported encrypted private key parameters');
     });
 
     it('should decrypt to a functional PrivateKey that can sign', async () => {
@@ -214,6 +254,9 @@ describe('EncryptedPrivateKey', () => {
       // Test with legacy format
       const legacyEncrypted = new EncryptedPrivateKey('ciphertext.iv.salt.tag');
       expect(legacyEncrypted.needsReEncryption()).toBeTrue();
+
+      const v2 = await EncryptedPrivateKeyV2.encrypt(privateKey, password);
+      expect(new EncryptedPrivateKey(v2).needsReEncryption()).toBeTrue();
     });
 
     it('should return false for an invalid format when checking re-encryption', () => {

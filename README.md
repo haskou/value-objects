@@ -103,28 +103,30 @@ Technical notes:
 - Asymmetric payload encryption is a classical hybrid scheme. It generates an ephemeral
   X25519 key pair, converts the recipient Ed25519 key material to Montgomery
   form for X25519 key agreement, derives a shared secret, then derives a
-  256-bit AES key with SHA-256 and encrypts the payload with AES-256-GCM.
-- The asymmetric payload format is
-  `ephemeralPublicKey.iv.cipherText.tag`, with Base64-encoded fields,
-  32-byte ephemeral public keys, 12-byte random IVs, and 16-byte
-  authentication tags. Tampered ciphertext, IVs, tags, or key-agreement data
-  fail authentication during decryption.
+  256-bit AES key with HKDF-SHA256 and encrypts the payload with AES-256-GCM.
+- The current asymmetric payload format is
+  `v2.x25519-hkdf-sha256-aes-256-gcm.ephemeralPublicKey.iv.cipherText.tag`,
+  with Base64-encoded key, IV, ciphertext, and tag fields. The previous
+  `ephemeralPublicKey.iv.cipherText.tag` format still decrypts for backward
+  compatibility.
 - Symmetric payload encryption uses a 32-byte AES-256-GCM key directly. The
   payload format is `v1.aes-256-gcm.iv.cipherText.tag`, with Base64-encoded
   IV, ciphertext, and tag fields.
-- `SymmetricKey.generate()` creates a random 256-bit key. `SymmetricKey.fromPassword()`
-  derives the same 256-bit key from the same password, salt, and scrypt
-  parameters. Encryption itself is still randomized because each payload uses a
-  fresh 12-byte IV.
+- `SymmetricKey.generate()` creates a random 256-bit key.
+  `SymmetricKey.fromPasswordUsingOwasp()` derives a 256-bit key with the OWASP
+  scrypt profile used by this package for new password-derived keys.
+  `SymmetricKey.fromPassword()` keeps its original defaults for backward
+  compatibility with existing encrypted data.
 - A 32-byte key provides the AES-256 key size. Real security depends on using
   either a high-entropy random key or a strong password with a unique,
   non-empty salt. AES-GCM also requires that IVs do not repeat for the same key;
   the library generates a random 96-bit IV for each encryption.
 - Payload encryption is intended for small payloads and is currently capped at
   1 MiB before encryption.
-- Encrypted private keys use a separate password-based scheme:
-  `scrypt(N=16384,r=8,p=1)` with a 16-byte salt, then AES-256-GCM with a
-  12-byte IV and 16-byte authentication tag.
+- New encrypted private keys use `v3.scrypt.N16384.r8.p5` with a 16-byte salt,
+  then AES-256-GCM with a 12-byte IV and 16-byte authentication tag. The older
+  v2 scrypt profile and legacy PBKDF2 format still decrypt, and
+  `needsReEncryption()` marks them for upgrade.
 - This is not a post-quantum cryptography scheme. Ed25519 and X25519 are
   classical elliptic-curve primitives, so neither signatures nor payload key
   agreement are post-quantum secure.
@@ -205,7 +207,7 @@ const plaintext = symmetricKey.decrypt(symmetricPayload);
 console.log(plaintext.toString()); // 'secret data'
 
 // Deterministic key derivation from a password and explicit salt
-const derivedKey = await SymmetricKey.fromPassword('my-password', {
+const derivedKey = await SymmetricKey.fromPasswordUsingOwasp('my-password', {
   salt: 'stable-application-salt',
 });
 

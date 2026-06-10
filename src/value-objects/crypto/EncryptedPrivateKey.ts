@@ -2,19 +2,21 @@ import { StringValueObject } from '../StringValueObject';
 import { ValueObject } from '../ValueObject';
 import { EncryptedPrivateKeyLegacy } from './encrypted-private-key/EncryptedPrivateKeyLegacy';
 import { EncryptedPrivateKeyV2 } from './encrypted-private-key/EncryptedPrivateKeyV2';
+import { EncryptedPrivateKeyV3 } from './encrypted-private-key/EncryptedPrivateKeyV3';
 import { PrivateKey } from './PrivateKey';
 
 export class EncryptedPrivateKey extends ValueObject<string> {
   private static readonly versions = [
     new EncryptedPrivateKeyLegacy(),
     new EncryptedPrivateKeyV2(),
+    new EncryptedPrivateKeyV3(),
   ];
 
   public static async create(
     privateKey: PrivateKey,
     password: string | StringValueObject,
   ): Promise<EncryptedPrivateKey> {
-    const encryptedPrivateKey = await EncryptedPrivateKeyV2.encrypt(
+    const encryptedPrivateKey = await EncryptedPrivateKeyV3.encrypt(
       privateKey,
       password,
     );

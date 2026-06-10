@@ -29,6 +29,9 @@ export class SymmetricKey extends ValueObject<string> {
   private static readonly SCRYPT_N = 16384;
   private static readonly SCRYPT_P = 1;
   private static readonly SCRYPT_R = 8;
+  private static readonly OWASP_SCRYPT_N = 16384;
+  private static readonly OWASP_SCRYPT_P = 5;
+  private static readonly OWASP_SCRYPT_R = 8;
   private static readonly TAG_LENGTH = 16;
   private static readonly VERSION = 'v1';
   private static readonly BASE64_PATTERN =
@@ -119,6 +122,18 @@ export class SymmetricKey extends ValueObject<string> {
     );
 
     return SymmetricKey.fromBuffer(Buffer.from(key));
+  }
+
+  public static async fromPasswordUsingOwasp(
+    password: string | StringValueObject,
+    options: Pick<SymmetricKeyDerivationOptions, 'salt'>,
+  ): Promise<SymmetricKey> {
+    return SymmetricKey.fromPassword(password, {
+      N: SymmetricKey.OWASP_SCRYPT_N,
+      p: SymmetricKey.OWASP_SCRYPT_P,
+      r: SymmetricKey.OWASP_SCRYPT_R,
+      salt: options.salt,
+    });
   }
 
   constructor(value: string | StringValueObject) {

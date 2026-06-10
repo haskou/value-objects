@@ -15,6 +15,10 @@ import { Signature } from './Signature';
 export class PublicKey extends Key {
   private static readonly LENGTH = 113;
   private static readonly MAX_PAYLOAD_LENGTH = 1024 * 1024;
+  private static readonly PAYLOAD_ALGORITHM = 'x25519-hkdf-sha256-aes-256-gcm';
+
+  private static readonly PAYLOAD_VERSION = 'v2';
+
   private static readonly PATTERN =
     /^-----BEGIN PUBLIC KEY-----\n[A-Za-z0-9+/=]+\n-----END PUBLIC KEY-----\n$/;
 
@@ -81,9 +85,10 @@ export class PublicKey extends Key {
       x25519Pub,
     );
 
-    const aesKey = CryptoAdapter.deriveEncryptionKey(
+    const aesKey = CryptoAdapter.deriveEncryptionKeyWithHkdf(
       sharedSecret,
       ephemeralPub,
+      x25519Pub,
     );
 
     const iv = CryptoAdapter.randomBytes(12);
@@ -94,6 +99,8 @@ export class PublicKey extends Key {
     );
 
     const result = [
+      PublicKey.PAYLOAD_VERSION,
+      PublicKey.PAYLOAD_ALGORITHM,
       Buffer.from(ephemeralPub).toString('base64'),
       iv.toString('base64'),
       Buffer.from(cipherText).toString('base64'),

@@ -11,6 +11,7 @@ import {
   Signature,
   StringValueObject,
 } from '../../../src';
+import { CryptoAdapter } from '../../../src/value-objects/crypto/CryptoAdapter';
 import { NullObject } from '../../../src/value-objects/NullObject';
 
 describe('PrivateKey', () => {
@@ -180,6 +181,38 @@ describe('PrivateKey', () => {
       expect(decrypted).toHaveLength(0);
     });
 
+    it('should decrypt legacy asymmetric payloads', () => {
+      const privKey = new PrivateKey(privatePem);
+      const message = Buffer.from('legacy secret');
+      const recipientPub = CryptoAdapter.publicKeyToX25519(publicPem);
+      const ephemeralPriv = CryptoAdapter.x25519RandomPrivateKey();
+      const ephemeralPub = CryptoAdapter.x25519PublicKey(ephemeralPriv);
+      const sharedSecret = CryptoAdapter.x25519SharedSecret(
+        ephemeralPriv,
+        recipientPub,
+      );
+      const aesKey = CryptoAdapter.deriveEncryptionKey(
+        sharedSecret,
+        ephemeralPub,
+      );
+      const iv = CryptoAdapter.randomBytes(12);
+      const { cipherText, tag } = CryptoAdapter.encryptAes256Gcm(
+        aesKey,
+        iv,
+        message,
+      );
+      const legacyPayload = new EncryptedPayload(
+        [
+          Buffer.from(ephemeralPub).toString('base64'),
+          iv.toString('base64'),
+          Buffer.from(cipherText).toString('base64'),
+          Buffer.from(tag).toString('base64'),
+        ].join('.'),
+      );
+
+      expect(privKey.decrypt(legacyPayload).toString()).toBe('legacy secret');
+    });
+
     it('should fail to decrypt with the wrong private key', () => {
       const pubKey = new PublicKey(publicPem);
       const encrypted = pubKey.encrypt('secret');
@@ -219,6 +252,22 @@ describe('PrivateKey', () => {
     it('should throw InvalidFormatError for malformed encrypted payload format', () => {
       const privKey = new PrivateKey(privatePem);
       const malformed = new EncryptedPayload('only-one-field');
+
+      expect(() => privKey.decrypt(malformed)).toThrow(InvalidFormatError);
+    });
+
+    it('should throw InvalidFormatError for unsupported versioned payload algorithm', () => {
+      const privKey = new PrivateKey(privatePem);
+      const malformed = new EncryptedPayload(
+        [
+          'v2',
+          'x25519-sha256-aes-256-gcm',
+          Buffer.alloc(32).toString('base64'),
+          Buffer.alloc(12).toString('base64'),
+          '',
+          Buffer.alloc(16).toString('base64'),
+        ].join('.'),
+      );
 
       expect(() => privKey.decrypt(malformed)).toThrow(InvalidFormatError);
     });
