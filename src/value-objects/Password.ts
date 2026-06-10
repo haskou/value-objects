@@ -1,5 +1,6 @@
 import { InvalidPasswordError } from '../errors/InvalidPasswordError';
 import { assert } from '../patterns';
+import { NullObject } from './NullObject';
 import { StringValueObject } from './StringValueObject';
 
 export class Password extends StringValueObject {
@@ -8,6 +9,10 @@ export class Password extends StringValueObject {
 
   constructor(value: string | StringValueObject) {
     super(value);
+
+    if (NullObject.isNullObject(this)) {
+      return this;
+    }
 
     assert(
       this.isValidPassword(),

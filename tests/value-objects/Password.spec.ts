@@ -1,7 +1,17 @@
-import { Password, InvalidPasswordError } from '../../src';
+import { Password, InvalidPasswordError, NullObject } from '../../src';
 
 describe('Password', () => {
   describe('constructor', () => {
+    it('should return a NullValueObject when receiving nullish', () => {
+      expect(() => new Password(undefined as unknown as string)).not.toThrow();
+      expect(
+        NullObject.isNullObject(new Password(undefined as unknown as string)),
+      ).toBeTrue();
+      expect(
+        NullObject.isNullObject(new Password(null as unknown as string)),
+      ).toBeTrue();
+    });
+
     it('should create a valid password with the required complexity', () => {
       const validPassword = 'Valid-password1!';
 
