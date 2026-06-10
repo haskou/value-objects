@@ -32,7 +32,7 @@ export class SymmetricKey extends ValueObject<string> {
   private static readonly ALGORITHM = 'aes-256-gcm';
   private static readonly IV_LENGTH = 12;
   private static readonly KEY_LENGTH = 32;
-  private static readonly MAX_PAYLOAD_LENGTH = 1024 * 1024;
+  private static readonly MAX_PAYLOAD_LENGTH = 8 * 1024 * 1024;
   private static readonly PAYLOAD_PARTS = 5;
   private static readonly SCRYPT_N = 16384;
   private static readonly SCRYPT_P = 1;
@@ -230,14 +230,14 @@ export class SymmetricKey extends ValueObject<string> {
       encryptedPayload,
       SymmetricKey.IV_LENGTH,
     );
-    SymmetricKey.ensureIsBase64(cipherTextB64, encryptedPayload, {
-      allowEmpty: true,
-    });
     const cipherTextLength = StrictBase64.getDecodedLength(cipherTextB64);
     assert(
       cipherTextLength <= SymmetricKey.MAX_PAYLOAD_LENGTH,
       new InvalidLengthError(cipherTextLength, SymmetricKey.MAX_PAYLOAD_LENGTH),
     );
+    SymmetricKey.ensureIsBase64(cipherTextB64, encryptedPayload, {
+      allowEmpty: true,
+    });
     SymmetricKey.ensureBase64DecodedLength(
       tagB64,
       encryptedPayload,

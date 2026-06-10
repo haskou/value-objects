@@ -103,9 +103,6 @@ export class PrivateKey extends Key {
     tagB64: string,
     options: { useHkdf: boolean; aad?: Buffer },
   ): Buffer {
-    PrivateKey.ensureIsBase64(cipherTextB64, encryptedPayload, {
-      allowEmpty: true,
-    });
     const cipherTextLength = StrictBase64.getDecodedLength(cipherTextB64);
     assert(
       cipherTextLength <= PrivateKey.MAX_CIPHERTEXT_LENGTH,
@@ -114,6 +111,9 @@ export class PrivateKey extends Key {
         PrivateKey.MAX_CIPHERTEXT_LENGTH,
       ),
     );
+    PrivateKey.ensureIsBase64(cipherTextB64, encryptedPayload, {
+      allowEmpty: true,
+    });
 
     PrivateKey.ensureBase64DecodedLength(
       ephPubB64,

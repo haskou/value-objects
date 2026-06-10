@@ -35,8 +35,8 @@ export class StrictBase64 {
     length: number,
     options: StrictBase64Options = {},
   ): void {
-    StrictBase64.ensure(value, error, options);
     assert(StrictBase64.getDecodedLength(value) === length, error);
+    StrictBase64.ensure(value, error, options);
   }
 
   public static decode(

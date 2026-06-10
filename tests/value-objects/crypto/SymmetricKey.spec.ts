@@ -226,10 +226,18 @@ describe('SymmetricKey', () => {
       expect(key.decrypt(encrypted)).toHaveLength(0);
     });
 
+    it('should encrypt and decrypt payloads larger than the asymmetric limit', () => {
+      const key = new SymmetricKey(keyBase64);
+      const payload = Buffer.alloc(1024 * 1024 + 1, 7);
+      const encrypted = key.encrypt(payload);
+
+      expect(key.decrypt(encrypted)).toEqual(payload);
+    });
+
     it('should throw InvalidLengthError for oversized payloads', () => {
       const key = new SymmetricKey(keyBase64);
 
-      expect(() => key.encrypt(Buffer.alloc(1024 * 1024 + 1))).toThrow(
+      expect(() => key.encrypt(Buffer.alloc(8 * 1024 * 1024 + 1))).toThrow(
         InvalidLengthError,
       );
     });
@@ -387,7 +395,7 @@ describe('SymmetricKey', () => {
     it('should throw InvalidLengthError for oversized ciphertext', () => {
       const key = new SymmetricKey(keyBase64);
       const oversizedCipher = 'A'.repeat(
-        Math.ceil((1024 * 1024 + 1) / 3) * 4,
+        Math.ceil((8 * 1024 * 1024 + 1) / 3) * 4,
       );
       const payload = [
         'v1',
