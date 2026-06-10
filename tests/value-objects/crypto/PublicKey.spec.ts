@@ -153,8 +153,12 @@ describe('PublicKey', () => {
       const key = new PublicKey(publicPem);
       const encrypted1 = key.encrypt('same payload');
       const encrypted2 = key.encrypt('same payload');
+      const firstParts = encrypted1.valueOf().split('.');
+      const secondParts = encrypted2.valueOf().split('.');
 
       expect(encrypted1.isEqual(encrypted2)).toBeFalse();
+      expect(firstParts[2]).not.toBe(secondParts[2]);
+      expect(firstParts[3]).not.toBe(secondParts[3]);
     });
 
     it('should accept a StringValueObject as payload', () => {

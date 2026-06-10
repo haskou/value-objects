@@ -22,6 +22,12 @@ export class PublicKey extends Key {
   private static readonly PATTERN =
     /^-----BEGIN PUBLIC KEY-----\n[A-Za-z0-9+/=]+\n-----END PUBLIC KEY-----\n$/;
 
+  private static getPayloadAad(): Buffer {
+    return Buffer.from(
+      [PublicKey.PAYLOAD_VERSION, PublicKey.PAYLOAD_ALGORITHM].join('.'),
+    );
+  }
+
   public static fromPEM(pem: string | StringValueObject): PublicKey {
     return new PublicKey(pem.valueOf());
   }
@@ -96,6 +102,7 @@ export class PublicKey extends Key {
       aesKey,
       iv,
       messageBuffer,
+      PublicKey.getPayloadAad(),
     );
 
     const result = [

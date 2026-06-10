@@ -2,11 +2,13 @@ import * as crypto from 'node:crypto';
 
 import {
   EncryptedPrivateKey,
+  Password,
   PrivateKey,
   StringValueObject,
   SymmetricEncryptedPayload,
   SymmetricKey,
 } from '../../../src';
+import { CryptoAdapter } from '../../../src/value-objects/crypto/CryptoAdapter';
 import { CryptoDerivation } from '../../../src/value-objects/crypto/encrypted-private-key/CryptoDerivation';
 import { EncryptedPrivateKeyV2 } from '../../../src/value-objects/crypto/encrypted-private-key/EncryptedPrivateKeyV2';
 import { EncryptedPrivateKeyV3 } from '../../../src/value-objects/crypto/encrypted-private-key/EncryptedPrivateKeyV3';
@@ -15,7 +17,7 @@ import { NullObject } from '../../../src/value-objects/NullObject';
 describe('EncryptedPrivateKey', () => {
   let privatePem: string;
   let publicPem: string;
-  const password = 'secure-password-123';
+  const password = new Password('Secure-password-123!');
 
   beforeAll(() => {
     const pair = crypto.generateKeyPairSync('ed25519', {
@@ -188,6 +190,39 @@ describe('EncryptedPrivateKey', () => {
       expect(decrypted.valueOf()).toBe(privatePem);
     });
 
+    it('should decrypt v2 encrypted private keys created without AAD', async () => {
+      const salt = Buffer.alloc(16, 3);
+      const iv = Buffer.alloc(12, 4);
+      const key = await SymmetricKey.fromPassword(password, {
+        N: 16384,
+        p: 1,
+        r: 8,
+        salt,
+      });
+      const { cipherText, tag } = CryptoAdapter.encryptAes256Gcm(
+        key.getBuffer(),
+        iv,
+        Buffer.from(privatePem),
+      );
+      const encrypted = [
+        'v2',
+        'scrypt',
+        'N16384',
+        'r8',
+        'p1',
+        salt.toString('base64'),
+        iv.toString('base64'),
+        Buffer.from(tag).toString('base64'),
+        Buffer.from(cipherText).toString('base64'),
+      ].join('.');
+
+      const decrypted = await new EncryptedPrivateKey(encrypted).decrypt(
+        password,
+      );
+
+      expect(decrypted.valueOf()).toBe(privatePem);
+    });
+
     it('should keep v3 AES-GCM fields compatible with SymmetricKey', async () => {
       const privateKey = new PrivateKey(privatePem);
       const encrypted = await EncryptedPrivateKey.create(privateKey, password);
@@ -202,7 +237,11 @@ describe('EncryptedPrivateKey', () => {
         ['v1', 'aes-256-gcm', parts[6], parts[8], parts[7]].join('.'),
       );
 
-      expect(key.decrypt(symmetricPayload).toString()).toBe(privatePem);
+      expect(
+        key
+          .decrypt(symmetricPayload, { aad: parts.slice(0, 5).join('.') })
+          .toString(),
+      ).toBe(privatePem);
     });
 
     it('should reject unsupported v3 parameters inside the v3 decryptor', async () => {
@@ -214,6 +253,17 @@ describe('EncryptedPrivateKey', () => {
       await expect(
         new EncryptedPrivateKeyV3().decrypt(parts, password),
       ).rejects.toThrow('Unsupported encrypted private key parameters');
+    });
+
+    it('should authenticate v3 header fields with AAD', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      parts[1] = 'tampered-kdf';
+
+      await expect(
+        new EncryptedPrivateKeyV3().decrypt(parts, password),
+      ).toReject();
     });
 
     it('should decrypt to a functional PrivateKey that can sign', async () => {
@@ -271,7 +321,7 @@ describe('EncryptedPrivateKey', () => {
       const iv = crypto.randomBytes(12);
       const key = await new Promise<Buffer>((resolve, reject) => {
         crypto.pbkdf2(
-          password,
+          password.valueOf(),
           salt,
           100000,
           32,

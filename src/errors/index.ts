@@ -13,6 +13,7 @@ export * from './InvalidLongitudeError';
 export * from './InvalidEmailError';
 export * from './InvalidMinutesError';
 export * from './InvalidNumberError';
+export * from './InvalidPasswordError';
 export * from './InvalidPositiveNumberError';
 export * from './InvalidStringLengthError';
 export * from './InvalidTimestampIntervalError';

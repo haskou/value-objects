@@ -1,9 +1,8 @@
 import { Buffer } from 'buffer';
 
-import { StringValueObject } from '../../StringValueObject';
 import { PrivateKey } from '../PrivateKey';
 import { SymmetricEncryptedPayload } from '../SymmetricEncryptedPayload';
-import { SymmetricKey } from '../SymmetricKey';
+import { CryptoPassword, SymmetricKey } from '../SymmetricKey';
 import { CryptoDerivation } from './CryptoDerivation';
 import { EncryptedPrivateKeyVersion } from './EncryptedPrivateKeyVersion';
 
@@ -27,7 +26,7 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
   }
 
   private static async deriveSymmetricKey(
-    password: string | StringValueObject,
+    password: CryptoPassword,
     salt: Buffer,
     options: { N: number; p: number; r: number },
   ): Promise<SymmetricKey> {
@@ -54,7 +53,7 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
 
   public static async encrypt(
     privateKey: PrivateKey,
-    password: string | StringValueObject,
+    password: CryptoPassword,
   ): Promise<string> {
     const salt = await CryptoDerivation.randomBytesAsync(
       EncryptedPrivateKeyV2.SALT_ENTROPY,
@@ -96,7 +95,7 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
 
   public async decrypt(
     parts: string[],
-    password: string | StringValueObject,
+    password: CryptoPassword,
   ): Promise<PrivateKey> {
     if (!EncryptedPrivateKeyV2.hasSupportedScryptParameters(parts)) {
       throw new Error('Unsupported encrypted private key parameters');

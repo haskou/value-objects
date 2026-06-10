@@ -7,6 +7,7 @@ Comprehensive technical documentation for the Value Objects library.
 - [API Documentation](#api-documentation)
   - [Base Classes](#base-classes)
   - [String Value Objects](#string-value-objects)
+  - [Password Value Objects](#password-value-objects)
   - [Number Value Objects](#number-value-objects)
   - [Integer Value Objects](#integer-value-objects)
   - [PositiveNumber Value Objects](#positivenumber-value-objects)
@@ -82,6 +83,29 @@ try {
   new StringValueObject('a'.repeat(600)); // Throws InvalidStringLengthError
 } catch (error) {
   console.error('String too long');
+}
+```
+
+### Password Value Objects
+
+#### Password
+
+Represents immutable password strings with basic length and complexity validation. A `Password` must be between 12 and 256 characters long and include at least one uppercase letter, one lowercase letter, one number, and one symbol. This value object validates password shape only; it does not hash, store, or encrypt passwords by itself.
+
+```typescript
+class Password extends StringValueObject {
+  constructor(value: string | StringValueObject);
+}
+```
+
+**Example:**
+```typescript
+const password = new Password('Secure-password-123!');
+
+try {
+  new Password('weak-password'); // Throws InvalidPasswordError
+} catch (error) {
+  console.error('Invalid password');
 }
 ```
 
@@ -645,7 +669,7 @@ try {
 
 ### Cryptography Value Objects
 
-Cryptographic key value objects use **Ed25519** elliptic curve keys in PEM format for signing and verification. Asymmetric payload encryption uses a library-specific hybrid public-key encryption scheme: Ed25519 key material is converted to X25519 (Montgomery form via `@noble/curves`), an ephemeral X25519 shared secret is expanded with HKDF-SHA256 to derive a 256-bit AES key, and the payload is encrypted with AES-256-GCM. Symmetric payload encryption uses a caller-held 32-byte AES-256-GCM key directly. These formats are not HPKE, are not post-quantum cryptography schemes, and are not documented here as independently audited protocols.
+Cryptographic key value objects use **Ed25519** elliptic curve keys in PEM format for signing and verification. Asymmetric payload encryption uses a library-specific hybrid public-key encryption scheme: Ed25519 key material is converted to X25519 (Montgomery form via `@noble/curves`), an ephemeral X25519 shared secret is expanded with HKDF-SHA256 to derive a 256-bit AES key, and the payload is encrypted with AES-256-GCM. The current asymmetric format authenticates its version and algorithm header as AES-GCM AAD, and uses HKDF salt/info values for domain separation. Symmetric payload encryption uses a caller-held 32-byte AES-256-GCM key directly. These formats are not HPKE, are not post-quantum cryptography schemes, and are not documented here as independently audited protocols.
 
 #### Key
 
@@ -750,7 +774,7 @@ class KeyPair {
   public isValidSignature(payload: CryptoPayload, signature: Signature): boolean;
   public encrypt(payload: CryptoPayload): EncryptedPayload;
   public decrypt(encryptedPayload: EncryptedPayload): Buffer;
-  public encryptKeyPair(password: string | StringValueObject): Promise<EncryptedKeyPair>;
+  public encryptKeyPair(password: CryptoPassword): Promise<EncryptedKeyPair>;
   public toPrimitives(): { publicKey: string; privateKey: string };
 }
 ```
@@ -773,13 +797,14 @@ console.log(decrypted.toString()); // 'secret data'
 const primitives = keyPair.toPrimitives();
 const restored = KeyPair.fromPrimitives(primitives);
 
-// Encrypt the private key with a password
-const encryptedKeyPair = await keyPair.encryptKeyPair('strong-password');
+// Encrypt the private key with a validated password
+const password = new Password('Secure-password-123!');
+const encryptedKeyPair = await keyPair.encryptKeyPair(password);
 ```
 
 #### SymmetricKey
 
-Represents an immutable 32-byte AES-256-GCM key encoded as Base64. Keys can be generated randomly, loaded from a 32-byte buffer, loaded from Base64, or deterministically derived from a password plus an explicit salt with scrypt (`N=16384`, `r=8`, `p=1` by default).
+Represents an immutable 32-byte AES-256-GCM key encoded as Base64. Keys can be generated randomly, loaded from a 32-byte buffer, loaded from Base64, or deterministically derived from a password plus an explicit salt with scrypt (`N=16384`, `r=8`, `p=1` by default). New encrypted payloads authenticate the `v1.aes-256-gcm` header as AES-GCM AAD; decrypting without AAD remains supported only for payloads produced by older package versions.
 
 ```typescript
 type SymmetricKeyDerivationOptions = {
@@ -789,22 +814,28 @@ type SymmetricKeyDerivationOptions = {
   salt: string | StringValueObject | Buffer;
 };
 
+type CryptoPassword = string | StringValueObject | Password;
+
+type SymmetricKeyCryptOptions = {
+  aad?: string | StringValueObject | Buffer;
+};
+
 class SymmetricKey extends ValueObject<string> {
   public static fromBase64(key: string | StringValueObject): SymmetricKey;
   public static fromBuffer(key: Buffer): SymmetricKey;
   public static generate(): SymmetricKey;
   public static fromPassword(
-    password: string | StringValueObject,
+    password: CryptoPassword,
     options: SymmetricKeyDerivationOptions,
   ): Promise<SymmetricKey>;
   public static fromPasswordUsingOwasp(
-    password: string | StringValueObject,
+    password: CryptoPassword,
     options: Pick<SymmetricKeyDerivationOptions, 'salt'>,
   ): Promise<SymmetricKey>;
   constructor(value: string | StringValueObject);
   public getBuffer(): Buffer;
-  public encrypt(payload: CryptoPayload): SymmetricEncryptedPayload;
-  public decrypt(encryptedPayload: EncryptedPayload): Buffer;
+  public encrypt(payload: CryptoPayload, options?: SymmetricKeyCryptOptions): SymmetricEncryptedPayload;
+  public decrypt(encryptedPayload: EncryptedPayload, options?: SymmetricKeyCryptOptions): Buffer;
 }
 ```
 
@@ -817,12 +848,13 @@ const decrypted = key.decrypt(encrypted);
 console.log(decrypted.toString()); // 'confidential data'
 
 // OWASP-compatible deterministic key derivation from password + explicit salt
-const derived = await SymmetricKey.fromPasswordUsingOwasp('strong-password', {
+const password = new Password('Secure-password-123!');
+const derived = await SymmetricKey.fromPasswordUsingOwasp(password, {
   salt: 'application-specific-salt',
 });
 
 // The same password, salt, and scrypt parameters derive the same key
-const sameDerived = await SymmetricKey.fromPasswordUsingOwasp('strong-password', {
+const sameDerived = await SymmetricKey.fromPasswordUsingOwasp(password, {
   salt: 'application-specific-salt',
 });
 console.log(derived.isEqual(sameDerived)); // true
@@ -832,7 +864,7 @@ The derived key is deterministic, but encryption is not: `encrypt()` generates a
 
 #### EncryptedPrivateKey
 
-Represents an immutable password-protected private key container. New encrypted private keys use v3 with scrypt (N=16384, r=8, p=5), a 16-byte salt, a 32-byte derived key, and AES-256-GCM with a 12-byte IV and 16-byte authentication tag. The class also supports v2 (`N=16384`, `r=8`, `p=1`) and the legacy 4-part format, which decrypts with PBKDF2-SHA256 using 100000 iterations and AES-256-GCM.
+Represents an immutable password-protected private key container. New encrypted private keys use v3 with scrypt (N=16384, r=8, p=5), a 16-byte salt, a 32-byte derived key, and AES-256-GCM with a 12-byte IV and 16-byte authentication tag. The v3 `v3.scrypt.N16384.r8.p5` header is authenticated as AES-GCM AAD. The class also supports v2 (`N=16384`, `r=8`, `p=1`) and the legacy 4-part format, which decrypts with PBKDF2-SHA256 using 100000 iterations and AES-256-GCM.
 
 The current encrypted format is: `v3.scrypt.N16384.r8.p5.salt.iv.tag.cipherText` (base64-encoded, dot-separated). v2 format: `v2.scrypt.N16384.r8.p1.salt.iv.tag.cipherText`. Legacy format: `cipherText.iv.salt.tag`.
 
@@ -846,10 +878,10 @@ private key later.
 class EncryptedPrivateKey extends ValueObject<string> {
   public static async create(
     privateKey: PrivateKey,
-    password: string | StringValueObject,
+    password: CryptoPassword,
   ): Promise<EncryptedPrivateKey>;
   constructor(encryptedPrivateKey: string | StringValueObject);
-  public decrypt(password: string | StringValueObject): Promise<PrivateKey>;
+  public decrypt(password: CryptoPassword): Promise<PrivateKey>;
   public needsReEncryption(): boolean;
 }
 ```
@@ -857,22 +889,23 @@ class EncryptedPrivateKey extends ValueObject<string> {
 **Example:**
 ```typescript
 // Encrypt a private key
-const encrypted = await EncryptedPrivateKey.create(privateKey, 'my-password');
+const password = new Password('Secure-password-123!');
+const encrypted = await EncryptedPrivateKey.create(privateKey, password);
 console.log(encrypted.valueOf()); // 'v3.scrypt.N16384.r8.p5.base64Salt.base64IV.base64Tag.base64CipherText'
 
 // Decrypt it back
-const decrypted = await encrypted.decrypt('my-password');
+const decrypted = await encrypted.decrypt(password);
 console.log(decrypted.valueOf()); // Original PEM private key
 
 // Check if re-encryption is needed
 if (encrypted.needsReEncryption()) {
   // Re-encrypt with stronger parameters
-  const reEncrypted = await EncryptedPrivateKey.create(decrypted, 'my-password');
+  const reEncrypted = await EncryptedPrivateKey.create(decrypted, password);
 }
 
 // Wrong password throws an error
 try {
-  await encrypted.decrypt('wrong-password'); // Throws (AES-GCM authentication fails)
+  await encrypted.decrypt(new Password('Wrong-password-123!')); // Throws (AES-GCM authentication fails)
 } catch (error) {
   console.error('Invalid password');
 }
@@ -887,14 +920,14 @@ class EncryptedKeyPair {
   public static async encryptKeyPair(
     publicKey: PublicKey,
     privateKey: PrivateKey,
-    password: string | StringValueObject,
+    password: CryptoPassword,
   ): Promise<EncryptedKeyPair>;
   public static fromPrimitives(primitives: PrimitiveOf<EncryptedKeyPair>): EncryptedKeyPair;
   constructor(publicKey: PublicKey, encryptedPrivateKey: EncryptedPrivateKey);
-  public sign(payload: CryptoPayload, password: string | StringValueObject): Promise<Signature>;
+  public sign(payload: CryptoPayload, password: CryptoPassword): Promise<Signature>;
   public isValidSignature(payload: CryptoPayload, signature: Signature): boolean;
   public encrypt(payload: CryptoPayload): EncryptedPayload;
-  public decrypt(encryptedPayload: EncryptedPayload, password: string | StringValueObject): Promise<Buffer>;
+  public decrypt(encryptedPayload: EncryptedPayload, password: CryptoPassword): Promise<Buffer>;
   public toPrimitives(): { publicKey: string; encryptedPrivateKey: string };
 }
 ```
@@ -903,17 +936,18 @@ class EncryptedKeyPair {
 ```typescript
 // Create from a KeyPair
 const keyPair = await KeyPair.generate();
-const encrypted = await keyPair.encryptKeyPair('password');
+const password = new Password('Secure-password-123!');
+const encrypted = await keyPair.encryptKeyPair(password);
 
 // Encrypt a payload (no password needed — uses public key)
 const cipherPayload = encrypted.encrypt('confidential data');
 
 // Decrypt (requires the password to unlock the private key internally)
-const plaintext = await encrypted.decrypt(cipherPayload, 'password');
+const plaintext = await encrypted.decrypt(cipherPayload, password);
 console.log(plaintext.toString()); // 'confidential data'
 
 // Sign (requires the password)
-const sig = await encrypted.sign('message', 'password');
+const sig = await encrypted.sign('message', password);
 
 // Verify (no password needed)
 console.log(encrypted.isValidSignature('message', sig)); // true
@@ -950,15 +984,19 @@ Recognized payload shapes:
 - Asymmetric legacy: `ephemeralPub.iv.cipherText.tag`
 - Symmetric v1: `v1.aes-256-gcm.iv.cipherText.tag`
 
+For current asymmetric v2 and symmetric v1 payloads, the version and algorithm
+header is authenticated as AES-GCM AAD. The legacy asymmetric shape and
+pre-AAD symmetric payloads still decrypt for backward compatibility.
+
 #### Encrypting and Decrypting Payloads
 
 The public-key payload API uses a classical hybrid encryption approach:
 
 1. The Ed25519 public key is converted to X25519 (Montgomery form)
-2. An ephemeral X25519 key pair is generated
+2. A new ephemeral X25519 key pair is generated for each encryption
 3. X25519 produces a shared secret
-4. HKDF-SHA256 over the shared secret derives a 256-bit AES key
-5. AES-256-GCM encrypts the payload with a 12-byte random IV and 16-byte authentication tag
+4. HKDF-SHA256 over the shared secret derives a 256-bit AES key, using `ephemeralPublicKey || recipientPublicKey` as salt and `@haskou/value-objects/asymmetric-payload/v2` as domain-separated info
+5. AES-256-GCM encrypts the payload with a 12-byte random IV, 16-byte authentication tag, and `v2.x25519-hkdf-sha256-aes-256-gcm` as AAD
 6. The output is `v2.x25519-hkdf-sha256-aes-256-gcm.ephemeralPub.iv.cipherText.tag` with Base64-encoded key, IV, ciphertext, and tag fields
 7. Decryption requires the corresponding Ed25519 private key material converted to X25519
 
@@ -976,13 +1014,14 @@ console.log(decrypted.toString()); // 'sensitive data'
 
 **With EncryptedKeyPair (private key protected by password):**
 ```typescript
-const encryptedKeyPair = await keyPair.encryptKeyPair('strong-password');
+const password = new Password('Secure-password-123!');
+const encryptedKeyPair = await keyPair.encryptKeyPair(password);
 
 // Encrypt (no password needed)
 const encrypted = encryptedKeyPair.encrypt('confidential');
 
 // Decrypt (password unlocks the private key internally)
-const decrypted = await encryptedKeyPair.decrypt(encrypted, 'strong-password');
+const decrypted = await encryptedKeyPair.decrypt(encrypted, password);
 console.log(decrypted.toString()); // 'confidential'
 ```
 
@@ -998,6 +1037,8 @@ console.log(decrypted.toString()); // 'hello world'
 
 **Important:**
 - Each call to `encrypt()` generates a new ephemeral key, producing different ciphertext even for the same payload.
+- Each call to `encrypt()` also generates a fresh 12-byte AES-GCM IV; the 16-byte tag authenticates the ciphertext and current header.
+- HKDF uses payload-specific salt and info values so the asymmetric payload key derivation is domain separated from other derivation contexts.
 - Decrypting with the wrong private key throws an AES-GCM authentication error.
 - The current asymmetric encrypted format is `v2.x25519-hkdf-sha256-aes-256-gcm.ephemeralPub.iv.cipherText.tag` (base64 data fields, dot-separated).
 - The previous `ephemeralPub.iv.cipherText.tag` format still decrypts for backward compatibility.
@@ -1013,7 +1054,7 @@ console.log(decrypted.toString()); // 'hello world'
 
 1. A `SymmetricKey` contains exactly 32 bytes (256 bits) encoded as Base64
 2. `encrypt()` generates a fresh 12-byte random IV
-3. AES-256-GCM encrypts the payload and produces a 16-byte authentication tag
+3. AES-256-GCM encrypts the payload, authenticates `v1.aes-256-gcm` as AAD by default, and produces a 16-byte authentication tag
 4. The output is `v1.aes-256-gcm.iv.cipherText.tag` with Base64-encoded IV, ciphertext, and tag fields
 5. `decrypt()` validates the version, algorithm, IV length, tag length, Base64 fields, and 1 MiB ciphertext limit before decrypting
 
@@ -1027,7 +1068,8 @@ console.log(decrypted.toString()); // 'secret data'
 
 **Password-derived key:**
 ```typescript
-const key = await SymmetricKey.fromPasswordUsingOwasp('strong-password', {
+const password = new Password('Secure-password-123!');
+const key = await SymmetricKey.fromPasswordUsingOwasp(password, {
   salt: 'application-specific-salt',
 });
 
@@ -1036,12 +1078,20 @@ const decrypted = key.decrypt(encrypted);
 console.log(decrypted.toString()); // 'secret data'
 ```
 
+**Custom AAD:**
+```typescript
+const encrypted = key.encrypt('secret data', { aad: 'orders.v1' });
+const decrypted = key.decrypt(encrypted, { aad: 'orders.v1' });
+```
+
 **Important:**
 - A 32-byte key is the AES-256 key size. With a uniformly random key, brute-force key search is not practical with current classical computing.
 - Password-derived keys are only as strong as the password and salt policy. Use a unique, non-empty salt per derivation context; callers must store or reproduce that salt because it is not included in `SymmetricEncryptedPayload`.
 - `SymmetricKey.fromPassword()` keeps the original scrypt defaults (`N=16384`, `r=8`, `p=1`) for backward compatibility. Custom scrypt parameters are accepted through the same method.
 - `SymmetricKey.fromPasswordUsingOwasp()` uses the package's OWASP-compatible scrypt profile (`N=16384`, `r=8`, `p=5`) for new password-derived symmetric keys.
 - The same password, salt, and scrypt parameters derive the same key. The encrypted payload remains randomized because every encryption uses a fresh 96-bit IV.
+- New symmetric payloads authenticate their version and algorithm header as AAD. If a caller supplies custom AAD, the same AAD is required for decryption.
+- `decrypt()` falls back to no-AAD decryption only when no custom AAD is supplied, so symmetric payloads created before header AAD support remain readable.
 - AES-GCM requires IV uniqueness for a given key. The library generates a random IV for each encryption; avoid manually reusing serialized payload internals as new encryption inputs.
 - Symmetric payload encryption provides confidentiality and ciphertext integrity for holders of the same key. It does not identify which holder encrypted the payload. It is not a post-quantum cryptography scheme; AES-256 is considered to retain a large security margin against Grover-style quadratic speedups, but the KDF and password entropy still matter.
 - Symmetric payload encryption is capped at 1 MiB before encryption.

@@ -57,6 +57,7 @@ your application.
 
 ### 🔤 Basic
 - **`StringValueObject`** - Strings with length validation
+- **`Password`** - Password strings with length and complexity validation
 - **`NumberValueObject`** - Numbers with math operations
 - **`Integer`** - Whole numbers
 - **`PositiveNumber`** - Positive numbers (> 0)
@@ -94,7 +95,7 @@ your application.
 - **`EncryptedPayload`** - Base container for dot-separated encrypted payload formats
 - **`AsymmetricEncryptedPayload`** - Payload encrypted for an Ed25519/X25519 recipient key pair
 - **`SymmetricEncryptedPayload`** - Payload encrypted with a symmetric AES-256-GCM key
-- **`SymmetricKey`** - 32-byte AES-256-GCM key, randomly generated or deterministically derived from a password and salt with scrypt
+- **`SymmetricKey`** - 32-byte AES-256-GCM key, randomly generated or deterministically derived from a `Password` and salt with scrypt
 - **`EncryptedPrivateKey`** - Password-protected private key encryption using scrypt + AES-256-GCM
 - **`EncryptedKeyPair`** - Key pair with encrypted private key
 
@@ -109,6 +110,9 @@ Technical notes:
   with Base64-encoded key, IV, ciphertext, and tag fields. The previous
   `ephemeralPublicKey.iv.cipherText.tag` format still decrypts for backward
   compatibility.
+- The v2 asymmetric header is authenticated as AES-GCM AAD. HKDF uses
+  `ephemeralPublicKey || recipientPublicKey` as salt and
+  `@haskou/value-objects/asymmetric-payload/v2` as domain-separated info.
 - Symmetric payload encryption uses a 32-byte AES-256-GCM key directly. The
   payload format is `v1.aes-256-gcm.iv.cipherText.tag`, with Base64-encoded
   IV, ciphertext, and tag fields.
@@ -126,7 +130,8 @@ Technical notes:
 - New encrypted private keys use `v3.scrypt.N16384.r8.p5` with a 16-byte salt,
   then AES-256-GCM with a 12-byte IV and 16-byte authentication tag. The older
   v2 scrypt profile and legacy PBKDF2 format still decrypt, and
-  `needsReEncryption()` marks them for upgrade.
+  `needsReEncryption()` marks them for upgrade. The v3 header is authenticated
+  as AES-GCM AAD.
 - This is not a post-quantum cryptography scheme. Ed25519 and X25519 are
   classical elliptic-curve primitives, so neither signatures nor payload key
   agreement are post-quantum secure.
@@ -196,8 +201,9 @@ const signature = keyPair.sign('hello world'); // Sign a message
 keyPair.isValidSignature('hello world', signature); // true
 
 // Encrypted key pairs
-const encrypted = await keyPair.encryptKeyPair('my-password');
-const sig = await encrypted.sign('message', 'my-password');
+const cryptoPassword = new Password('Secure-password-123!');
+const encrypted = await keyPair.encryptKeyPair(cryptoPassword);
+const sig = await encrypted.sign('message', cryptoPassword);
 encrypted.isValidSignature('message', sig); // true
 
 // Symmetric payload encryption
@@ -207,9 +213,10 @@ const plaintext = symmetricKey.decrypt(symmetricPayload);
 console.log(plaintext.toString()); // 'secret data'
 
 // Deterministic key derivation from a password and explicit salt
-const derivedKey = await SymmetricKey.fromPasswordUsingOwasp('my-password', {
-  salt: 'stable-application-salt',
-});
+const derivedKey = await SymmetricKey.fromPasswordUsingOwasp(
+  cryptoPassword,
+  { salt: 'stable-application-salt' },
+);
 
 // Media
 const media = new Media('hello world');

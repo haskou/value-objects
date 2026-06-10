@@ -226,6 +226,54 @@ describe('PrivateKey', () => {
       expect(() => wrongKey.decrypt(encrypted)).toThrow();
     });
 
+    it('should fail when the ephemeral key is tampered', () => {
+      const pubKey = new PublicKey(publicPem);
+      const privKey = new PrivateKey(privatePem);
+      const encrypted = pubKey.encrypt('secret');
+      const parts = encrypted.valueOf().split('.');
+      parts[2] = Buffer.alloc(32, 1).toString('base64');
+
+      expect(() =>
+        privKey.decrypt(new EncryptedPayload(parts.join('.'))),
+      ).toThrow();
+    });
+
+    it('should fail when the IV is tampered', () => {
+      const pubKey = new PublicKey(publicPem);
+      const privKey = new PrivateKey(privatePem);
+      const encrypted = pubKey.encrypt('secret');
+      const parts = encrypted.valueOf().split('.');
+      parts[3] = Buffer.alloc(12, 1).toString('base64');
+
+      expect(() =>
+        privKey.decrypt(new EncryptedPayload(parts.join('.'))),
+      ).toThrow();
+    });
+
+    it('should fail when the ciphertext is tampered', () => {
+      const pubKey = new PublicKey(publicPem);
+      const privKey = new PrivateKey(privatePem);
+      const encrypted = pubKey.encrypt('secret');
+      const parts = encrypted.valueOf().split('.');
+      parts[4] = Buffer.from('tampered').toString('base64');
+
+      expect(() =>
+        privKey.decrypt(new EncryptedPayload(parts.join('.'))),
+      ).toThrow();
+    });
+
+    it('should fail when the authentication tag is tampered', () => {
+      const pubKey = new PublicKey(publicPem);
+      const privKey = new PrivateKey(privatePem);
+      const encrypted = pubKey.encrypt('secret');
+      const parts = encrypted.valueOf().split('.');
+      parts[5] = Buffer.alloc(16, 1).toString('base64');
+
+      expect(() =>
+        privKey.decrypt(new EncryptedPayload(parts.join('.'))),
+      ).toThrow();
+    });
+
     it('should handle different payload sizes', () => {
       const pubKey = new PublicKey(publicPem);
       const privKey = new PrivateKey(privatePem);

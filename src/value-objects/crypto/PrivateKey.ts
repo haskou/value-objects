@@ -71,6 +71,12 @@ export class PrivateKey extends Key {
     return Buffer.from(value, 'base64');
   }
 
+  private static getPayloadAad(): Buffer {
+    return Buffer.from(
+      [PrivateKey.PAYLOAD_VERSION, PrivateKey.PAYLOAD_ALGORITHM].join('.'),
+    );
+  }
+
   public static fromPEM(pem: string | StringValueObject): PrivateKey {
     return new PrivateKey(pem.valueOf());
   }
@@ -103,7 +109,7 @@ export class PrivateKey extends Key {
     ivB64: string,
     cipherTextB64: string,
     tagB64: string,
-    useHkdf: boolean,
+    options: { useHkdf: boolean; aad?: Buffer },
   ): Buffer {
     PrivateKey.ensureIsBase64(cipherTextB64, encryptedPayload, {
       allowEmpty: true,
@@ -144,7 +150,7 @@ export class PrivateKey extends Key {
       ephemeralPub,
     );
 
-    const aesKey = useHkdf
+    const aesKey = options.useHkdf
       ? CryptoAdapter.deriveEncryptionKeyWithHkdf(
           sharedSecret,
           ephemeralPub,
@@ -152,7 +158,13 @@ export class PrivateKey extends Key {
         )
       : CryptoAdapter.deriveEncryptionKey(sharedSecret, ephemeralPub);
 
-    return CryptoAdapter.decryptAes256Gcm(aesKey, iv, cipherText, tag);
+    return CryptoAdapter.decryptAes256Gcm(
+      aesKey,
+      iv,
+      cipherText,
+      tag,
+      options.aad,
+    );
   }
 
   public getPublicKey(): PublicKey {
@@ -181,7 +193,7 @@ export class PrivateKey extends Key {
         ivB64,
         cipherTextB64,
         tagB64,
-        false,
+        { useHkdf: false },
       );
     }
 
@@ -203,7 +215,10 @@ export class PrivateKey extends Key {
       ivB64,
       cipherTextB64,
       tagB64,
-      true,
+      {
+        aad: PrivateKey.getPayloadAad(),
+        useHkdf: true,
+      },
     );
   }
 }

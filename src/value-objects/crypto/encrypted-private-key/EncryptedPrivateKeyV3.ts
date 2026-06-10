@@ -1,9 +1,8 @@
 import { Buffer } from 'buffer';
 
-import { StringValueObject } from '../../StringValueObject';
 import { PrivateKey } from '../PrivateKey';
 import { SymmetricEncryptedPayload } from '../SymmetricEncryptedPayload';
-import { SymmetricKey } from '../SymmetricKey';
+import { CryptoPassword, SymmetricKey } from '../SymmetricKey';
 import { CryptoDerivation } from './CryptoDerivation';
 import { EncryptedPrivateKeyVersion } from './EncryptedPrivateKeyVersion';
 
@@ -26,8 +25,22 @@ export class EncryptedPrivateKeyV3 extends EncryptedPrivateKeyVersion {
     );
   }
 
+  private static getHeaderParts(): string[] {
+    return [
+      EncryptedPrivateKeyV3.VERSION,
+      EncryptedPrivateKeyV3.KDF,
+      `N${EncryptedPrivateKeyV3.SCRYPT_N}`,
+      `r${EncryptedPrivateKeyV3.SCRYPT_R}`,
+      `p${EncryptedPrivateKeyV3.SCRYPT_P}`,
+    ];
+  }
+
+  private static getAad(parts: string[]): string {
+    return parts.slice(0, 5).join('.');
+  }
+
   private static async deriveSymmetricKey(
-    password: string | StringValueObject,
+    password: CryptoPassword,
     salt: Buffer,
     options: { N: number; p: number; r: number },
   ): Promise<SymmetricKey> {
@@ -54,7 +67,7 @@ export class EncryptedPrivateKeyV3 extends EncryptedPrivateKeyVersion {
 
   public static async encrypt(
     privateKey: PrivateKey,
-    password: string | StringValueObject,
+    password: CryptoPassword,
   ): Promise<string> {
     const salt = await CryptoDerivation.randomBytesAsync(
       EncryptedPrivateKeyV3.SALT_ENTROPY,
@@ -65,7 +78,9 @@ export class EncryptedPrivateKeyV3 extends EncryptedPrivateKeyVersion {
       r: EncryptedPrivateKeyV3.SCRYPT_R,
     });
     const symmetricPayload = key
-      .encrypt(privateKey.valueOf())
+      .encrypt(privateKey.valueOf(), {
+        aad: EncryptedPrivateKeyV3.getHeaderParts().join('.'),
+      })
       .valueOf()
       .split('.');
     const iv = symmetricPayload[2];
@@ -73,11 +88,7 @@ export class EncryptedPrivateKeyV3 extends EncryptedPrivateKeyVersion {
     const tag = symmetricPayload[4];
 
     return [
-      EncryptedPrivateKeyV3.VERSION,
-      EncryptedPrivateKeyV3.KDF,
-      `N${EncryptedPrivateKeyV3.SCRYPT_N}`,
-      `r${EncryptedPrivateKeyV3.SCRYPT_R}`,
-      `p${EncryptedPrivateKeyV3.SCRYPT_P}`,
+      ...EncryptedPrivateKeyV3.getHeaderParts(),
       salt.toString('base64'),
       iv,
       tag,
@@ -96,7 +107,7 @@ export class EncryptedPrivateKeyV3 extends EncryptedPrivateKeyVersion {
 
   public async decrypt(
     parts: string[],
-    password: string | StringValueObject,
+    password: CryptoPassword,
   ): Promise<PrivateKey> {
     if (!EncryptedPrivateKeyV3.hasSupportedScryptParameters(parts)) {
       throw new Error('Unsupported encrypted private key parameters');
@@ -114,6 +125,9 @@ export class EncryptedPrivateKeyV3 extends EncryptedPrivateKeyVersion {
 
     const decrypted = key.decrypt(
       EncryptedPrivateKeyV3.toSymmetricPayload(parts),
+      {
+        aad: EncryptedPrivateKeyV3.getAad(parts),
+      },
     );
 
     return new PrivateKey(decrypted.toString());
