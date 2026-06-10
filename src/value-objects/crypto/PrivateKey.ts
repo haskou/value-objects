@@ -12,6 +12,7 @@ import { EncryptedPayload } from './EncryptedPayload';
 import { Key } from './Key';
 import { PublicKey } from './PublicKey';
 import { Signature } from './Signature';
+import { StrictBase64 } from './StrictBase64';
 
 export class PrivateKey extends Key {
   private static readonly LENGTH = 119;
@@ -25,28 +26,18 @@ export class PrivateKey extends Key {
 
   private static readonly PAYLOAD_VERSION = 'v2';
 
-  private static readonly BASE64_PATTERN =
-    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
-
   private static readonly PATTERN =
     /^-----BEGIN PRIVATE KEY-----\n[A-Za-z0-9+/=]+\n-----END PRIVATE KEY-----\n$/;
-
-  private static getBase64DecodedLength(value: string): number {
-    const padding = value.endsWith('==') ? 2 : value.endsWith('=') ? 1 : 0;
-
-    return (value.length / 4) * 3 - padding;
-  }
 
   private static ensureIsBase64(
     value: string,
     encryptedPayload: EncryptedPayload,
-    options: { allowEmpty: boolean } = { allowEmpty: false },
+    options: { allowEmpty: boolean },
   ): void {
-    assert(
-      (options.allowEmpty || value.length > 0) &&
-        value.length % 4 === 0 &&
-        PrivateKey.BASE64_PATTERN.test(value),
+    StrictBase64.ensure(
+      value,
       new InvalidFormatError(encryptedPayload.valueOf()),
+      options,
     );
   }
 
@@ -55,10 +46,10 @@ export class PrivateKey extends Key {
     encryptedPayload: EncryptedPayload,
     length: number,
   ): void {
-    PrivateKey.ensureIsBase64(value, encryptedPayload);
-    assert(
-      PrivateKey.getBase64DecodedLength(value) === length,
+    StrictBase64.ensureDecodedLength(
+      value,
       new InvalidFormatError(encryptedPayload.valueOf()),
+      length,
     );
   }
 
@@ -66,9 +57,10 @@ export class PrivateKey extends Key {
     value: string,
     encryptedPayload: EncryptedPayload,
   ): Buffer {
-    PrivateKey.ensureIsBase64(value, encryptedPayload);
-
-    return Buffer.from(value, 'base64');
+    return StrictBase64.decode(
+      value,
+      new InvalidFormatError(encryptedPayload.valueOf()),
+    );
   }
 
   private static getPayloadAad(): Buffer {
@@ -114,7 +106,7 @@ export class PrivateKey extends Key {
     PrivateKey.ensureIsBase64(cipherTextB64, encryptedPayload, {
       allowEmpty: true,
     });
-    const cipherTextLength = PrivateKey.getBase64DecodedLength(cipherTextB64);
+    const cipherTextLength = StrictBase64.getDecodedLength(cipherTextB64);
     assert(
       cipherTextLength <= PrivateKey.MAX_CIPHERTEXT_LENGTH,
       new InvalidLengthError(
@@ -141,7 +133,11 @@ export class PrivateKey extends Key {
 
     const ephemeralPub = PrivateKey.decodeBase64(ephPubB64, encryptedPayload);
     const iv = PrivateKey.decodeBase64(ivB64, encryptedPayload);
-    const cipherText = Buffer.from(cipherTextB64, 'base64');
+    const cipherText = StrictBase64.decode(
+      cipherTextB64,
+      new InvalidFormatError(encryptedPayload.valueOf()),
+      { allowEmpty: true },
+    );
     const tag = PrivateKey.decodeBase64(tagB64, encryptedPayload);
     const x25519Priv = CryptoAdapter.privateKeyToX25519(this.valueOf());
 

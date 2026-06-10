@@ -5,6 +5,7 @@ export * from './InvalidDayError';
 export * from './InvalidDayFormatError';
 export * from './InvalidHourError';
 export * from './InvalidEmailError';
+export * from './InvalidEncryptedPrivateKeyFormatError';
 export * from './InvalidFormatError';
 export * from './InvalidHashError';
 export * from './InvalidIntegerError';

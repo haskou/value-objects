@@ -847,7 +847,7 @@ const encrypted = key.encrypt('confidential data');
 const decrypted = key.decrypt(encrypted);
 console.log(decrypted.toString()); // 'confidential data'
 
-// OWASP-compatible deterministic key derivation from password + explicit salt
+// OWASP-aligned deterministic key derivation from password + explicit salt
 const password = new Password('Secure-password-123!');
 const derived = await SymmetricKey.fromPasswordUsingOwasp(password, {
   salt: 'application-specific-salt',
@@ -860,7 +860,7 @@ const sameDerived = await SymmetricKey.fromPasswordUsingOwasp(password, {
 console.log(derived.isEqual(sameDerived)); // true
 ```
 
-The derived key is deterministic, but encryption is not: `encrypt()` generates a fresh 12-byte AES-GCM IV for each payload. Callers must store or reproduce the salt used for password-based derivation; it is not embedded in `SymmetricEncryptedPayload`. `fromPassword()` keeps its original scrypt defaults for backward compatibility. `fromPasswordUsingOwasp()` uses this package's OWASP-compatible scrypt profile for new password-derived keys.
+The derived key is deterministic, but encryption is not: `encrypt()` generates a fresh 12-byte AES-GCM IV for each payload. Callers must store or reproduce the salt used for password-based derivation; it is not embedded in `SymmetricEncryptedPayload`. `fromPassword()` keeps its original scrypt defaults for backward compatibility. `fromPasswordUsingOwasp()` uses this package's OWASP-aligned scrypt profile for new password-derived keys.
 
 #### EncryptedPrivateKey
 
@@ -1088,7 +1088,7 @@ const decrypted = key.decrypt(encrypted, { aad: 'orders.v1' });
 - A 32-byte key is the AES-256 key size. With a uniformly random key, brute-force key search is not practical with current classical computing.
 - Password-derived keys are only as strong as the password and salt policy. Use a unique, non-empty salt per derivation context; callers must store or reproduce that salt because it is not included in `SymmetricEncryptedPayload`.
 - `SymmetricKey.fromPassword()` keeps the original scrypt defaults (`N=16384`, `r=8`, `p=1`) for backward compatibility. Custom scrypt parameters are accepted through the same method.
-- `SymmetricKey.fromPasswordUsingOwasp()` uses the package's OWASP-compatible scrypt profile (`N=16384`, `r=8`, `p=5`) for new password-derived symmetric keys.
+- `SymmetricKey.fromPasswordUsingOwasp()` uses the package's OWASP-aligned scrypt profile (`N=16384`, `r=8`, `p=5`) for new password-derived symmetric keys.
 - The same password, salt, and scrypt parameters derive the same key. The encrypted payload remains randomized because every encryption uses a fresh 96-bit IV.
 - New symmetric payloads authenticate their version and algorithm header as AAD. If a caller supplies custom AAD, the same AAD is required for decryption.
 - `decrypt()` falls back to no-AAD decryption only when no custom AAD is supplied, so symmetric payloads created before header AAD support remain readable.

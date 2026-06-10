@@ -1,7 +1,8 @@
 import { Buffer } from 'buffer';
 
-import { assert } from '../../../patterns';
+import { InvalidEncryptedPrivateKeyFormatError } from '../../../errors/InvalidEncryptedPrivateKeyFormatError';
 import { PrivateKey } from '../PrivateKey';
+import { StrictBase64 } from '../StrictBase64';
 import { SymmetricEncryptedPayload } from '../SymmetricEncryptedPayload';
 import { CryptoPassword, SymmetricKey } from '../SymmetricKey';
 import { CryptoDerivation } from './CryptoDerivation';
@@ -17,8 +18,6 @@ export class EncryptedPrivateKeyV3 extends EncryptedPrivateKeyVersion {
   private static readonly CIPHER = 'aes-256-gcm';
   private static readonly EXPECTED_PARTS = 9;
   private static readonly SYMMETRIC_PAYLOAD_VERSION = 'v1';
-  private static readonly BASE64_PATTERN =
-    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 
   private static hasSupportedScryptParameters(parts: string[]): boolean {
     return (
@@ -43,22 +42,13 @@ export class EncryptedPrivateKeyV3 extends EncryptedPrivateKeyVersion {
   }
 
   private static ensureSaltIsValid(saltB64: string): Buffer {
-    assert(
-      saltB64.length > 0 &&
-        saltB64.length % 4 === 0 &&
-        EncryptedPrivateKeyV3.BASE64_PATTERN.test(saltB64),
-      new Error('Invalid encrypted private key salt'),
+    return StrictBase64.decodeCanonicalFixedLength(
+      saltB64,
+      new InvalidEncryptedPrivateKeyFormatError(
+        'Invalid encrypted private key salt',
+      ),
+      EncryptedPrivateKeyV3.SALT_ENTROPY,
     );
-
-    const salt = Buffer.from(saltB64, 'base64');
-
-    assert(
-      salt.length === EncryptedPrivateKeyV3.SALT_ENTROPY &&
-        salt.toString('base64') === saltB64,
-      new Error('Invalid encrypted private key salt'),
-    );
-
-    return salt;
   }
 
   private static async deriveSymmetricKey(
@@ -132,7 +122,9 @@ export class EncryptedPrivateKeyV3 extends EncryptedPrivateKeyVersion {
     password: CryptoPassword,
   ): Promise<PrivateKey> {
     if (!EncryptedPrivateKeyV3.hasSupportedScryptParameters(parts)) {
-      throw new Error('Unsupported encrypted private key parameters');
+      throw new InvalidEncryptedPrivateKeyFormatError(
+        'Unsupported encrypted private key parameters',
+      );
     }
 
     const N = parseInt(parts[2].slice(1), 10);

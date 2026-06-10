@@ -1,3 +1,4 @@
+import { InvalidEncryptedPrivateKeyFormatError } from '../../errors/InvalidEncryptedPrivateKeyFormatError';
 import { StringValueObject } from '../StringValueObject';
 import { ValueObject } from '../ValueObject';
 import { EncryptedPrivateKeyLegacy } from './encrypted-private-key/EncryptedPrivateKeyLegacy';
@@ -36,7 +37,7 @@ export class EncryptedPrivateKey extends ValueObject<string> {
     );
 
     if (!version) {
-      throw new Error('Invalid encrypted private key format');
+      throw new InvalidEncryptedPrivateKeyFormatError();
     }
 
     return version.decrypt(parts, password);

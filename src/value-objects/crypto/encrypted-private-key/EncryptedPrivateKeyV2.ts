@@ -1,5 +1,6 @@
 import { Buffer } from 'buffer';
 
+import { InvalidEncryptedPrivateKeyFormatError } from '../../../errors/InvalidEncryptedPrivateKeyFormatError';
 import { PrivateKey } from '../PrivateKey';
 import { SymmetricEncryptedPayload } from '../SymmetricEncryptedPayload';
 import { CryptoPassword, SymmetricKey } from '../SymmetricKey';
@@ -98,7 +99,9 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
     password: CryptoPassword,
   ): Promise<PrivateKey> {
     if (!EncryptedPrivateKeyV2.hasSupportedScryptParameters(parts)) {
-      throw new Error('Unsupported encrypted private key parameters');
+      throw new InvalidEncryptedPrivateKeyFormatError(
+        'Unsupported encrypted private key parameters',
+      );
     }
 
     const N = parseInt(parts[2].slice(1), 10);

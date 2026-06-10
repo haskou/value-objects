@@ -12,6 +12,7 @@ import { CryptoAdapter } from './CryptoAdapter';
 import { CryptoPayload } from './CryptoPayload';
 import { CryptoDerivation } from './encrypted-private-key/CryptoDerivation';
 import { EncryptedPayload } from './EncryptedPayload';
+import { StrictBase64 } from './StrictBase64';
 import { SymmetricEncryptedPayload } from './SymmetricEncryptedPayload';
 
 export type SymmetricKeyDerivationOptions = {
@@ -41,25 +42,16 @@ export class SymmetricKey extends ValueObject<string> {
   private static readonly OWASP_SCRYPT_R = 8;
   private static readonly TAG_LENGTH = 16;
   private static readonly VERSION = 'v1';
-  private static readonly BASE64_PATTERN =
-    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
-
-  private static getBase64DecodedLength(value: string): number {
-    const padding = value.endsWith('==') ? 2 : value.endsWith('=') ? 1 : 0;
-
-    return (value.length / 4) * 3 - padding;
-  }
 
   private static ensureIsBase64(
     value: string,
     encryptedPayload: EncryptedPayload,
-    options: { allowEmpty: boolean } = { allowEmpty: false },
+    options: { allowEmpty: boolean },
   ): void {
-    assert(
-      (options.allowEmpty || value.length > 0) &&
-        value.length % 4 === 0 &&
-        SymmetricKey.BASE64_PATTERN.test(value),
+    StrictBase64.ensure(
+      value,
       new InvalidFormatError(encryptedPayload.valueOf()),
+      options,
     );
   }
 
@@ -68,10 +60,10 @@ export class SymmetricKey extends ValueObject<string> {
     encryptedPayload: EncryptedPayload,
     length: number,
   ): void {
-    SymmetricKey.ensureIsBase64(value, encryptedPayload);
-    assert(
-      SymmetricKey.getBase64DecodedLength(value) === length,
+    StrictBase64.ensureDecodedLength(
+      value,
       new InvalidFormatError(encryptedPayload.valueOf()),
+      length,
     );
   }
 
@@ -166,16 +158,11 @@ export class SymmetricKey extends ValueObject<string> {
   }
 
   private ensureIsValidKey(value: string): void {
+    StrictBase64.ensure(value, new InvalidFormatError(value));
+    const decodedLength = StrictBase64.getDecodedLength(value);
     assert(
-      value.length % 4 === 0 && SymmetricKey.BASE64_PATTERN.test(value),
-      new InvalidFormatError(value),
-    );
-    assert(
-      SymmetricKey.getBase64DecodedLength(value) === SymmetricKey.KEY_LENGTH,
-      new InvalidLengthError(
-        SymmetricKey.getBase64DecodedLength(value),
-        SymmetricKey.KEY_LENGTH,
-      ),
+      decodedLength === SymmetricKey.KEY_LENGTH,
+      new InvalidLengthError(decodedLength, SymmetricKey.KEY_LENGTH),
     );
   }
 
@@ -246,7 +233,7 @@ export class SymmetricKey extends ValueObject<string> {
     SymmetricKey.ensureIsBase64(cipherTextB64, encryptedPayload, {
       allowEmpty: true,
     });
-    const cipherTextLength = SymmetricKey.getBase64DecodedLength(cipherTextB64);
+    const cipherTextLength = StrictBase64.getDecodedLength(cipherTextB64);
     assert(
       cipherTextLength <= SymmetricKey.MAX_PAYLOAD_LENGTH,
       new InvalidLengthError(cipherTextLength, SymmetricKey.MAX_PAYLOAD_LENGTH),
@@ -258,9 +245,12 @@ export class SymmetricKey extends ValueObject<string> {
     );
 
     const key = this.getBuffer();
-    const iv = Buffer.from(ivB64, 'base64');
-    const cipherText = Buffer.from(cipherTextB64, 'base64');
-    const tag = Buffer.from(tagB64, 'base64');
+    const formatError = new InvalidFormatError(encryptedPayload.valueOf());
+    const iv = StrictBase64.decode(ivB64, formatError);
+    const cipherText = StrictBase64.decode(cipherTextB64, formatError, {
+      allowEmpty: true,
+    });
+    const tag = StrictBase64.decode(tagB64, formatError);
     const aad =
       options.aad === undefined
         ? SymmetricKey.getDefaultAad(version, algorithm)

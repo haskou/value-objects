@@ -2,6 +2,7 @@ import * as crypto from 'node:crypto';
 
 import {
   EncryptedPrivateKey,
+  InvalidEncryptedPrivateKeyFormatError,
   Password,
   PrivateKey,
   StringValueObject,
@@ -117,7 +118,9 @@ describe('EncryptedPrivateKey', () => {
     it('should fail to decrypt invalid format', async () => {
       const invalidEncrypted = new EncryptedPrivateKey('invalid.format');
 
-      await expect(invalidEncrypted.decrypt(password)).toReject();
+      await expect(invalidEncrypted.decrypt(password)).rejects.toThrow(
+        InvalidEncryptedPrivateKeyFormatError,
+      );
     });
 
     it('should reject tampered scrypt parameters before deriving a key', async () => {
@@ -129,7 +132,7 @@ describe('EncryptedPrivateKey', () => {
       const scryptSpy = jest.spyOn(CryptoDerivation, 'scryptAsync');
 
       await expect(tampered.decrypt(password)).rejects.toThrow(
-        'Invalid encrypted private key format',
+        InvalidEncryptedPrivateKeyFormatError,
       );
 
       expect(scryptSpy).not.toHaveBeenCalled();
@@ -145,7 +148,7 @@ describe('EncryptedPrivateKey', () => {
       const scryptSpy = jest.spyOn(CryptoDerivation, 'scryptAsync');
 
       await expect(tampered.decrypt(password)).rejects.toThrow(
-        'Invalid encrypted private key format',
+        InvalidEncryptedPrivateKeyFormatError,
       );
 
       expect(scryptSpy).not.toHaveBeenCalled();
@@ -160,7 +163,7 @@ describe('EncryptedPrivateKey', () => {
 
       await expect(
         new EncryptedPrivateKeyV2().decrypt(parts, password),
-      ).rejects.toThrow('Unsupported encrypted private key parameters');
+      ).rejects.toThrow(InvalidEncryptedPrivateKeyFormatError);
     });
 
     it('should keep v2 AES-GCM fields compatible with SymmetricKey', async () => {
@@ -252,7 +255,7 @@ describe('EncryptedPrivateKey', () => {
 
       await expect(
         new EncryptedPrivateKeyV3().decrypt(parts, password),
-      ).rejects.toThrow('Unsupported encrypted private key parameters');
+      ).rejects.toThrow(InvalidEncryptedPrivateKeyFormatError);
     });
 
     it('should reject invalid v3 salt base64 before deriving a key', async () => {
@@ -264,7 +267,7 @@ describe('EncryptedPrivateKey', () => {
 
       await expect(
         new EncryptedPrivateKeyV3().decrypt(parts, password),
-      ).rejects.toThrow('Invalid encrypted private key salt');
+      ).rejects.toThrow(InvalidEncryptedPrivateKeyFormatError);
 
       expect(scryptSpy).not.toHaveBeenCalled();
       scryptSpy.mockRestore();
@@ -279,7 +282,7 @@ describe('EncryptedPrivateKey', () => {
 
       await expect(
         new EncryptedPrivateKeyV3().decrypt(parts, password),
-      ).rejects.toThrow('Invalid encrypted private key salt');
+      ).rejects.toThrow(InvalidEncryptedPrivateKeyFormatError);
 
       expect(scryptSpy).not.toHaveBeenCalled();
       scryptSpy.mockRestore();
