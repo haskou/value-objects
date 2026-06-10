@@ -136,19 +136,29 @@ describe('PublicKey', () => {
       expect(encrypted.valueOf()).not.toBe('hello world');
     });
 
-    it('should produce a base64-encoded string', () => {
+    it('should produce a versioned OWASP-compatible payload format', () => {
       const key = new PublicKey(publicPem);
       const encrypted = key.encrypt('test data');
+      const parts = encrypted.valueOf().split('.');
 
-      expect(() => Buffer.from(encrypted.valueOf(), 'base64')).not.toThrow();
+      expect(parts).toHaveLength(6);
+      expect(parts[0]).toBe('v2');
+      expect(parts[1]).toBe('x25519-hkdf-sha256-aes-256-gcm');
+      expect(Buffer.from(parts[2], 'base64')).toHaveLength(32);
+      expect(Buffer.from(parts[3], 'base64')).toHaveLength(12);
+      expect(Buffer.from(parts[5], 'base64')).toHaveLength(16);
     });
 
-    it('should produce different ciphertext for the same payload (OAEP padding)', () => {
+    it('should produce different ciphertext for the same payload', () => {
       const key = new PublicKey(publicPem);
       const encrypted1 = key.encrypt('same payload');
       const encrypted2 = key.encrypt('same payload');
+      const firstParts = encrypted1.valueOf().split('.');
+      const secondParts = encrypted2.valueOf().split('.');
 
       expect(encrypted1.isEqual(encrypted2)).toBeFalse();
+      expect(firstParts[2]).not.toBe(secondParts[2]);
+      expect(firstParts[3]).not.toBe(secondParts[3]);
     });
 
     it('should accept a StringValueObject as payload', () => {

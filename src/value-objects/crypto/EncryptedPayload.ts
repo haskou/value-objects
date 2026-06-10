@@ -10,6 +10,14 @@ export class EncryptedPayload extends ValueObject<string> {
       return 'asymmetric';
     }
 
+    if (
+      parts.length === 6 &&
+      parts[0] === 'v2' &&
+      parts[1] === 'x25519-hkdf-sha256-aes-256-gcm'
+    ) {
+      return 'asymmetric';
+    }
+
     if (parts.length === 5 && parts[0] === 'v1' && parts[1] === 'aes-256-gcm') {
       return 'symmetric';
     }

@@ -4,10 +4,13 @@ import {
   InvalidLengthError,
   Media,
   NullObject,
+  Password,
   StringValueObject,
   SymmetricEncryptedPayload,
   SymmetricKey,
 } from '../../../src';
+import { CryptoAdapter } from '../../../src/value-objects/crypto/CryptoAdapter';
+import { CryptoDerivation } from '../../../src/value-objects/crypto/encrypted-private-key/CryptoDerivation';
 
 describe('SymmetricKey', () => {
   const keyBytes = Buffer.alloc(32, 7);
@@ -116,6 +119,51 @@ describe('SymmetricKey', () => {
       expect(key.getBuffer()).toHaveLength(32);
     });
 
+    it('should keep legacy scrypt defaults for fromPassword', async () => {
+      const derivedKey = Buffer.alloc(32, 9);
+      const scryptSpy = jest
+        .spyOn(CryptoDerivation, 'scryptAsync')
+        .mockResolvedValue(derivedKey);
+
+      const key = await SymmetricKey.fromPassword('password', {
+        salt: 'stable-salt',
+      });
+
+      expect(scryptSpy).toHaveBeenCalledWith(
+        'password',
+        Buffer.from('stable-salt'),
+        32,
+        { N: 16384, p: 1, r: 8 },
+      );
+      expect(key.getBuffer()).toEqual(derivedKey);
+
+      scryptSpy.mockRestore();
+    });
+
+    it('should derive with OWASP scrypt parameters when requested', async () => {
+      const derivedKey = Buffer.alloc(32, 10);
+      const scryptSpy = jest
+        .spyOn(CryptoDerivation, 'scryptAsync')
+        .mockResolvedValue(derivedKey);
+
+      const key = await SymmetricKey.fromPasswordUsingOwasp(
+        new Password('Secure-password-123!'),
+        {
+          salt: 'stable-salt',
+        },
+      );
+
+      expect(scryptSpy).toHaveBeenCalledWith(
+        'Secure-password-123!',
+        Buffer.from('stable-salt'),
+        32,
+        { N: 16384, p: 5, r: 8 },
+      );
+      expect(key.getBuffer()).toEqual(derivedKey);
+
+      scryptSpy.mockRestore();
+    });
+
     it('should reject empty derivation salts', async () => {
       await expect(
         SymmetricKey.fromPassword('password', { salt: '' }),
@@ -141,6 +189,9 @@ describe('SymmetricKey', () => {
       const second = key.encrypt('same payload');
 
       expect(first.isEqual(second)).toBeFalse();
+      expect(first.valueOf().split('.')[2]).not.toBe(
+        second.valueOf().split('.')[2],
+      );
       expect(key.decrypt(first).toString()).toBe('same payload');
       expect(key.decrypt(second).toString()).toBe('same payload');
     });
@@ -191,13 +242,76 @@ describe('SymmetricKey', () => {
       expect(() => wrongKey.decrypt(encrypted)).toThrow();
     });
 
+    it('should throw when the IV is tampered', () => {
+      const key = new SymmetricKey(keyBase64);
+      const encrypted = key.encrypt('secret');
+      const parts = encrypted.valueOf().split('.');
+      parts[2] = Buffer.alloc(12, 1).toString('base64');
+
+      expect(() =>
+        key.decrypt(new SymmetricEncryptedPayload(parts.join('.'))),
+      ).toThrow();
+    });
+
+    it('should throw when the ciphertext is tampered', () => {
+      const key = new SymmetricKey(keyBase64);
+      const encrypted = key.encrypt('secret');
+      const parts = encrypted.valueOf().split('.');
+      parts[3] = Buffer.from('tampered').toString('base64');
+
+      expect(() =>
+        key.decrypt(new SymmetricEncryptedPayload(parts.join('.'))),
+      ).toThrow();
+    });
+
     it('should throw when the authentication tag is tampered', () => {
       const key = new SymmetricKey(keyBase64);
       const encrypted = key.encrypt('secret');
       const parts = encrypted.valueOf().split('.');
       parts[4] = Buffer.alloc(16, 1).toString('base64');
 
-      expect(() => key.decrypt(new SymmetricEncryptedPayload(parts.join('.')))).toThrow();
+      expect(() =>
+        key.decrypt(new SymmetricEncryptedPayload(parts.join('.'))),
+      ).toThrow();
+    });
+
+    it('should authenticate custom AAD', () => {
+      const key = new SymmetricKey(keyBase64);
+      const encrypted = key.encrypt('secret', { aad: 'domain.header' });
+
+      expect(key.decrypt(encrypted, { aad: 'domain.header' }).toString()).toBe(
+        'secret',
+      );
+      expect(() => key.decrypt(encrypted, { aad: 'other.header' })).toThrow();
+    });
+
+    it('should authenticate Buffer AAD', () => {
+      const key = new SymmetricKey(keyBase64);
+      const aad = Buffer.from('domain.header');
+      const encrypted = key.encrypt('secret', { aad });
+
+      expect(key.decrypt(encrypted, { aad }).toString()).toBe('secret');
+    });
+
+    it('should decrypt legacy symmetric payloads without AAD', () => {
+      const key = new SymmetricKey(keyBase64);
+      const iv = Buffer.alloc(12, 2);
+      const { cipherText, tag } = CryptoAdapter.encryptAes256Gcm(
+        key.getBuffer(),
+        iv,
+        Buffer.from('legacy secret'),
+      );
+      const legacyPayload = new SymmetricEncryptedPayload(
+        [
+          'v1',
+          'aes-256-gcm',
+          iv.toString('base64'),
+          Buffer.from(cipherText).toString('base64'),
+          Buffer.from(tag).toString('base64'),
+        ].join('.'),
+      );
+
+      expect(key.decrypt(legacyPayload).toString()).toBe('legacy secret');
     });
   });
 

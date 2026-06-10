@@ -9,6 +9,7 @@ export * from './Email';
 export * from './Enum';
 export * from './Integer';
 export * from './NumberValueObject';
+export * from './Password';
 export * from './PositiveNumber';
 export * from './StringValueObject';
 export * from './NullObject';

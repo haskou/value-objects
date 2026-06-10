@@ -1,8 +1,8 @@
 import { Buffer } from 'buffer';
 
-import { StringValueObject } from '../../StringValueObject';
 import { CryptoAdapter } from '../CryptoAdapter';
 import { PrivateKey } from '../PrivateKey';
+import { CryptoPassword } from '../SymmetricKey';
 import { CryptoDerivation } from './CryptoDerivation';
 import { EncryptedPrivateKeyVersion } from './EncryptedPrivateKeyVersion';
 
@@ -19,7 +19,7 @@ export class EncryptedPrivateKeyLegacy extends EncryptedPrivateKeyVersion {
 
   public async decrypt(
     parts: string[],
-    password: string | StringValueObject,
+    password: CryptoPassword,
   ): Promise<PrivateKey> {
     const [cipherTextB64, ivB64, saltB64, tagB64] = parts;
     const cipherText = Buffer.from(cipherTextB64, 'base64');

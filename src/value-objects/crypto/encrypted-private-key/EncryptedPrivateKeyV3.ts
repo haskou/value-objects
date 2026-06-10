@@ -3,17 +3,18 @@ import { Buffer } from 'buffer';
 import { InvalidEncryptedPrivateKeyFormatError } from '../../../errors/InvalidEncryptedPrivateKeyFormatError';
 import { assert } from '../../../patterns';
 import { PrivateKey } from '../PrivateKey';
+import { StrictBase64 } from '../StrictBase64';
 import { SymmetricEncryptedPayload } from '../SymmetricEncryptedPayload';
 import { CryptoPassword, SymmetricKey } from '../SymmetricKey';
 import { CryptoDerivation } from './CryptoDerivation';
 import { EncryptedPrivateKeyVersion } from './EncryptedPrivateKeyVersion';
 
-export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
-  private static readonly VERSION = 'v2';
+export class EncryptedPrivateKeyV3 extends EncryptedPrivateKeyVersion {
+  private static readonly VERSION = 'v3';
   private static readonly KDF = 'scrypt';
   private static readonly SCRYPT_N = 16384;
   private static readonly SCRYPT_R = 8;
-  private static readonly SCRYPT_P = 1;
+  private static readonly SCRYPT_P = 5;
   private static readonly SALT_ENTROPY = 16;
   private static readonly CIPHER = 'aes-256-gcm';
   private static readonly EXPECTED_PARTS = 9;
@@ -21,9 +22,33 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
 
   private static hasSupportedScryptParameters(parts: string[]): boolean {
     return (
-      parts[2] === `N${EncryptedPrivateKeyV2.SCRYPT_N}` &&
-      parts[3] === `r${EncryptedPrivateKeyV2.SCRYPT_R}` &&
-      parts[4] === `p${EncryptedPrivateKeyV2.SCRYPT_P}`
+      parts[2] === `N${EncryptedPrivateKeyV3.SCRYPT_N}` &&
+      parts[3] === `r${EncryptedPrivateKeyV3.SCRYPT_R}` &&
+      parts[4] === `p${EncryptedPrivateKeyV3.SCRYPT_P}`
+    );
+  }
+
+  private static getHeaderParts(): string[] {
+    return [
+      EncryptedPrivateKeyV3.VERSION,
+      EncryptedPrivateKeyV3.KDF,
+      `N${EncryptedPrivateKeyV3.SCRYPT_N}`,
+      `r${EncryptedPrivateKeyV3.SCRYPT_R}`,
+      `p${EncryptedPrivateKeyV3.SCRYPT_P}`,
+    ];
+  }
+
+  private static getAad(parts: string[]): string {
+    return parts.slice(0, 5).join('.');
+  }
+
+  private static ensureSaltIsValid(saltB64: string): Buffer {
+    return StrictBase64.decodeCanonicalFixedLength(
+      saltB64,
+      new InvalidEncryptedPrivateKeyFormatError(
+        'Invalid encrypted private key salt',
+      ),
+      EncryptedPrivateKeyV3.SALT_ENTROPY,
     );
   }
 
@@ -44,8 +69,8 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
 
     return new SymmetricEncryptedPayload(
       [
-        EncryptedPrivateKeyV2.SYMMETRIC_PAYLOAD_VERSION,
-        EncryptedPrivateKeyV2.CIPHER,
+        EncryptedPrivateKeyV3.SYMMETRIC_PAYLOAD_VERSION,
+        EncryptedPrivateKeyV3.CIPHER,
         iv,
         cipherText,
         tag,
@@ -58,15 +83,17 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
     password: CryptoPassword,
   ): Promise<string> {
     const salt = await CryptoDerivation.randomBytesAsync(
-      EncryptedPrivateKeyV2.SALT_ENTROPY,
+      EncryptedPrivateKeyV3.SALT_ENTROPY,
     );
-    const key = await EncryptedPrivateKeyV2.deriveSymmetricKey(password, salt, {
-      N: EncryptedPrivateKeyV2.SCRYPT_N,
-      p: EncryptedPrivateKeyV2.SCRYPT_P,
-      r: EncryptedPrivateKeyV2.SCRYPT_R,
+    const key = await EncryptedPrivateKeyV3.deriveSymmetricKey(password, salt, {
+      N: EncryptedPrivateKeyV3.SCRYPT_N,
+      p: EncryptedPrivateKeyV3.SCRYPT_P,
+      r: EncryptedPrivateKeyV3.SCRYPT_R,
     });
     const symmetricPayload = key
-      .encrypt(privateKey.valueOf())
+      .encrypt(privateKey.valueOf(), {
+        aad: EncryptedPrivateKeyV3.getHeaderParts().join('.'),
+      })
       .valueOf()
       .split('.');
     const iv = symmetricPayload[2];
@@ -74,11 +101,7 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
     const tag = symmetricPayload[4];
 
     return [
-      EncryptedPrivateKeyV2.VERSION,
-      EncryptedPrivateKeyV2.KDF,
-      `N${EncryptedPrivateKeyV2.SCRYPT_N}`,
-      `r${EncryptedPrivateKeyV2.SCRYPT_R}`,
-      `p${EncryptedPrivateKeyV2.SCRYPT_P}`,
+      ...EncryptedPrivateKeyV3.getHeaderParts(),
       salt.toString('base64'),
       iv,
       tag,
@@ -88,10 +111,10 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
 
   public matches(parts: string[]): boolean {
     return (
-      parts.length === EncryptedPrivateKeyV2.EXPECTED_PARTS &&
-      parts[0] === EncryptedPrivateKeyV2.VERSION &&
-      parts[1] === EncryptedPrivateKeyV2.KDF &&
-      EncryptedPrivateKeyV2.hasSupportedScryptParameters(parts)
+      parts.length === EncryptedPrivateKeyV3.EXPECTED_PARTS &&
+      parts[0] === EncryptedPrivateKeyV3.VERSION &&
+      parts[1] === EncryptedPrivateKeyV3.KDF &&
+      EncryptedPrivateKeyV3.hasSupportedScryptParameters(parts)
     );
   }
 
@@ -100,7 +123,7 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
     password: CryptoPassword,
   ): Promise<PrivateKey> {
     assert(
-      EncryptedPrivateKeyV2.hasSupportedScryptParameters(parts),
+      EncryptedPrivateKeyV3.hasSupportedScryptParameters(parts),
       new InvalidEncryptedPrivateKeyFormatError(
         'Unsupported encrypted private key parameters',
       ),
@@ -109,21 +132,20 @@ export class EncryptedPrivateKeyV2 extends EncryptedPrivateKeyVersion {
     const N = parseInt(parts[2].slice(1), 10);
     const r = parseInt(parts[3].slice(1), 10);
     const p = parseInt(parts[4].slice(1), 10);
-    const salt = Buffer.from(parts[5], 'base64');
-    const key = await EncryptedPrivateKeyV2.deriveSymmetricKey(password, salt, {
+    const salt = EncryptedPrivateKeyV3.ensureSaltIsValid(parts[5]);
+    const key = await EncryptedPrivateKeyV3.deriveSymmetricKey(password, salt, {
       N,
       p,
       r,
     });
 
     const decrypted = key.decrypt(
-      EncryptedPrivateKeyV2.toSymmetricPayload(parts),
+      EncryptedPrivateKeyV3.toSymmetricPayload(parts),
+      {
+        aad: EncryptedPrivateKeyV3.getAad(parts),
+      },
     );
 
     return new PrivateKey(decrypted.toString());
-  }
-
-  public needsReEncryption(): boolean {
-    return true;
   }
 }

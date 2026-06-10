@@ -1,20 +1,25 @@
+import { InvalidEncryptedPrivateKeyFormatError } from '../../errors/InvalidEncryptedPrivateKeyFormatError';
+import { assert } from '../../patterns';
 import { StringValueObject } from '../StringValueObject';
 import { ValueObject } from '../ValueObject';
 import { EncryptedPrivateKeyLegacy } from './encrypted-private-key/EncryptedPrivateKeyLegacy';
 import { EncryptedPrivateKeyV2 } from './encrypted-private-key/EncryptedPrivateKeyV2';
+import { EncryptedPrivateKeyV3 } from './encrypted-private-key/EncryptedPrivateKeyV3';
 import { PrivateKey } from './PrivateKey';
+import { CryptoPassword } from './SymmetricKey';
 
 export class EncryptedPrivateKey extends ValueObject<string> {
   private static readonly versions = [
     new EncryptedPrivateKeyLegacy(),
     new EncryptedPrivateKeyV2(),
+    new EncryptedPrivateKeyV3(),
   ];
 
   public static async create(
     privateKey: PrivateKey,
-    password: string | StringValueObject,
+    password: CryptoPassword,
   ): Promise<EncryptedPrivateKey> {
-    const encryptedPrivateKey = await EncryptedPrivateKeyV2.encrypt(
+    const encryptedPrivateKey = await EncryptedPrivateKeyV3.encrypt(
       privateKey,
       password,
     );
@@ -26,17 +31,13 @@ export class EncryptedPrivateKey extends ValueObject<string> {
     super(encryptedPrivateKey?.valueOf());
   }
 
-  public async decrypt(
-    password: string | StringValueObject,
-  ): Promise<PrivateKey> {
+  public async decrypt(password: CryptoPassword): Promise<PrivateKey> {
     const parts = this.valueOf().split('.');
     const version = EncryptedPrivateKey.versions.find((handler) =>
       handler.matches(parts),
     );
 
-    if (!version) {
-      throw new Error('Invalid encrypted private key format');
-    }
+    assert(version, new InvalidEncryptedPrivateKeyFormatError());
 
     return version.decrypt(parts, password);
   }

@@ -2,19 +2,23 @@ import * as crypto from 'node:crypto';
 
 import {
   EncryptedPrivateKey,
+  InvalidEncryptedPrivateKeyFormatError,
+  Password,
   PrivateKey,
   StringValueObject,
   SymmetricEncryptedPayload,
   SymmetricKey,
 } from '../../../src';
+import { CryptoAdapter } from '../../../src/value-objects/crypto/CryptoAdapter';
 import { CryptoDerivation } from '../../../src/value-objects/crypto/encrypted-private-key/CryptoDerivation';
 import { EncryptedPrivateKeyV2 } from '../../../src/value-objects/crypto/encrypted-private-key/EncryptedPrivateKeyV2';
+import { EncryptedPrivateKeyV3 } from '../../../src/value-objects/crypto/encrypted-private-key/EncryptedPrivateKeyV3';
 import { NullObject } from '../../../src/value-objects/NullObject';
 
 describe('EncryptedPrivateKey', () => {
   let privatePem: string;
   let publicPem: string;
-  const password = 'secure-password-123';
+  const password = new Password('Secure-password-123!');
 
   beforeAll(() => {
     const pair = crypto.generateKeyPairSync('ed25519', {
@@ -70,6 +74,7 @@ describe('EncryptedPrivateKey', () => {
 
       const parts = encrypted.valueOf().split('.');
       expect(parts).toHaveLength(9);
+      expect(parts.slice(0, 5)).toEqual(['v3', 'scrypt', 'N16384', 'r8', 'p5']);
     });
 
     it('should produce different ciphertexts each time due to random salt/iv', async () => {
@@ -113,7 +118,9 @@ describe('EncryptedPrivateKey', () => {
     it('should fail to decrypt invalid format', async () => {
       const invalidEncrypted = new EncryptedPrivateKey('invalid.format');
 
-      await expect(invalidEncrypted.decrypt(password)).toReject();
+      await expect(invalidEncrypted.decrypt(password)).rejects.toThrow(
+        InvalidEncryptedPrivateKeyFormatError,
+      );
     });
 
     it('should reject tampered scrypt parameters before deriving a key', async () => {
@@ -125,7 +132,7 @@ describe('EncryptedPrivateKey', () => {
       const scryptSpy = jest.spyOn(CryptoDerivation, 'scryptAsync');
 
       await expect(tampered.decrypt(password)).rejects.toThrow(
-        'Invalid encrypted private key format',
+        InvalidEncryptedPrivateKeyFormatError,
       );
 
       expect(scryptSpy).not.toHaveBeenCalled();
@@ -141,7 +148,7 @@ describe('EncryptedPrivateKey', () => {
       const scryptSpy = jest.spyOn(CryptoDerivation, 'scryptAsync');
 
       await expect(tampered.decrypt(password)).rejects.toThrow(
-        'Invalid encrypted private key format',
+        InvalidEncryptedPrivateKeyFormatError,
       );
 
       expect(scryptSpy).not.toHaveBeenCalled();
@@ -150,19 +157,19 @@ describe('EncryptedPrivateKey', () => {
 
     it('should reject unsupported v2 parameters inside the v2 decryptor', async () => {
       const privateKey = new PrivateKey(privatePem);
-      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
-      const parts = encrypted.valueOf().split('.');
+      const encrypted = await EncryptedPrivateKeyV2.encrypt(privateKey, password);
+      const parts = encrypted.split('.');
       parts[4] = 'p2';
 
       await expect(
         new EncryptedPrivateKeyV2().decrypt(parts, password),
-      ).rejects.toThrow('Unsupported encrypted private key parameters');
+      ).rejects.toThrow(InvalidEncryptedPrivateKeyFormatError);
     });
 
     it('should keep v2 AES-GCM fields compatible with SymmetricKey', async () => {
       const privateKey = new PrivateKey(privatePem);
-      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
-      const parts = encrypted.valueOf().split('.');
+      const encrypted = await EncryptedPrivateKeyV2.encrypt(privateKey, password);
+      const parts = encrypted.split('.');
       const key = await SymmetricKey.fromPassword(password, {
         N: 16384,
         p: 1,
@@ -174,6 +181,122 @@ describe('EncryptedPrivateKey', () => {
       );
 
       expect(key.decrypt(symmetricPayload).toString()).toBe(privatePem);
+    });
+
+    it('should decrypt v2 encrypted private keys for backward compatibility', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKeyV2.encrypt(privateKey, password);
+      const decrypted = await new EncryptedPrivateKey(encrypted).decrypt(
+        password,
+      );
+
+      expect(decrypted.valueOf()).toBe(privatePem);
+    });
+
+    it('should decrypt v2 encrypted private keys created without AAD', async () => {
+      const salt = Buffer.alloc(16, 3);
+      const iv = Buffer.alloc(12, 4);
+      const key = await SymmetricKey.fromPassword(password, {
+        N: 16384,
+        p: 1,
+        r: 8,
+        salt,
+      });
+      const { cipherText, tag } = CryptoAdapter.encryptAes256Gcm(
+        key.getBuffer(),
+        iv,
+        Buffer.from(privatePem),
+      );
+      const encrypted = [
+        'v2',
+        'scrypt',
+        'N16384',
+        'r8',
+        'p1',
+        salt.toString('base64'),
+        iv.toString('base64'),
+        Buffer.from(tag).toString('base64'),
+        Buffer.from(cipherText).toString('base64'),
+      ].join('.');
+
+      const decrypted = await new EncryptedPrivateKey(encrypted).decrypt(
+        password,
+      );
+
+      expect(decrypted.valueOf()).toBe(privatePem);
+    });
+
+    it('should keep v3 AES-GCM fields compatible with SymmetricKey', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      const key = await SymmetricKey.fromPassword(password, {
+        N: 16384,
+        p: 5,
+        r: 8,
+        salt: Buffer.from(parts[5], 'base64'),
+      });
+      const symmetricPayload = new SymmetricEncryptedPayload(
+        ['v1', 'aes-256-gcm', parts[6], parts[8], parts[7]].join('.'),
+      );
+
+      expect(
+        key
+          .decrypt(symmetricPayload, { aad: parts.slice(0, 5).join('.') })
+          .toString(),
+      ).toBe(privatePem);
+    });
+
+    it('should reject unsupported v3 parameters inside the v3 decryptor', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      parts[4] = 'p1';
+
+      await expect(
+        new EncryptedPrivateKeyV3().decrypt(parts, password),
+      ).rejects.toThrow(InvalidEncryptedPrivateKeyFormatError);
+    });
+
+    it('should reject invalid v3 salt base64 before deriving a key', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      parts[5] = 'not-base64!';
+      const scryptSpy = jest.spyOn(CryptoDerivation, 'scryptAsync');
+
+      await expect(
+        new EncryptedPrivateKeyV3().decrypt(parts, password),
+      ).rejects.toThrow(InvalidEncryptedPrivateKeyFormatError);
+
+      expect(scryptSpy).not.toHaveBeenCalled();
+      scryptSpy.mockRestore();
+    });
+
+    it('should reject v3 salts that are not exactly 16 bytes before deriving a key', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      parts[5] = Buffer.alloc(15).toString('base64');
+      const scryptSpy = jest.spyOn(CryptoDerivation, 'scryptAsync');
+
+      await expect(
+        new EncryptedPrivateKeyV3().decrypt(parts, password),
+      ).rejects.toThrow(InvalidEncryptedPrivateKeyFormatError);
+
+      expect(scryptSpy).not.toHaveBeenCalled();
+      scryptSpy.mockRestore();
+    });
+
+    it('should authenticate v3 header fields with AAD', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      parts[1] = 'tampered-kdf';
+
+      await expect(
+        new EncryptedPrivateKeyV3().decrypt(parts, password),
+      ).toReject();
     });
 
     it('should decrypt to a functional PrivateKey that can sign', async () => {
@@ -214,6 +337,9 @@ describe('EncryptedPrivateKey', () => {
       // Test with legacy format
       const legacyEncrypted = new EncryptedPrivateKey('ciphertext.iv.salt.tag');
       expect(legacyEncrypted.needsReEncryption()).toBeTrue();
+
+      const v2 = await EncryptedPrivateKeyV2.encrypt(privateKey, password);
+      expect(new EncryptedPrivateKey(v2).needsReEncryption()).toBeTrue();
     });
 
     it('should return false for an invalid format when checking re-encryption', () => {
@@ -228,7 +354,7 @@ describe('EncryptedPrivateKey', () => {
       const iv = crypto.randomBytes(12);
       const key = await new Promise<Buffer>((resolve, reject) => {
         crypto.pbkdf2(
-          password,
+          password.valueOf(),
           salt,
           100000,
           32,

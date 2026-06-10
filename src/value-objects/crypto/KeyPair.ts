@@ -1,13 +1,13 @@
 import type { Buffer } from 'buffer';
 
 import { PrimitiveOf } from '../../interfaces';
-import { StringValueObject } from '../StringValueObject';
 import { CryptoPayload } from './CryptoPayload';
 import { EncryptedKeyPair } from './EncryptedKeyPair';
 import { EncryptedPayload } from './EncryptedPayload';
 import { PrivateKey } from './PrivateKey';
 import { PublicKey } from './PublicKey';
 import { Signature } from './Signature';
+import { CryptoPassword } from './SymmetricKey';
 
 export class KeyPair {
   public static generate(): Promise<KeyPair> {
@@ -30,12 +30,12 @@ export class KeyPair {
   ) {}
 
   public async encryptKeyPair(
-    password: string | StringValueObject,
+    password: CryptoPassword,
   ): Promise<EncryptedKeyPair> {
     return await EncryptedKeyPair.encryptKeyPair(
       this.publicKey,
       this.privateKey,
-      password.valueOf(),
+      password,
     );
   }
 

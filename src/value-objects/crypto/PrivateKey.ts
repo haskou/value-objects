@@ -12,36 +12,32 @@ import { EncryptedPayload } from './EncryptedPayload';
 import { Key } from './Key';
 import { PublicKey } from './PublicKey';
 import { Signature } from './Signature';
+import { StrictBase64 } from './StrictBase64';
 
 export class PrivateKey extends Key {
   private static readonly LENGTH = 119;
-  private static readonly ENCRYPTED_PAYLOAD_PARTS = 4;
+  private static readonly LEGACY_ENCRYPTED_PAYLOAD_PARTS = 4;
+  private static readonly OWASP_ENCRYPTED_PAYLOAD_PARTS = 6;
   private static readonly EPHEMERAL_PUBLIC_KEY_LENGTH = 32;
   private static readonly IV_LENGTH = 12;
   private static readonly TAG_LENGTH = 16;
   private static readonly MAX_CIPHERTEXT_LENGTH = 1024 * 1024;
-  private static readonly BASE64_PATTERN =
-    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+  private static readonly PAYLOAD_ALGORITHM = 'x25519-hkdf-sha256-aes-256-gcm';
+
+  private static readonly PAYLOAD_VERSION = 'v2';
 
   private static readonly PATTERN =
     /^-----BEGIN PRIVATE KEY-----\n[A-Za-z0-9+/=]+\n-----END PRIVATE KEY-----\n$/;
 
-  private static getBase64DecodedLength(value: string): number {
-    const padding = value.endsWith('==') ? 2 : value.endsWith('=') ? 1 : 0;
-
-    return (value.length / 4) * 3 - padding;
-  }
-
   private static ensureIsBase64(
     value: string,
     encryptedPayload: EncryptedPayload,
-    options: { allowEmpty: boolean } = { allowEmpty: false },
+    options: { allowEmpty: boolean },
   ): void {
-    assert(
-      (options.allowEmpty || value.length > 0) &&
-        value.length % 4 === 0 &&
-        PrivateKey.BASE64_PATTERN.test(value),
+    StrictBase64.ensure(
+      value,
       new InvalidFormatError(encryptedPayload.valueOf()),
+      options,
     );
   }
 
@@ -50,10 +46,10 @@ export class PrivateKey extends Key {
     encryptedPayload: EncryptedPayload,
     length: number,
   ): void {
-    PrivateKey.ensureIsBase64(value, encryptedPayload);
-    assert(
-      PrivateKey.getBase64DecodedLength(value) === length,
+    StrictBase64.ensureDecodedLength(
+      value,
       new InvalidFormatError(encryptedPayload.valueOf()),
+      length,
     );
   }
 
@@ -61,9 +57,16 @@ export class PrivateKey extends Key {
     value: string,
     encryptedPayload: EncryptedPayload,
   ): Buffer {
-    PrivateKey.ensureIsBase64(value, encryptedPayload);
+    return StrictBase64.decode(
+      value,
+      new InvalidFormatError(encryptedPayload.valueOf()),
+    );
+  }
 
-    return Buffer.from(value, 'base64');
+  private static getPayloadAad(): Buffer {
+    return Buffer.from(
+      [PrivateKey.PAYLOAD_VERSION, PrivateKey.PAYLOAD_ALGORITHM].join('.'),
+    );
   }
 
   public static fromPEM(pem: string | StringValueObject): PrivateKey {
@@ -92,32 +95,18 @@ export class PrivateKey extends Key {
     assert(PrivateKey.PATTERN.test(value), new InvalidFormatError(value));
   }
 
-  public getPublicKey(): PublicKey {
-    return PublicKey.fromPEM(CryptoAdapter.getPublicKey(this.valueOf()));
-  }
-
-  public sign(payload: CryptoPayload): Signature {
-    const messageBuffer =
-      payload instanceof Media
-        ? payload.getBuffer()
-        : Buffer.from(payload.valueOf());
-    const signatureBuffer = CryptoAdapter.sign(messageBuffer, this.valueOf());
-
-    return Signature.fromBuffer(signatureBuffer);
-  }
-
-  public decrypt(encryptedPayload: EncryptedPayload): Buffer {
-    const parts = encryptedPayload.valueOf().split('.');
-    assert(
-      parts.length === PrivateKey.ENCRYPTED_PAYLOAD_PARTS,
-      new InvalidFormatError(encryptedPayload.valueOf()),
-    );
-
-    const [ephPubB64, ivB64, cipherTextB64, tagB64] = parts;
+  private decryptPayload(
+    encryptedPayload: EncryptedPayload,
+    ephPubB64: string,
+    ivB64: string,
+    cipherTextB64: string,
+    tagB64: string,
+    options: { useHkdf: boolean; aad?: Buffer },
+  ): Buffer {
     PrivateKey.ensureIsBase64(cipherTextB64, encryptedPayload, {
       allowEmpty: true,
     });
-    const cipherTextLength = PrivateKey.getBase64DecodedLength(cipherTextB64);
+    const cipherTextLength = StrictBase64.getDecodedLength(cipherTextB64);
     assert(
       cipherTextLength <= PrivateKey.MAX_CIPHERTEXT_LENGTH,
       new InvalidLengthError(
@@ -144,7 +133,11 @@ export class PrivateKey extends Key {
 
     const ephemeralPub = PrivateKey.decodeBase64(ephPubB64, encryptedPayload);
     const iv = PrivateKey.decodeBase64(ivB64, encryptedPayload);
-    const cipherText = Buffer.from(cipherTextB64, 'base64');
+    const cipherText = StrictBase64.decode(
+      cipherTextB64,
+      new InvalidFormatError(encryptedPayload.valueOf()),
+      { allowEmpty: true },
+    );
     const tag = PrivateKey.decodeBase64(tagB64, encryptedPayload);
     const x25519Priv = CryptoAdapter.privateKeyToX25519(this.valueOf());
 
@@ -153,11 +146,75 @@ export class PrivateKey extends Key {
       ephemeralPub,
     );
 
-    const aesKey = CryptoAdapter.deriveEncryptionKey(
-      sharedSecret,
-      ephemeralPub,
+    const aesKey = options.useHkdf
+      ? CryptoAdapter.deriveEncryptionKeyWithHkdf(
+          sharedSecret,
+          ephemeralPub,
+          CryptoAdapter.x25519PublicKey(x25519Priv),
+        )
+      : CryptoAdapter.deriveEncryptionKey(sharedSecret, ephemeralPub);
+
+    return CryptoAdapter.decryptAes256Gcm(
+      aesKey,
+      iv,
+      cipherText,
+      tag,
+      options.aad,
+    );
+  }
+
+  public getPublicKey(): PublicKey {
+    return PublicKey.fromPEM(CryptoAdapter.getPublicKey(this.valueOf()));
+  }
+
+  public sign(payload: CryptoPayload): Signature {
+    const messageBuffer =
+      payload instanceof Media
+        ? payload.getBuffer()
+        : Buffer.from(payload.valueOf());
+    const signatureBuffer = CryptoAdapter.sign(messageBuffer, this.valueOf());
+
+    return Signature.fromBuffer(signatureBuffer);
+  }
+
+  public decrypt(encryptedPayload: EncryptedPayload): Buffer {
+    const parts = encryptedPayload.valueOf().split('.');
+
+    if (parts.length === PrivateKey.LEGACY_ENCRYPTED_PAYLOAD_PARTS) {
+      const [ephPubB64, ivB64, cipherTextB64, tagB64] = parts;
+
+      return this.decryptPayload(
+        encryptedPayload,
+        ephPubB64,
+        ivB64,
+        cipherTextB64,
+        tagB64,
+        { useHkdf: false },
+      );
+    }
+
+    assert(
+      parts.length === PrivateKey.OWASP_ENCRYPTED_PAYLOAD_PARTS,
+      new InvalidFormatError(encryptedPayload.valueOf()),
     );
 
-    return CryptoAdapter.decryptAes256Gcm(aesKey, iv, cipherText, tag);
+    const [version, algorithm, ephPubB64, ivB64, cipherTextB64, tagB64] = parts;
+    assert(
+      version === PrivateKey.PAYLOAD_VERSION &&
+        algorithm === PrivateKey.PAYLOAD_ALGORITHM,
+      new InvalidFormatError(encryptedPayload.valueOf()),
+    );
+
+    return this.decryptPayload(
+      encryptedPayload,
+      ephPubB64,
+      ivB64,
+      cipherTextB64,
+      tagB64,
+      {
+        aad: PrivateKey.getPayloadAad(),
+        useHkdf: true,
+      },
+    );
   }
 }

@@ -1,4 +1,5 @@
 import { InvalidDayError } from '../../errors/InvalidDayError';
+import { assert } from '../../patterns';
 import { Enum } from '../Enum';
 import { Timestamp } from './Timestamp';
 
@@ -37,9 +38,7 @@ export class DayOfWeek extends Enum {
         ([, value]) => value === day,
       ) || [];
 
-    if (!eDay) {
-      throw new InvalidDayError(eDay);
-    }
+    assert(eDay, new InvalidDayError(eDay));
 
     return new DayOfWeek(eDay);
   }
