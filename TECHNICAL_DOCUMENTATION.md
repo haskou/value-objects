@@ -864,7 +864,7 @@ The derived key is deterministic, but encryption is not: `encrypt()` generates a
 
 #### EncryptedPrivateKey
 
-Represents an immutable password-protected private key container. New encrypted private keys use v3 with scrypt (N=16384, r=8, p=5), a 16-byte salt, a 32-byte derived key, and AES-256-GCM with a 12-byte IV and 16-byte authentication tag. The v3 `v3.scrypt.N16384.r8.p5` header is authenticated as AES-GCM AAD. The class also supports v2 (`N=16384`, `r=8`, `p=1`) and the legacy 4-part format, which decrypts with PBKDF2-SHA256 using 100000 iterations and AES-256-GCM.
+Represents an immutable password-protected private key container. New encrypted private keys use v3 with scrypt (N=16384, r=8, p=5), a strict Base64-encoded 16-byte salt, a 32-byte derived key, and AES-256-GCM with a 12-byte IV and 16-byte authentication tag. The v3 `v3.scrypt.N16384.r8.p5` header is authenticated as AES-GCM AAD. The class also supports v2 (`N=16384`, `r=8`, `p=1`) and the legacy 4-part format, which decrypts with PBKDF2-SHA256 using 100000 iterations and AES-256-GCM.
 
 The current encrypted format is: `v3.scrypt.N16384.r8.p5.salt.iv.tag.cipherText` (base64-encoded, dot-separated). v2 format: `v2.scrypt.N16384.r8.p1.salt.iv.tag.cipherText`. Legacy format: `cipherText.iv.salt.tag`.
 

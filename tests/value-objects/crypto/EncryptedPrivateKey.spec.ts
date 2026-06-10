@@ -255,6 +255,36 @@ describe('EncryptedPrivateKey', () => {
       ).rejects.toThrow('Unsupported encrypted private key parameters');
     });
 
+    it('should reject invalid v3 salt base64 before deriving a key', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      parts[5] = 'not-base64!';
+      const scryptSpy = jest.spyOn(CryptoDerivation, 'scryptAsync');
+
+      await expect(
+        new EncryptedPrivateKeyV3().decrypt(parts, password),
+      ).rejects.toThrow('Invalid encrypted private key salt');
+
+      expect(scryptSpy).not.toHaveBeenCalled();
+      scryptSpy.mockRestore();
+    });
+
+    it('should reject v3 salts that are not exactly 16 bytes before deriving a key', async () => {
+      const privateKey = new PrivateKey(privatePem);
+      const encrypted = await EncryptedPrivateKey.create(privateKey, password);
+      const parts = encrypted.valueOf().split('.');
+      parts[5] = Buffer.alloc(15).toString('base64');
+      const scryptSpy = jest.spyOn(CryptoDerivation, 'scryptAsync');
+
+      await expect(
+        new EncryptedPrivateKeyV3().decrypt(parts, password),
+      ).rejects.toThrow('Invalid encrypted private key salt');
+
+      expect(scryptSpy).not.toHaveBeenCalled();
+      scryptSpy.mockRestore();
+    });
+
     it('should authenticate v3 header fields with AAD', async () => {
       const privateKey = new PrivateKey(privatePem);
       const encrypted = await EncryptedPrivateKey.create(privateKey, password);

@@ -1,5 +1,6 @@
 import { Buffer } from 'buffer';
 
+import { assert } from '../../../patterns';
 import { PrivateKey } from '../PrivateKey';
 import { SymmetricEncryptedPayload } from '../SymmetricEncryptedPayload';
 import { CryptoPassword, SymmetricKey } from '../SymmetricKey';
@@ -16,6 +17,8 @@ export class EncryptedPrivateKeyV3 extends EncryptedPrivateKeyVersion {
   private static readonly CIPHER = 'aes-256-gcm';
   private static readonly EXPECTED_PARTS = 9;
   private static readonly SYMMETRIC_PAYLOAD_VERSION = 'v1';
+  private static readonly BASE64_PATTERN =
+    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 
   private static hasSupportedScryptParameters(parts: string[]): boolean {
     return (
@@ -37,6 +40,25 @@ export class EncryptedPrivateKeyV3 extends EncryptedPrivateKeyVersion {
 
   private static getAad(parts: string[]): string {
     return parts.slice(0, 5).join('.');
+  }
+
+  private static ensureSaltIsValid(saltB64: string): Buffer {
+    assert(
+      saltB64.length > 0 &&
+        saltB64.length % 4 === 0 &&
+        EncryptedPrivateKeyV3.BASE64_PATTERN.test(saltB64),
+      new Error('Invalid encrypted private key salt'),
+    );
+
+    const salt = Buffer.from(saltB64, 'base64');
+
+    assert(
+      salt.length === EncryptedPrivateKeyV3.SALT_ENTROPY &&
+        salt.toString('base64') === saltB64,
+      new Error('Invalid encrypted private key salt'),
+    );
+
+    return salt;
   }
 
   private static async deriveSymmetricKey(
@@ -116,7 +138,7 @@ export class EncryptedPrivateKeyV3 extends EncryptedPrivateKeyVersion {
     const N = parseInt(parts[2].slice(1), 10);
     const r = parseInt(parts[3].slice(1), 10);
     const p = parseInt(parts[4].slice(1), 10);
-    const salt = Buffer.from(parts[5], 'base64');
+    const salt = EncryptedPrivateKeyV3.ensureSaltIsValid(parts[5]);
     const key = await EncryptedPrivateKeyV3.deriveSymmetricKey(password, salt, {
       N,
       p,
