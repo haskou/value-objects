@@ -6,7 +6,7 @@ export type Errors = Error | BaseError | DomainError | string;
 export function assert(
   condition: boolean | unknown | undefined,
   error: string | Errors,
-): void {
+): asserts condition {
   if (condition) {
     return;
   }

@@ -1,4 +1,5 @@
 import { InvalidEncryptedPrivateKeyFormatError } from '../../errors/InvalidEncryptedPrivateKeyFormatError';
+import { assert } from '../../patterns';
 import { StringValueObject } from '../StringValueObject';
 import { ValueObject } from '../ValueObject';
 import { EncryptedPrivateKeyLegacy } from './encrypted-private-key/EncryptedPrivateKeyLegacy';
@@ -36,9 +37,7 @@ export class EncryptedPrivateKey extends ValueObject<string> {
       handler.matches(parts),
     );
 
-    if (!version) {
-      throw new InvalidEncryptedPrivateKeyFormatError();
-    }
+    assert(version, new InvalidEncryptedPrivateKeyFormatError());
 
     return version.decrypt(parts, password);
   }
