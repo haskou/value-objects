@@ -1056,7 +1056,7 @@ console.log(decrypted.toString()); // 'hello world'
 2. `encrypt()` generates a fresh 12-byte random IV
 3. AES-256-GCM encrypts the payload, authenticates `v1.aes-256-gcm` as AAD by default, and produces a 16-byte authentication tag
 4. The output is `v1.aes-256-gcm.iv.cipherText.tag` with Base64-encoded IV, ciphertext, and tag fields
-5. `decrypt()` validates the version, algorithm, IV length, tag length, Base64 fields, and 1 MiB ciphertext limit before decrypting
+5. `decrypt()` validates the version, algorithm, IV length, tag length, Base64 fields, and 8 MiB ciphertext limit before decrypting
 
 **Random key:**
 ```typescript
@@ -1094,7 +1094,7 @@ const decrypted = key.decrypt(encrypted, { aad: 'orders.v1' });
 - `decrypt()` falls back to no-AAD decryption only when no custom AAD is supplied, so symmetric payloads created before header AAD support remain readable.
 - AES-GCM requires IV uniqueness for a given key. The library generates a random IV for each encryption; avoid manually reusing serialized payload internals as new encryption inputs.
 - Symmetric payload encryption provides confidentiality and ciphertext integrity for holders of the same key. It does not identify which holder encrypted the payload. It is not a post-quantum cryptography scheme; AES-256 is considered to retain a large security margin against Grover-style quadratic speedups, but the KDF and password entropy still matter.
-- Symmetric payload encryption is capped at 1 MiB before encryption.
+- Symmetric payload encryption is capped at 8 MiB before encryption.
 
 #### CryptoPayload
 

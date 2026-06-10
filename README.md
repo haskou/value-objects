@@ -125,8 +125,9 @@ Technical notes:
   either a high-entropy random key or a strong password with a unique,
   non-empty salt. AES-GCM also requires that IVs do not repeat for the same key;
   the library generates a random 96-bit IV for each encryption.
-- Payload encryption is intended for small payloads and is currently capped at
-  1 MiB before encryption.
+- Asymmetric payload encryption is intended for small payloads and is currently
+  capped at 1 MiB before encryption. Symmetric payload encryption is capped at
+  8 MiB before encryption.
 - New encrypted private keys use `v3.scrypt.N16384.r8.p5` with a 16-byte salt,
   then AES-256-GCM with a 12-byte IV and 16-byte authentication tag. The older
   v2 scrypt profile and legacy PBKDF2 format still decrypt, and
