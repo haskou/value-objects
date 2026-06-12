@@ -1,14 +1,15 @@
-import type { Config } from '@jest/types';
-
-// Sync object
-const config: Config.InitialOptions = {
+/** @type {import('@jest/types').Config.InitialOptions} */
+const config = {
   collectCoverageFrom: ['<rootDir>/src/**/*.ts'],
   coverageDirectory: '<rootDir>/tests/coverage',
   coveragePathIgnorePatterns: ['<rootDir>/node_modules/', 'index.ts'],
   coverageReporters: ['html', 'lcov', 'text'],
-  globals: {
-    'ts-jest': {
-      tsconfig: 'tsconfig.jest.json',
+  coverageThreshold: {
+    global: {
+      branches: 100,
+      functions: 100,
+      lines: 100,
+      statements: 100,
     },
   },
   moduleDirectories: ['node_modules', 'src'],
@@ -23,7 +24,7 @@ const config: Config.InitialOptions = {
   testPathIgnorePatterns: ['<rootDir>/node_modules/', 'index.ts'],
   transform: {
     '^.+\\.js$': 'ts-jest',
-    '^.+\\.ts': 'ts-jest',
+    '^.+\\.ts': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],
   },
   transformIgnorePatterns: [
     'node_modules/(?!(@noble/ciphers|@noble/curves|@noble/hashes)/)',
@@ -31,4 +32,4 @@ const config: Config.InitialOptions = {
   verbose: true,
 };
 
-export default config;
+module.exports = config;

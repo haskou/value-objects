@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "ESNext",
+    "target": "ES2022",
     "strict": true,
     "allowJs": false,
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "noImplicitAny": true,
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "importHelpers": true,
     "allowSyntheticDefaultImports": true,
     "emitDecoratorMetadata": true,
@@ -15,7 +16,7 @@
     "strictNullChecks": true,
     "preserveConstEnums": true,
     "lib": [
-      "ESNext",
+      "ES2022",
     ],
     "types": [
       "node",

@@ -3,10 +3,22 @@
   "version": "2.10.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist"
   ],
+  "sideEffects": false,
   "license": "MIT",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -22,41 +34,32 @@
     "lint": "eslint ./src --ext .ts",
     "lint:fix": "eslint ./src --ext .ts --fix",
     "test": "yarn lint && yarn test:unit",
-    "test:unit": "jest --passWithNoTests --runInBand",
+    "test:unit": "jest --runInBand",
     "test:coverage": "NODE_ENV=test jest --collect-coverage",
-    "build": "rm -rf dist/ && tsc",
-    "publish:patch": "yarn lint && yarn test:coverage && tsc --declaration --outDir dist && yarn version --patch && yarn publish && git push",
-    "publish:minor": "yarn lint && yarn test:coverage && tsc --declaration --outDir dist && yarn version --minor && yarn publish && git push",
-    "publish:major": "yarn lint && yarn test:coverage && tsc --declaration --outDir dist && yarn version --major && yarn publish && git push"
-  },
-  "devDependencies": {
-    "@types/jest": "^30.0.0",
-    "@types/node": "^24.0.13",
-    "@types/uuid": "8",
-    "@typescript-eslint/eslint-plugin": "6.20.0",
-    "@typescript-eslint/parser": "6.20.0",
-    "eslint": "8.57.0",
-    "eslint-config-prettier": "^10.1.5",
-    "eslint-plugin-perfectionist": "^4.15.0",
-    "eslint-plugin-prettier": "^5.5.1",
-    "eslint-plugin-sonarjs": "^3.0.4",
-    "eslint-plugin-unused-imports": "^4.1.4",
-    "faker": "^6.6.6",
-    "jest": "^30.0.4",
-    "jest-extended": "^6.0.0",
-    "jest-runner-tsc": "^1.6.0",
-    "prettier": "^3.6.2",
-    "prettier-eslint": "^16.4.2",
-    "ts-jest": "^29.4.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "build": "rm -rf dist/ && tsc"
   },
   "dependencies": {
     "@noble/ciphers": "^2.2.0",
-    "@noble/curves": "^2.0.1",
+    "@noble/curves": "^2.2.0",
     "@noble/hashes": "^2.0.1",
-    "bson-objectid": "^2.0.4",
     "buffer": "^6.0.3",
-    "uuid": "8"
+    "tslib": "^2.8.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.9.3",
+    "@typescript-eslint/eslint-plugin": "8.61.0",
+    "@typescript-eslint/parser": "8.61.0",
+    "eslint": "10.4.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-perfectionist": "^5.9.0",
+    "eslint-plugin-prettier": "^5.5.6",
+    "eslint-plugin-sonarjs": "^4.0.3",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "jest": "^30.4.2",
+    "jest-extended": "^7.0.0",
+    "prettier": "^3.8.4",
+    "ts-jest": "^29.4.11",
+    "typescript": "^6.0.3"
   }
 }
