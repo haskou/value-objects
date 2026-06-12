@@ -3,10 +3,22 @@
   "version": "2.10.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist"
   ],
+  "sideEffects": false,
   "license": "MIT",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -22,12 +34,9 @@
     "lint": "eslint ./src --ext .ts",
     "lint:fix": "eslint ./src --ext .ts --fix",
     "test": "yarn lint && yarn test:unit",
-    "test:unit": "jest --passWithNoTests --runInBand",
+    "test:unit": "jest --runInBand",
     "test:coverage": "NODE_ENV=test jest --collect-coverage",
-    "build": "rm -rf dist/ && tsc",
-    "publish:patch": "yarn lint && yarn test:coverage && tsc --declaration --outDir dist && yarn version --patch && yarn publish && git push",
-    "publish:minor": "yarn lint && yarn test:coverage && tsc --declaration --outDir dist && yarn version --minor && yarn publish && git push",
-    "publish:major": "yarn lint && yarn test:coverage && tsc --declaration --outDir dist && yarn version --major && yarn publish && git push"
+    "build": "rm -rf dist/ && tsc"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
@@ -57,6 +66,7 @@
     "@noble/hashes": "^2.0.1",
     "bson-objectid": "^2.0.4",
     "buffer": "^6.0.3",
+    "tslib": "^2.8.1",
     "uuid": "8"
   }
 }

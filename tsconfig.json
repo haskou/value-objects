@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "ESNext",
+    "target": "ES2022",
     "strict": true,
     "allowJs": false,
     "esModuleInterop": true,
@@ -15,7 +15,7 @@
     "strictNullChecks": true,
     "preserveConstEnums": true,
     "lib": [
-      "ESNext",
+      "ES2022",
     ],
     "types": [
       "node",
