@@ -9,6 +9,7 @@ describe('ShortId', () => {
       const id = ShortId.generate();
       expect(id).toBeInstanceOf(ShortId);
       expect(id.toString()).toHaveLength(24);
+      expect(id.toString()).toMatch(/^[0-9a-f]{24}$/);
     });
   });
   describe('constructor', () => {

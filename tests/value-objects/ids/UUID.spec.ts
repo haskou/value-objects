@@ -9,6 +9,8 @@ describe('UUID', () => {
       const id = UUID.generate();
       expect(id).toBeInstanceOf(UUID);
       expect(id.toString()).toHaveLength(36);
+      expect(id.toString()[14]).toBe('4');
+      expect(['8', '9', 'a', 'b']).toContain(id.toString()[19]);
     });
   });
   describe('constructor', () => {
