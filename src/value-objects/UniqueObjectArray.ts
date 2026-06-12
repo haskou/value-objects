@@ -1,9 +1,9 @@
 interface ComparableItem {
   isEqual(item: unknown): boolean;
 }
-export class UniqueObjectArray<T extends ComparableItem>
-  implements Iterable<T>
-{
+export class UniqueObjectArray<
+  T extends ComparableItem,
+> implements Iterable<T> {
   private items: T[] = [];
 
   public static fromArray<T extends ComparableItem>(

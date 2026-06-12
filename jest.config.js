@@ -1,7 +1,5 @@
-import type { Config } from '@jest/types';
-
-// Sync object
-const config: Config.InitialOptions = {
+/** @type {import('@jest/types').Config.InitialOptions} */
+const config = {
   collectCoverageFrom: ['<rootDir>/src/**/*.ts'],
   coverageDirectory: '<rootDir>/tests/coverage',
   coveragePathIgnorePatterns: ['<rootDir>/node_modules/', 'index.ts'],
@@ -34,4 +32,4 @@ const config: Config.InitialOptions = {
   verbose: true,
 };
 
-export default config;
+module.exports = config;

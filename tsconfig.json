@@ -8,6 +8,7 @@
     "resolveJsonModule": true,
     "noImplicitAny": true,
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "importHelpers": true,
     "allowSyntheticDefaultImports": true,
     "emitDecoratorMetadata": true,
