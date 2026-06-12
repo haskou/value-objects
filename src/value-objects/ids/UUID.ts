@@ -11,10 +11,11 @@ export class UUID extends ValueObject<string> {
   private static readonly PATTERN = new RegExp(`^[a-z0-9-]{${this.LENGTH}}$`);
 
   private static fromRandomBytes(bytes: Buffer): string {
-    bytes[6] = (bytes[6] % 16) + 64;
-    bytes[8] = (bytes[8] % 64) + 128;
+    const uuidBytes = Buffer.from(bytes);
+    uuidBytes[6] = (uuidBytes[6] % 16) + 64;
+    uuidBytes[8] = (uuidBytes[8] % 64) + 128;
 
-    const hex = bytes.toString('hex');
+    const hex = uuidBytes.toString('hex');
 
     return [
       hex.slice(0, 8),

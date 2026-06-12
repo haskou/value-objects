@@ -29,7 +29,7 @@ const jestGlobals = {
 
 module.exports = [
   {
-    ignores: ['dist/**', 'node_modules/**', 'tests/coverage/**'],
+    ignores: ['dist/**', 'node_modules/**', 'tests/**'],
   },
   {
     files: ['**/*.ts'],
