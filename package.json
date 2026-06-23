@@ -1,6 +1,7 @@
 {
   "name": "@haskou/value-objects",
   "version": "2.10.1",
+  "description": "TypeScript value objects for validated, immutable primitive values and small domain-safe data structures.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -19,6 +20,28 @@
   "engines": {
     "node": ">=20.19.0"
   },
+  "keywords": [
+    "value-object",
+    "value-objects",
+    "typescript",
+    "validation",
+    "validated-types",
+    "immutable",
+    "immutability",
+    "type-safety",
+    "domain-primitives",
+    "primitive-obsession",
+    "ddd",
+    "domain-driven-design",
+    "email-validation",
+    "uuid",
+    "hash",
+    "crypto",
+    "aes-256-gcm",
+    "ed25519",
+    "x25519",
+    "scrypt"
+  ],
   "publishConfig": {
     "access": "public"
   },
@@ -29,14 +52,17 @@
   "bugs": {
     "url": "https://github.com/haskou/value-objects/issues"
   },
-  "homepage": "https://github.com/haskou/value-objects#readme",
+  "homepage": "https://haskou.github.io/value-objects/",
   "scripts": {
     "lint": "eslint ./src --ext .ts",
     "lint:fix": "eslint ./src --ext .ts --fix",
     "test": "yarn lint && yarn test:unit",
     "test:unit": "jest --runInBand",
     "test:coverage": "NODE_ENV=test jest --collect-coverage",
-    "build": "rm -rf dist/ && tsc"
+    "build": "rm -rf dist/ && tsc",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress build docs && vitepress preview docs"
   },
   "dependencies": {
     "@noble/ciphers": "^2.2.0",
@@ -60,6 +86,8 @@
     "jest-extended": "^7.0.0",
     "prettier": "^3.8.4",
     "ts-jest": "^29.4.11",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.22"
   }
 }
