@@ -618,7 +618,7 @@
   dependencies:
     "@types/json-schema" "^7.0.15"
 
-"@eslint/js@^10.4.1":
+"@eslint/js@^10.0.1":
   version "10.0.1"
   resolved "https://registry.yarnpkg.com/@eslint/js/-/js-10.0.1.tgz#1e8a876f50117af8ab67e47d5ad94d38d6622583"
   integrity sha512-zeR9k5pd4gxjZ0abRoIaxdc7I3nDktoXZk2qOv9gCNWx3mVwEn32VRhyLaRsDiJjTs0xq/T8mfPtyuXu7GWBcA==
@@ -636,12 +636,12 @@
     "@eslint/core" "^1.2.1"
     levn "^0.4.1"
 
-"@haskou/eslint-config@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@haskou/eslint-config/-/eslint-config-0.1.0.tgz#b615a436cad5a72c48d612c51efa37e6af19634f"
-  integrity sha512-5LvE9JlN8drmRos4sPjmbOk4pdWDhw+VX6+4FgZmpVTj2kew1v34jelMaOT0lrSZxs3/aQgdqU5yyEmMxwbY4Q==
+"@haskou/eslint-config@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@haskou/eslint-config/-/eslint-config-0.1.1.tgz#81233418a57d11f8fb723693615591a320cb266f"
+  integrity sha512-NZfhdAAenWpW+I9mzLl9F/lbNcyZsBpFigUhueDblFKOFS8LOaO5ViGhgQNhgThK7rNjetMEQBJ20X9MUQqPyA==
   dependencies:
-    "@eslint/js" "^10.4.1"
+    "@eslint/js" "^10.0.1"
     "@typescript-eslint/eslint-plugin" "8.61.0"
     "@typescript-eslint/parser" "8.61.0"
     eslint-config-prettier "^10.1.8"
