@@ -5,7 +5,7 @@ description: API reference for @haskou/value-objects
 
 # Reference
 
-Each exported class has its own page. Tiny miracle: now changing one class doc no longer means spelunking through a mega Markdown crypt.
+Each exported class has its own page.
 
 ## Base
 

@@ -1,5 +1,31 @@
 import { defineConfig } from 'vitepress';
 
+const gettingStartedSidebar = [
+  {
+    text: 'Getting Started',
+    items: [
+      { text: 'Introduction', link: '/getting-started/introduction' },
+      { text: 'Installation', link: '/getting-started/installation' },
+      { text: 'Basic usage', link: '/getting-started/basic-usage' },
+    ],
+  },
+];
+
+const guideSidebar = [
+  {
+    text: 'Guide',
+    items: [
+      { text: 'Overview', link: '/guides/' },
+      { text: 'Custom value objects', link: '/guides/custom-value-objects' },
+      { text: 'Error handling', link: '/guides/error-handling' },
+      { text: 'Serialization', link: '/guides/serialization' },
+      { text: 'Null object', link: '/guides/null-object' },
+      { text: 'Release flow', link: '/guides/release-flow' },
+      { text: 'Agent skill', link: '/guides/agent-skill' },
+    ],
+  },
+];
+
 const referenceSidebar = [
   {
     text: 'Overview',
@@ -122,52 +148,18 @@ export default defineConfig({
   ],
 
   themeConfig: {
-    logo: { src: '/logo.svg', alt: 'Value Objects' },
     siteTitle: 'Value Objects',
 
     nav: [
-      { text: 'Guide', link: '/getting-started/introduction' },
+      { text: 'Getting Started', link: '/getting-started/introduction' },
+      { text: 'Guide', link: '/guides/' },
       { text: 'Reference', link: '/reference/' },
-      { text: 'Agent skill', link: '/guides/agent-skill' },
       { text: 'npm', link: 'https://www.npmjs.com/package/@haskou/value-objects' },
     ],
 
     sidebar: {
-      '/getting-started/': [
-        {
-          text: 'Getting started',
-          items: [
-            { text: 'Introduction', link: '/getting-started/introduction' },
-            { text: 'Installation', link: '/getting-started/installation' },
-            { text: 'Basic usage', link: '/getting-started/basic-usage' },
-          ],
-        },
-        {
-          text: 'Guides',
-          items: [
-            { text: 'Custom value objects', link: '/guides/custom-value-objects' },
-            { text: 'Error handling', link: '/guides/error-handling' },
-            { text: 'Serialization', link: '/guides/serialization' },
-            { text: 'Null object', link: '/guides/null-object' },
-            { text: 'Release flow', link: '/guides/release-flow' },
-            { text: 'Agent skill', link: '/guides/agent-skill' },
-          ],
-        },
-      ],
-      '/guides/': [
-        {
-          text: 'Guides',
-          items: [
-            { text: 'Custom value objects', link: '/guides/custom-value-objects' },
-            { text: 'Error handling', link: '/guides/error-handling' },
-            { text: 'Serialization', link: '/guides/serialization' },
-            { text: 'Null object', link: '/guides/null-object' },
-            { text: 'Release flow', link: '/guides/release-flow' },
-            { text: 'Agent skill', link: '/guides/agent-skill' },
-          ],
-        },
-        ...referenceSidebar,
-      ],
+      '/getting-started/': gettingStartedSidebar,
+      '/guides/': guideSidebar,
       '/reference/': referenceSidebar,
     },
 
