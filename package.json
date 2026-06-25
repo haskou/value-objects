@@ -1,6 +1,6 @@
 {
   "name": "@haskou/value-objects",
-  "version": "2.12.0",
+  "version": "2.13.0",
   "description": "TypeScript value objects for validated, immutable primitive values and small domain-safe data structures.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
