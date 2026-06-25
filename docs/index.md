@@ -17,6 +17,7 @@ Use it as the source of truth for installation, examples, errors, serialization 
 - [Introduction](/getting-started/introduction)
 - [Installation](/getting-started/installation)
 - [Basic usage](/getting-started/basic-usage)
+- [Guide](/guides/)
 - [API reference](/reference/)
 
 ## Package
