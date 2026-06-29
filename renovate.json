@@ -4,6 +4,8 @@
   "labels": ["dependencies"],
   "timezone": "Europe/Madrid",
   "rangeStrategy": "bump",
+  "branchPrefix": "",
+  "branchPrefixOld": "renovate/",
   "platformAutomerge": true,
   "commitMessageAction": "⬆️ update",
   "packageRules": [
@@ -14,6 +16,7 @@
       "matchUpdateTypes": ["minor", "patch"],
       "semanticCommitType": "fix",
       "semanticCommitScope": "deps",
+      "additionalBranchPrefix": "fix/",
       "automerge": true,
       "automergeType": "pr"
     },
@@ -24,6 +27,7 @@
       "matchUpdateTypes": ["minor", "patch"],
       "semanticCommitType": "chore",
       "semanticCommitScope": "deps",
+      "additionalBranchPrefix": "chore/",
       "automerge": true,
       "automergeType": "pr"
     },
@@ -32,11 +36,13 @@
       "matchDepTypes": ["peerDependencies"],
       "semanticCommitType": "fix",
       "semanticCommitScope": "peer-deps",
+      "additionalBranchPrefix": "fix/",
       "automerge": false
     },
     {
       "description": "Major updates: manual review",
       "matchUpdateTypes": ["major"],
+      "additionalBranchPrefix": "break/",
       "automerge": false
     }
   ]
