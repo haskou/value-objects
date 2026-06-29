@@ -1,15 +1,49 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits"],
+  "extends": ["config:recommended", ":semanticCommits"],
   "labels": ["dependencies"],
+  "timezone": "Europe/Madrid",
   "rangeStrategy": "bump",
-  "semanticCommitType": "chore",
-  "semanticCommitScope": "deps",
+  "branchPrefix": "",
+  "branchPrefixOld": "renovate/",
+  "platformAutomerge": true,
   "commitMessageAction": "⬆️ update",
   "packageRules": [
     {
-      "groupName": "non-major dependencies",
-      "matchUpdateTypes": ["minor", "patch"]
+      "description": "Runtime deps: patch/minor grouped, automerge, release patch",
+      "groupName": "non-major runtime dependencies",
+      "matchDepTypes": ["dependencies", "optionalDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "deps",
+      "additionalBranchPrefix": "fix/",
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Dev deps: patch/minor grouped, automerge, no release",
+      "groupName": "non-major dev dependencies",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps",
+      "additionalBranchPrefix": "chore/",
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Peer deps: manual review",
+      "matchDepTypes": ["peerDependencies"],
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "peer-deps",
+      "additionalBranchPrefix": "fix/",
+      "automerge": false
+    },
+    {
+      "description": "Major updates: manual review",
+      "matchUpdateTypes": ["major"],
+      "additionalBranchPrefix": "break/",
+      "automerge": false
     }
   ]
 }
