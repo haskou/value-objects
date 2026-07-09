@@ -13,15 +13,6 @@ export class CalendarDay extends ValueObject<string> {
   private readonly month: number;
   private readonly day: number;
 
-  private static ensureIsValidValue(
-    value: string | Date | number | Timestamp,
-  ): void {
-    if (typeof value == 'string') {
-      this.ensureIsValidString(value);
-    }
-    this.ensureIsValidDate(new Date(value.valueOf()));
-  }
-
   private static ensureIsValidString(value: string): void {
     assert(
       value.match(/^\d{4}-\d{1,2}-\d{1,2}$/),
@@ -37,15 +28,44 @@ export class CalendarDay extends ValueObject<string> {
   }
 
   private static ensureIsValidDate(value: Date | number | Timestamp): void {
-    assert(!isNaN(value.valueOf()), new InvalidDayError(value));
+    assert(Number.isFinite(value.valueOf()), new InvalidDayError(value));
+  }
+
+  private static timestampFromString(value: string): Timestamp {
+    CalendarDay.ensureIsValidString(value);
+
+    const [year, month, day] = value.split('-').map(Number);
+    const date = new Date(0);
+    date.setUTCHours(0, 0, 0, 0);
+    date.setUTCFullYear(year, month - 1, day);
+
+    assert(
+      date.getUTCFullYear() === year &&
+        date.getUTCMonth() === month - 1 &&
+        date.getUTCDate() === day,
+      new InvalidDayError(value),
+    );
+
+    return new Timestamp(date);
+  }
+
+  private static timestampFromValue(
+    value: string | Date | number | Timestamp,
+  ): Timestamp {
+    if (typeof value === 'string') {
+      return CalendarDay.timestampFromString(value);
+    }
+
+    CalendarDay.ensureIsValidDate(value);
+
+    return new Timestamp(value);
   }
 
   constructor(value?: string | Date | number | Timestamp) {
     let timestamp: Timestamp;
 
-    if (value) {
-      CalendarDay.ensureIsValidValue(value);
-      timestamp = new Timestamp(value);
+    if (value !== undefined) {
+      timestamp = CalendarDay.timestampFromValue(value);
     } else {
       timestamp = new Timestamp();
     }
@@ -86,6 +106,10 @@ export class CalendarDay extends ValueObject<string> {
   }
 
   public toTimestamp(): Timestamp {
-    return new Timestamp(Date.UTC(this.year, this.month - 1, this.day));
+    const date = new Date(0);
+    date.setUTCHours(0, 0, 0, 0);
+    date.setUTCFullYear(this.year, this.month - 1, this.day);
+
+    return new Timestamp(date);
   }
 }

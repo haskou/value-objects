@@ -37,17 +37,17 @@ This class can throw:
 
 ## Methods
 
-| Method | Description |
-| --- | --- |
-| `isZero()` | Returns true when the number is exactly 0. |
-| `isGreaterThan(other)` | Returns true when the current value is greater than `other`. |
+| Method                        | Description                                                              |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| `isZero()`                    | Returns true when the number is exactly 0.                               |
+| `isGreaterThan(other)`        | Returns true when the current value is greater than `other`.             |
 | `isGreaterOrEqualThan(other)` | Returns true when the current value is greater than or equal to `other`. |
-| `isLessThan(other)` | Returns true when the current value is less than `other`. |
-| `isLessOrEqualThan(other)` | Returns true when the current value is less than or equal to `other`. |
-| `add(other)` | Returns a new `NumberValueObject` with the sum. |
-| `subtract(other)` | Returns a new `NumberValueObject` with the difference. |
-| `multiply(other)` | Returns a new `NumberValueObject` with the product. |
-| `divide(other)` | Returns a new `NumberValueObject` with the quotient. |
+| `isLessThan(other)`           | Returns true when the current value is less than `other`.                |
+| `isLessOrEqualThan(other)`    | Returns true when the current value is less than or equal to `other`.    |
+| `add(other)`                  | Returns a new `NumberValueObject` with the sum.                          |
+| `subtract(other)`             | Returns a new `NumberValueObject` with the difference.                   |
+| `multiply(other)`             | Returns a new `NumberValueObject` with the product.                      |
+| `divide(other)`               | Returns a new `NumberValueObject` with the quotient.                     |
 
 ## Example
 
@@ -65,7 +65,7 @@ a.isGreaterThan(b); // true
 ## Notes
 
 - Arithmetic helpers return new instances.
-- `Infinity` is accepted because the current validation only rejects `NaN`.
+- `NaN`, `Infinity`, and `-Infinity` are rejected.
 
 ## Related
 

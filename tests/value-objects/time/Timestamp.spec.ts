@@ -5,10 +5,14 @@ import {
   Day,
   Duration,
   CalendarDay,
+  InvalidNumberError,
   MonthOfYear,
 } from '../../../src';
 
 describe('Timestamp', () => {
+  it('should reject invalid date strings', () => {
+    expect(() => new Timestamp('not-a-date')).toThrow(InvalidNumberError);
+  });
   describe('constructor', () => {
     it('should create a Timestamp with a Date value', () => {
       expect(new Timestamp(new Date())).toBeInstanceOf(Timestamp);

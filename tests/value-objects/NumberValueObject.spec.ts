@@ -26,6 +26,12 @@ describe('NumberValueObject', () => {
         `Invalid number ${value}`,
       );
     });
+    it.each([Infinity, -Infinity])(
+      'should throw InvalidNumberError for non-finite value %s',
+      (value) => {
+        expect(() => new NumberValueObject(value)).toThrow(InvalidNumberError);
+      },
+    );
     it('should throw InvalidNumberError for a parsed string', () => {
       const value = parseInt('Not a number');
 
@@ -43,6 +49,14 @@ describe('NumberValueObject', () => {
 
     it('should return false when value is not 0', () => {
       expect(new NumberValueObject(1).isZero()).toBeFalse();
+    });
+  });
+
+  describe('divide', () => {
+    it('should reject division by zero', () => {
+      expect(() => new NumberValueObject(1).divide(0)).toThrow(
+        InvalidNumberError,
+      );
     });
   });
 

@@ -152,42 +152,6 @@ describe('TimestampInterval', () => {
     );
   });
 
-  describe('modifyStart', () => {
-    it('should modify the start timestamp', () => {
-      const newStartTimestamp = new Timestamp(1721606400000);
-      timestampInterval.modifyStart(newStartTimestamp);
-      expect(timestampInterval).toMatchObject({
-        start: newStartTimestamp,
-        end: endTimestamp,
-      });
-    });
-
-    it('should throw error if the start is after the end', () => {
-      const newStartTimestamp = new Timestamp(1722124800000);
-      expect(() => timestampInterval.modifyStart(newStartTimestamp)).toThrow(
-        InvalidTimestampIntervalError,
-      );
-    });
-  });
-
-  describe('modifyEnd', () => {
-    it('should modify the end timestamp', () => {
-      const newEndTimestamp = new Timestamp(1722124800000);
-      timestampInterval.modifyEnd(newEndTimestamp);
-      expect(timestampInterval).toMatchObject({
-        start: startTimestamp,
-        end: newEndTimestamp,
-      });
-    });
-
-    it('should throw error if the start is after the end', () => {
-      const newEndTimestamp = new Timestamp(1721606400000);
-      expect(() => timestampInterval.modifyEnd(newEndTimestamp)).toThrow(
-        InvalidTimestampIntervalError,
-      );
-    });
-  });
-
   describe('getDaysBetweenInterval', () => {
     it('should return an array of dates in ISO format for the given interval', () => {
       const start = new Timestamp('2024-11-18T00:00:00.000Z');

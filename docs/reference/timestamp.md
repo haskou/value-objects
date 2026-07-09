@@ -27,45 +27,45 @@ constructor(value?: number | Date | Timestamp | string)
 
 ## Validation
 
-String values are parsed with `new Date(value)`. Invalid dates produce `NaN`; this class itself does not reject `NaN`.
+String values are parsed with `new Date(value)`. Inputs that produce `NaN`, `Infinity`, or `-Infinity` are rejected with `InvalidNumberError`.
 
 ## Methods
 
-| Method | Description |
-| --- | --- |
-| `static new(value)` | Creates a new `Timestamp`. |
-| `static now()` | Creates a timestamp for the current time. |
-| `static fromSeconds(seconds)` | Creates from seconds. |
-| `toExactHour()` | Returns a timestamp rounded down to the exact UTC hour. |
-| `toMilliseconds()` | Returns milliseconds. |
-| `toSeconds()` | Returns rounded seconds. |
-| `toDate()` | Returns a `Date`. |
-| `isBefore(other)` | Compares milliseconds. |
-| `isAfter(other)` | Compares milliseconds. |
-| `isBeforeOrEqual(other)` | Compares milliseconds. |
-| `isAfterOrEqual(other)` | Compares milliseconds. |
-| `addMilliseconds(value)` | Returns a new timestamp. |
-| `addSeconds(value)` | Returns a new timestamp. |
-| `addMinutes(value)` | Returns a new timestamp. |
-| `addHours(value)` | Returns a new timestamp. |
-| `addDays(value)` | Returns a new timestamp. |
-| `addWeeks(value)` | Returns a new timestamp. |
-| `addMonths(value)` | Uses a fixed 30-day month factor. |
-| `addYears(value)` | Uses a fixed 365-day year factor. |
-| `addDuration(duration)` | Adds a `Duration`. |
-| `isSameDay(other)` | Compares `CalendarDay`. |
-| `isSameMonth(other)` | Compares `MonthOfYear`. |
-| `isSameYear(other)` | Compares `Year`. |
-| `getCalendarDay()` | Returns a `CalendarDay`. |
-| `getDay()` | Returns a UTC `Day`. |
-| `getMonth()` | Returns a UTC `Month`. |
-| `getYear()` | Returns a UTC `Year`. |
-| `getHours()` | Returns UTC hours. |
-| `getMinutes()` | Returns UTC minutes. |
-| `getSeconds()` | Returns UTC seconds. |
-| `getMilliseconds()` | Returns UTC milliseconds. |
-| `getDayOfWeek()` | Returns JavaScript UTC day number. |
-| `getMonthOfYear()` | Returns `MonthOfYear`. |
+| Method                        | Description                                             |
+| ----------------------------- | ------------------------------------------------------- |
+| `static new(value)`           | Creates a new `Timestamp`.                              |
+| `static now()`                | Creates a timestamp for the current time.               |
+| `static fromSeconds(seconds)` | Creates from seconds.                                   |
+| `toExactHour()`               | Returns a timestamp rounded down to the exact UTC hour. |
+| `toMilliseconds()`            | Returns milliseconds.                                   |
+| `toSeconds()`                 | Returns rounded seconds.                                |
+| `toDate()`                    | Returns a `Date`.                                       |
+| `isBefore(other)`             | Compares milliseconds.                                  |
+| `isAfter(other)`              | Compares milliseconds.                                  |
+| `isBeforeOrEqual(other)`      | Compares milliseconds.                                  |
+| `isAfterOrEqual(other)`       | Compares milliseconds.                                  |
+| `addMilliseconds(value)`      | Returns a new timestamp.                                |
+| `addSeconds(value)`           | Returns a new timestamp.                                |
+| `addMinutes(value)`           | Returns a new timestamp.                                |
+| `addHours(value)`             | Returns a new timestamp.                                |
+| `addDays(value)`              | Returns a new timestamp.                                |
+| `addWeeks(value)`             | Returns a new timestamp.                                |
+| `addMonths(value)`            | Uses a fixed 30-day month factor.                       |
+| `addYears(value)`             | Uses a fixed 365-day year factor.                       |
+| `addDuration(duration)`       | Adds a `Duration`.                                      |
+| `isSameDay(other)`            | Compares `CalendarDay`.                                 |
+| `isSameMonth(other)`          | Compares `MonthOfYear`.                                 |
+| `isSameYear(other)`           | Compares `Year`.                                        |
+| `getCalendarDay()`            | Returns a `CalendarDay`.                                |
+| `getDay()`                    | Returns a UTC `Day`.                                    |
+| `getMonth()`                  | Returns a UTC `Month`.                                  |
+| `getYear()`                   | Returns a UTC `Year`.                                   |
+| `getHours()`                  | Returns UTC hours.                                      |
+| `getMinutes()`                | Returns UTC minutes.                                    |
+| `getSeconds()`                | Returns UTC seconds.                                    |
+| `getMilliseconds()`           | Returns UTC milliseconds.                               |
+| `getDayOfWeek()`              | Returns JavaScript UTC day number.                      |
+| `getMonthOfYear()`            | Returns `MonthOfYear`.                                  |
 
 ## Example
 

@@ -19,8 +19,8 @@ export class TimestampInterval extends ValueObject<string> {
   }
 
   constructor(
-    private start: Timestamp,
-    private end: Timestamp,
+    private readonly start: Timestamp,
+    private readonly end: Timestamp,
   ) {
     super(`${start.valueOf()}-${end.valueOf()}`);
 
@@ -68,18 +68,6 @@ export class TimestampInterval extends ValueObject<string> {
     }
 
     return count;
-  }
-
-  public modifyStart(start: Timestamp): void {
-    const end = this.end;
-    assert(start.isBefore(end), new InvalidTimestampIntervalError(start, end));
-    this.start = start;
-  }
-
-  public modifyEnd(end: Timestamp): void {
-    const start = this.start;
-    assert(start.isBefore(end), new InvalidTimestampIntervalError(start, end));
-    this.end = end;
   }
 
   public getDaysBetweenInterval(): CalendarDay[] {

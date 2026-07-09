@@ -102,7 +102,7 @@ export class Duration extends NumberValueObject {
     return new NumberValueObject(
       Math.floor(
         new Duration(this).divide(Duration.millisecondFactors.DAYS).valueOf(),
-      ) % Duration.SECOND_UNITS.DAYS,
+      ),
     );
   }
 
@@ -110,7 +110,7 @@ export class Duration extends NumberValueObject {
     return new NumberValueObject(
       Math.floor(
         new Duration(this).divide(Duration.millisecondFactors.HOURS).valueOf(),
-      ) % Duration.SECOND_UNITS.HOURS,
+      ) % 24,
     );
   }
 

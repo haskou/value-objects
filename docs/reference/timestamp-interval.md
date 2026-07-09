@@ -27,7 +27,7 @@ constructor(start: Timestamp, end: Timestamp)
 
 ## Validation
 
-`start` must be before or equal to `end` in the constructor. `modifyStart()` and `modifyEnd()` require strict before.
+`start` must be before or equal to `end` in the constructor. Intervals are immutable; create a new interval when either boundary changes.
 
 ## Throws
 
@@ -37,19 +37,17 @@ This class can throw:
 
 ## Methods
 
-| Method | Description |
-| --- | --- |
-| `static fromPrimitives(primitives)` | Restores from `{ start, end }` milliseconds. |
-| `toPrimitives()` | Returns `{ start, end }`. |
-| `getStart()` | Returns the current start timestamp. |
-| `getEnd()` | Returns the current end timestamp. |
-| `getDuration()` | Returns a `Duration`. |
-| `getTotalDaysOfWeek(dayOfWeek)` | Counts occurrences of a weekday within the interval. |
-| `modifyStart(start)` | Mutates the start timestamp after validation. |
-| `modifyEnd(end)` | Mutates the end timestamp after validation. |
-| `getDaysBetweenInterval()` | Returns all `CalendarDay` values between start and end, inclusive. |
-| `getOverlappingInterval(searchInterval)` | Returns overlapping interval or `null`. |
-| `includes(timestamp)` | Checks whether a timestamp is inside the interval, inclusive. |
+| Method                                   | Description                                                        |
+| ---------------------------------------- | ------------------------------------------------------------------ |
+| `static fromPrimitives(primitives)`      | Restores from `{ start, end }` milliseconds.                       |
+| `toPrimitives()`                         | Returns `{ start, end }`.                                          |
+| `getStart()`                             | Returns the current start timestamp.                               |
+| `getEnd()`                               | Returns the current end timestamp.                                 |
+| `getDuration()`                          | Returns a `Duration`.                                              |
+| `getTotalDaysOfWeek(dayOfWeek)`          | Counts occurrences of a weekday within the interval.               |
+| `getDaysBetweenInterval()`               | Returns all `CalendarDay` values between start and end, inclusive. |
+| `getOverlappingInterval(searchInterval)` | Returns overlapping interval or `null`.                            |
+| `includes(timestamp)`                    | Checks whether a timestamp is inside the interval, inclusive.      |
 
 ## Example
 
@@ -66,7 +64,7 @@ interval.includes(start); // true
 
 ## Notes
 
-- Unlike most value objects, `modifyStart()` and `modifyEnd()` mutate internal state. Use deliberately, because apparently time was not annoying enough already.
+- Interval boundaries cannot be changed after construction.
 
 ## Related
 

@@ -7,19 +7,20 @@ export class Longitude extends NumberValueObject {
   private static MAX_VALUE = new NumberValueObject(180);
 
   private static isValid(value: number | NumberValueObject): boolean {
-    const numberValue = new NumberValueObject(value.valueOf());
+    const primitive = value.valueOf();
 
     return (
-      numberValue.isGreaterOrEqualThan(this.MIN_VALUE) &&
-      numberValue.isLessOrEqualThan(this.MAX_VALUE)
+      Number.isFinite(primitive) &&
+      primitive >= this.MIN_VALUE.valueOf() &&
+      primitive <= this.MAX_VALUE.valueOf()
     );
   }
 
   constructor(value: number | NumberValueObject) {
-    super(value.valueOf());
     assert(
       Longitude.isValid(value),
       new InvalidLongitudeError(value.valueOf()),
     );
+    super(value.valueOf());
   }
 }

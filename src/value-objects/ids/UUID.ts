@@ -8,7 +8,8 @@ import { ValueObject } from '../ValueObject';
 
 export class UUID extends ValueObject<string> {
   private static readonly LENGTH = 36;
-  private static readonly PATTERN = new RegExp(`^[a-z0-9-]{${this.LENGTH}}$`);
+  private static readonly PATTERN =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
   private static fromRandomBytes(bytes: Buffer): string {
     const uuidBytes = Buffer.from(bytes);

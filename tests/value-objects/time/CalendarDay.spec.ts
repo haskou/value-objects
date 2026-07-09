@@ -58,6 +58,22 @@ describe('CalendarDay', () => {
       });
     });
 
+    it('should interpret zero as the Unix epoch', () => {
+      expect(new CalendarDay(0).valueOf()).toBe('1970-01-01');
+    });
+
+    it('should reject a calendar date that does not exist', () => {
+      expect(() => new CalendarDay('2022-02-31')).toThrow(InvalidDayError);
+    });
+
+    it('should accept a valid leap day', () => {
+      expect(new CalendarDay('2024-02-29').valueOf()).toBe('2024-02-29');
+    });
+
+    it('should reject a leap day in a non-leap year', () => {
+      expect(() => new CalendarDay('2023-02-29')).toThrow(InvalidDayError);
+    });
+
     it('should throw InvalidDateFormatError when provided with an invalid date string', () => {
       expect(() => new CalendarDay('2022-01-001')).toThrow(
         InvalidDayFormatError,

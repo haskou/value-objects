@@ -38,16 +38,16 @@ This class can throw:
 
 ## Methods
 
-| Method | Description |
-| --- | --- |
-| `getYear()` | Returns the numeric year. |
-| `getMonth()` | Returns a `Month`. |
-| `getMonthOfYear()` | Returns a `MonthOfYear`. |
-| `getDay()` | Returns a `Day`. |
-| `getDayOfWeek()` | Returns a `DayOfWeek`. |
-| `toTimestamp()` | Returns a UTC timestamp for the day. |
-| `isBefore(date)` | Compares by `YYYY-MM-DD` string value. |
-| `isAfter(date)` | Compares by `YYYY-MM-DD` string value. |
+| Method             | Description                            |
+| ------------------ | -------------------------------------- |
+| `getYear()`        | Returns the numeric year.              |
+| `getMonth()`       | Returns a `Month`.                     |
+| `getMonthOfYear()` | Returns a `MonthOfYear`.               |
+| `getDay()`         | Returns a `Day`.                       |
+| `getDayOfWeek()`   | Returns a `DayOfWeek`.                 |
+| `toTimestamp()`    | Returns a UTC timestamp for the day.   |
+| `isBefore(date)`   | Compares by `YYYY-MM-DD` string value. |
+| `isAfter(date)`    | Compares by `YYYY-MM-DD` string value. |
 
 ## Example
 
@@ -64,6 +64,8 @@ day.getDayOfWeek().toString(); // depends on date
 ## Notes
 
 - When no value is provided, it uses the current timestamp.
+- Numeric zero represents the Unix epoch (`1970-01-01`).
+- Calendar dates that do not exist, such as `2022-02-31`, are rejected instead of normalized.
 - Internally it uses UTC date getters through `Timestamp`.
 
 ## Related
