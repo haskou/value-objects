@@ -28,13 +28,32 @@ describe('UUID', () => {
       expect(() => new UUID('123')).toThrow(InvalidLengthError);
     });
 
-    it("should be a valid id when it's 36 length string", () => {
+    it('should accept a structurally valid UUID', () => {
       expect(
         () => new UUID('8ab0b0f7-7324-4637-bc6b-109326f081c0'),
       ).not.toThrow();
       expect(new UUID('8ab0b0f7-7324-4637-bc6b-109326f081c0')).toBeInstanceOf(
         UUID,
       );
+    });
+
+    it('should reject 36-character strings without UUID structure', () => {
+      expect(() => new UUID('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toThrow(
+        InvalidFormatError,
+      );
+    });
+
+    it('should reject UUIDs with an invalid variant', () => {
+      expect(() => new UUID('8ab0b0f7-7324-4637-7c6b-109326f081c0')).toThrow(
+        InvalidFormatError,
+      );
+    });
+
+    it.each([
+      '00000000-0000-0000-0000-000000000000',
+      'ffffffff-ffff-ffff-ffff-ffffffffffff',
+    ])('should accept the reserved sentinel UUID %s', (value) => {
+      expect(new UUID(value).valueOf()).toBe(value);
     });
 
     it("should be invalid id when it's 36 length but invalid characters", () => {

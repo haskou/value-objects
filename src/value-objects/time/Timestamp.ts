@@ -1,3 +1,5 @@
+import { InvalidNumberError } from '../../errors/InvalidNumberError';
+import { assert } from '../../patterns/Assert';
 import { NumberValueObject } from '../NumberValueObject';
 import { ValueObject } from '../ValueObject';
 import { CalendarDay } from './CalendarDay';
@@ -50,6 +52,11 @@ export class Timestamp extends ValueObject<number> {
 
   public constructor(value?: TimestampValue) {
     super(Timestamp.valueMilliseconds(value));
+
+    assert(
+      Number.isFinite(new Date(this.value).valueOf()),
+      new InvalidNumberError(this.value),
+    );
   }
 
   public toExactHour(): Timestamp {

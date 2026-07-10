@@ -15,7 +15,7 @@ export class NumberValueObject extends ValueObject<number> {
   }
 
   private isValidNumber(value: number): boolean {
-    return !isNaN(value.valueOf());
+    return Number.isFinite(value.valueOf());
   }
 
   public isZero(): boolean {

@@ -22,17 +22,17 @@ describe('Integer', () => {
     expect(() => new Integer(value)).toThrow(`Invalid number ${value}`);
   });
 
-  it('should throw InvalidIntegerError for Infinity', () => {
+  it('should throw InvalidNumberError for Infinity', () => {
     const value = Infinity;
 
-    expect(() => new Integer(value)).toThrow(InvalidIntegerError);
-    expect(() => new Integer(value)).toThrow(`Invalid integer value ${value}`);
+    expect(() => new Integer(value)).toThrow(InvalidNumberError);
+    expect(() => new Integer(value)).toThrow(`Invalid number ${value}`);
   });
 
-  it('should throw InvalidIntegerError for -Infinity', () => {
+  it('should throw InvalidNumberError for -Infinity', () => {
     const value = -Infinity;
 
-    expect(() => new Integer(value)).toThrow(InvalidIntegerError);
-    expect(() => new Integer(value)).toThrow(`Invalid integer value ${value}`);
+    expect(() => new Integer(value)).toThrow(InvalidNumberError);
+    expect(() => new Integer(value)).toThrow(`Invalid number ${value}`);
   });
 });

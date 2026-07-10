@@ -142,6 +142,12 @@ describe('Duration', () => {
   });
 
   describe('getDays', () => {
+    it('should return all whole days for very long durations', () => {
+      const time = Duration.fromDays(100000);
+
+      expect(time.getDays().valueOf()).toBe(100000);
+    });
+
     it('should return the days', () => {
       const milliseconds = 2 * 24 * 60 * 60 * 1000;
       const time = Duration.fromMilliseconds(milliseconds);
@@ -173,6 +179,12 @@ describe('Duration', () => {
   });
 
   describe('getHours', () => {
+    it('should return the hour component after whole days', () => {
+      const time = Duration.fromHours(26);
+
+      expect(time.getHours().valueOf()).toBe(2);
+    });
+
     it('should return the hours', () => {
       const milliseconds = 2 * 60 * 60 * 1000;
       const time = Duration.fromMilliseconds(milliseconds);
