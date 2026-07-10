@@ -53,7 +53,10 @@ export class Timestamp extends ValueObject<number> {
   public constructor(value?: TimestampValue) {
     super(Timestamp.valueMilliseconds(value));
 
-    assert(Number.isFinite(this.value), new InvalidNumberError(this.value));
+    assert(
+      Number.isFinite(new Date(this.value).valueOf()),
+      new InvalidNumberError(this.value),
+    );
   }
 
   public toExactHour(): Timestamp {

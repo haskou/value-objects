@@ -13,6 +13,21 @@ describe('Timestamp', () => {
   it('should reject invalid date strings', () => {
     expect(() => new Timestamp('not-a-date')).toThrow(InvalidNumberError);
   });
+
+  it.each([8640000000000001, -8640000000000001])(
+    'should reject finite milliseconds outside the Date range: %s',
+    (milliseconds) => {
+      expect(() => new Timestamp(milliseconds)).toThrow(InvalidNumberError);
+    },
+  );
+
+  it.each([8640000000000000, -8640000000000000])(
+    'should accept milliseconds at the Date range boundary: %s',
+    (milliseconds) => {
+      expect(new Timestamp(milliseconds).valueOf()).toBe(milliseconds);
+    },
+  );
+
   describe('constructor', () => {
     it('should create a Timestamp with a Date value', () => {
       expect(new Timestamp(new Date())).toBeInstanceOf(Timestamp);

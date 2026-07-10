@@ -11,6 +11,9 @@ export class UUID extends ValueObject<string> {
   private static readonly PATTERN =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+  private static readonly SENTINEL_PATTERN =
+    /^(?:00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
+
   private static fromRandomBytes(bytes: Buffer): string {
     const uuidBytes = Buffer.from(bytes);
     uuidBytes[6] = (uuidBytes[6] % 16) + 64;
@@ -45,6 +48,9 @@ export class UUID extends ValueObject<string> {
       value.length === UUID.LENGTH,
       new InvalidLengthError(this.value, UUID.LENGTH),
     );
-    assert(UUID.PATTERN.test(value), new InvalidFormatError(this.value));
+    assert(
+      UUID.PATTERN.test(value) || UUID.SENTINEL_PATTERN.test(value),
+      new InvalidFormatError(this.value),
+    );
   }
 }

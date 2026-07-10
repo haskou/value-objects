@@ -27,7 +27,7 @@ constructor(value?: number | Date | Timestamp | string)
 
 ## Validation
 
-String values are parsed with `new Date(value)`. Inputs that produce `NaN`, `Infinity`, or `-Infinity` are rejected with `InvalidNumberError`.
+String values are parsed with `new Date(value)`. Inputs that produce an invalid ECMAScript `Date`, including non-finite and out-of-range millisecond values, are rejected with `InvalidNumberError`.
 
 ## Methods
 

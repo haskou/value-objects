@@ -27,7 +27,7 @@ constructor(value: string | StringValueObject)
 
 ## Validation
 
-Must use the standard `8-4-4-4-12` hexadecimal structure with a supported UUID version and RFC variant.
+Must use the standard `8-4-4-4-12` hexadecimal structure with a supported UUID version and RFC variant. The Nil and Max sentinel UUIDs defined by RFC 9562 are also accepted.
 
 ## Throws
 

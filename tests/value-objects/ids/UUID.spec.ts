@@ -49,6 +49,13 @@ describe('UUID', () => {
       );
     });
 
+    it.each([
+      '00000000-0000-0000-0000-000000000000',
+      'ffffffff-ffff-ffff-ffff-ffffffffffff',
+    ])('should accept the reserved sentinel UUID %s', (value) => {
+      expect(new UUID(value).valueOf()).toBe(value);
+    });
+
     it("should be invalid id when it's 36 length but invalid characters", () => {
       expect(() => new UUID('8ab0b0f7-7324#5637-bc6b-109326f081c0')).toThrow(
         InvalidFormatError,
