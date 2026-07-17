@@ -18,7 +18,7 @@
   "sideEffects": false,
   "license": "MIT",
   "engines": {
-    "node": ">=20.20.2"
+    "node": ">=24.18.0"
   },
   "keywords": [
     "value-object",
