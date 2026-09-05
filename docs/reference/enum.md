@@ -62,7 +62,7 @@ new StatusValue(Status.ACTIVE).valueOf(); // 'active'
 
 ## Notes
 
-- `Primitive` is `string | number | boolean | bigint | symbol`.
+- `Primitive` is `string | number | boolean | bigint | symbol | null | undefined`.
 - Object and array values are intentionally excluded because the base equality contract uses primitive value equality.
 
 ## Related
