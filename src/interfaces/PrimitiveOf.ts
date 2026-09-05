@@ -1,5 +1,11 @@
 import { Primitive } from '../types/Primitive';
 
-export type PrimitiveOf<
-  T extends { toPrimitives(): Primitive | Record<string, Primitive> },
-> = ReturnType<T['toPrimitives']>;
+type SerializedValue =
+  | Primitive
+  | SerializedValue[]
+  | {
+      [key: string]: SerializedValue;
+    };
+
+export type PrimitiveOf<T extends { toPrimitives(): SerializedValue }> =
+  ReturnType<T['toPrimitives']>;

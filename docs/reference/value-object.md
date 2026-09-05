@@ -19,6 +19,8 @@ import { ValueObject } from '@haskou/value-objects';
 abstract class ValueObject<T extends Primitive = Primitive>
 ```
 
+`Primitive` is `string | number | boolean | bigint | symbol | null | undefined`. Object and array values are intentionally excluded.
+
 ## Constructor
 
 ```typescript
@@ -29,11 +31,13 @@ constructor(value: T | null | undefined)
 
 Returns a null object when the constructor value is `null` or `undefined`; otherwise stores the primitive value.
 
+Object and array values are intentionally excluded from `Primitive` because `ValueObject.isEqual()` compares wrapped values with `===`. Composite domain values should model their fields explicitly instead of inheriting reference equality accidentally. Composite `toPrimitives()` serialization remains supported independently of this storage constraint.
+
 ## Methods
 
 | Method | Description |
 | --- | --- |
-| `valueOf()` | Returns the wrapped primitive value. |
+| `valueOf()` | Returns the wrapped primitive value. Null objects return `undefined`. |
 | `toString()` | Returns `valueOf().toString()`. |
 | `isEqual(other)` | Compares by primitive value using `other?.valueOf()`. |
 | `isNotEqual(other)` | Negates `isEqual()`. |
@@ -54,6 +58,7 @@ name.isEqual('hasko'); // true
 ## Notes
 
 - Use `ValueObject` when no extra validation is needed beyond null-object handling.
+- Equality remains value-based and does not require matching Value Object classes.
 - Most concrete classes in this package extend it directly or indirectly.
 
 ## Related

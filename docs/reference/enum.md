@@ -27,7 +27,7 @@ constructor(value: T)
 
 ## Validation
 
-The value must be included in the array returned by `getValues()`.
+The primitive value must be included in the array returned by `getValues()`.
 
 ## Throws
 
@@ -62,7 +62,8 @@ new StatusValue(Status.ACTIVE).valueOf(); // 'active'
 
 ## Notes
 
-- Works with string, number, and mixed primitive enum values.
+- `Primitive` is `string | number | boolean | bigint | symbol | null | undefined`.
+- Object and array values are intentionally excluded because the base equality contract uses primitive value equality.
 
 ## Related
 
