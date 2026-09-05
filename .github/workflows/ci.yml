@@ -6,7 +6,6 @@ on:
       - opened
       - synchronize
       - reopened
-      - closed
     branches:
       - master
       - main
@@ -50,38 +49,23 @@ jobs:
           fail_ci_if_error: false
 
   publish:
-    name: Publish to npm
+    name: Publish queued releases
     runs-on: ubuntu-latest
     needs: test
+    if: github.event_name == 'push'
     concurrency:
-      group: publish-${{ github.repository }}-${{ github.event.pull_request.base.ref }}
+      group: publish-${{ github.repository }}-${{ github.ref_name }}
       cancel-in-progress: false
     permissions:
       contents: write
       id-token: write
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.event.action == 'closed' &&
-      github.event.pull_request.merged == true &&
-      (
-        github.event.pull_request.base.ref == 'master' ||
-        github.event.pull_request.base.ref == 'main'
-      ) &&
-      (
-        github.event.pull_request.head.ref == 'feat' ||
-        startsWith(github.event.pull_request.head.ref, 'feat/') ||
-        github.event.pull_request.head.ref == 'fix' ||
-        startsWith(github.event.pull_request.head.ref, 'fix/') ||
-        github.event.pull_request.head.ref == 'break' ||
-        startsWith(github.event.pull_request.head.ref, 'break/')
-      )
+      pull-requests: read
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.base.ref }}
           persist-credentials: false
 
       - name: Setup Node.js
@@ -91,74 +75,50 @@ jobs:
           cache: yarn
           registry-url: https://registry.npmjs.org/
 
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Build package
-        run: yarn build
-
-      - name: Compute release version
-        id: release
+      - name: Drain merged release PRs
         shell: bash
         run: |
           set -euo pipefail
 
           package_name="$(node -p "require('./package.json').name")"
-          current_version="$(node -p "require('./package.json').version")"
-          published_version="$(npm view "$package_name" version)"
-          branch_name="${HEAD_BRANCH}"
-          release_marker="for #${PR_NUMBER}"
+          base_branch="${GITHUB_REF_NAME}"
+          published_version="$(npm view "$package_name" version 2>/dev/null || true)"
+          auth_header="$(
+            node -e "process.stdout.write('AUTHORIZATION: basic ' + Buffer.from('x-access-token:' + process.env.GITHUB_TOKEN).toString('base64'))"
+          )"
 
-          echo "already_released=false" >> "$GITHUB_OUTPUT"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$base_branch" --tags --force
 
-          case "$branch_name" in
-            fix|fix/*)
-              bump="patch"
-              ;;
-            feat|feat/*)
-              bump="minor"
-              ;;
-            break|break/*)
-              bump="major"
-              ;;
-            *)
-              echo "Unsupported release branch: $branch_name"
-              exit 1
-              ;;
-          esac
-
-          release_subject="$(git log --format=%s --grep="$release_marker" -n 1 HEAD || true)"
-
-          if [ -n "$release_subject" ] && grep -q "$release_marker" <<< "$release_subject"; then
-            next_version="$(
-              node - "$release_subject" "$current_version" <<'NODE'
-          const [subject, fallbackVersion] = process.argv.slice(2);
-          const match = subject.match(/Release v([^ ]+) for #\d+/);
-
-          process.stdout.write(match?.[1] ?? fallbackVersion);
+          max_version() {
+            node - "$1" "$2" <<'NODE'
+          const [left, right] = process.argv.slice(2);
+          const parse = (value) => {
+            if (!value) return [0, 0, 0];
+            const parts = value.split('.').map(Number);
+            if (parts.length !== 3 || parts.some((part) => !Number.isInteger(part))) {
+              throw new Error(`Unsupported npm version: ${value}`);
+            }
+            return parts;
+          };
+          const compare = (a, b) => {
+            for (let index = 0; index < 3; index += 1) {
+              if (a[index] !== b[index]) return a[index] - b[index];
+            }
+            return 0;
+          };
+          process.stdout.write(compare(parse(left), parse(right)) >= 0 ? (left || '0.0.0') : (right || '0.0.0'));
           NODE
-            )"
+          }
 
-            echo "Release for PR #${PR_NUMBER} already exists."
-            echo "already_released=true" >> "$GITHUB_OUTPUT"
-            echo "package_name=$package_name" >> "$GITHUB_OUTPUT"
-            echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
-            echo "published_version=$published_version" >> "$GITHUB_OUTPUT"
-            echo "next_version=$next_version" >> "$GITHUB_OUTPUT"
-            echo "bump=$bump" >> "$GITHUB_OUTPUT"
-            echo "should_publish=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          next_version="$(
-            node - "$current_version" "$bump" <<'NODE'
+          bump_version() {
+            node - "$1" "$2" <<'NODE'
           const [version, bump] = process.argv.slice(2);
           const parts = version.split('.').map(Number);
-
           if (parts.length !== 3 || parts.some((part) => !Number.isInteger(part))) {
             throw new Error(`Unsupported npm version: ${version}`);
           }
-
           if (bump === 'patch') parts[2] += 1;
           if (bump === 'minor') {
             parts[1] += 1;
@@ -169,130 +129,158 @@ jobs:
             parts[1] = 0;
             parts[2] = 0;
           }
-
           process.stdout.write(parts.join('.'));
           NODE
-          )"
-
-          npm version "$next_version" --no-git-tag-version
-
-          should_publish="true"
-
-          if [ "$published_version" = "$next_version" ]; then
-            should_publish="false"
-          fi
-
-          if [ "$should_publish" = "true" ]; then
-            node - "$published_version" "$next_version" <<'NODE'
-          const [publishedVersion, nextVersion] = process.argv.slice(2);
-          const parse = (version) => version.split('.').map(Number);
-          const [publishedMajor, publishedMinor, publishedPatch] = parse(publishedVersion);
-          const [nextMajor, nextMinor, nextPatch] = parse(nextVersion);
-          const published = [publishedMajor, publishedMinor, publishedPatch];
-          const next = [nextMajor, nextMinor, nextPatch];
-          const comparison = published.findIndex((part, index) => part !== next[index]);
-
-          if (comparison !== -1 && published[comparison] > next[comparison]) {
-            throw new Error(
-              `Published npm version ${publishedVersion} is newer than computed release ${nextVersion}`,
-            );
           }
-          NODE
-          fi
 
-          echo "package_name=$package_name" >> "$GITHUB_OUTPUT"
-          echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
-          echo "published_version=$published_version" >> "$GITHUB_OUTPUT"
-          echo "next_version=$next_version" >> "$GITHUB_OUTPUT"
-          echo "bump=$bump" >> "$GITHUB_OUTPUT"
-          echo "should_publish=$should_publish" >> "$GITHUB_OUTPUT"
-        env:
-          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          release_for_pr() {
+            local pr_number="$1"
+            local tag subject release_commit version
 
-      - name: Publish package
-        if: >-
-          steps.release.outputs.already_released != 'true' &&
-          steps.release.outputs.should_publish == 'true'
-        run: npm publish --access public --tag latest
+            while IFS= read -r tag; do
+              release_commit="$(git rev-parse "${tag}^{commit}")"
+              subject="$(git show -s --format=%s "$release_commit")"
 
-      - name: Commit release version
-        if: steps.release.outputs.already_released != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
+              if [[ "$subject" =~ Release\ v([^[:space:]]+)\ for\ \#${pr_number}$ ]]; then
+                version="${BASH_REMATCH[1]}"
+                printf '%s\t%s\t%s\n' "$tag" "$version" "$release_commit"
+                return 0
+              fi
+            done < <(git tag --list 'v*')
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            return 1
+          }
 
-          git add package.json
+          ensure_github_release() {
+            local pr_json="$1"
+            local tag="$2"
+            local version="$3"
+            local bump="$4"
+            local pr_number pr_title pr_body pr_url head_branch release_notes
 
-          if git diff --cached --quiet; then
-            echo "No package.json version changes to commit."
-          else
-            git commit -m "chore(release): 🔖 Release v${NEXT_VERSION} for #${PR_NUMBER}"
-          fi
+            pr_number="$(jq -r '.number' <<< "$pr_json")"
+            pr_title="$(jq -r '.title' <<< "$pr_json")"
+            pr_body="$(jq -r '.body // ""' <<< "$pr_json")"
+            pr_url="$(jq -r '.url' <<< "$pr_json")"
+            head_branch="$(jq -r '.headRefName' <<< "$pr_json")"
+            release_notes="$(mktemp)"
 
-          if git rev-parse "v${NEXT_VERSION}" >/dev/null 2>&1; then
-            echo "Tag v${NEXT_VERSION} already exists."
-          else
-            git tag -a "v${NEXT_VERSION}" -m "Release v${NEXT_VERSION} for #${PR_NUMBER}"
-          fi
-
-          auth_header="$(
-            node -e "process.stdout.write('AUTHORIZATION: basic ' + Buffer.from('x-access-token:' + process.env.GITHUB_TOKEN).toString('base64'))"
-          )"
-          git -c "http.https://github.com/.extraheader=$auth_header" push origin "HEAD:${BASE_BRANCH}"
-          git -c "http.https://github.com/.extraheader=$auth_header" push origin "v${NEXT_VERSION}"
-        env:
-          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
-          NEXT_VERSION: ${{ steps.release.outputs.next_version }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Create GitHub release notes
-        if: steps.release.outputs.next_version != ''
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          tag="v${NEXT_VERSION}"
-          release_notes="$(mktemp)"
-          pr_title="$(gh pr view "$PR_NUMBER" --json title --jq '.title')"
-          pr_body="$(gh pr view "$PR_NUMBER" --json body --jq '.body // ""')"
-          pr_url="$(gh pr view "$PR_NUMBER" --json url --jq '.url')"
-
-          {
-            echo "## Changes"
-            echo
-            printf -- "- %s\n" "$pr_title"
-            echo
-            echo "## Release details"
-            echo
-            printf -- "- npm: https://www.npmjs.com/package/%s/v/%s\n" "$PACKAGE_NAME" "$NEXT_VERSION"
-            printf -- "- Pull request: %s\n" "$pr_url"
-            printf -- "- Source branch: \`%s\`\n" "$HEAD_BRANCH"
-            printf -- "- Version bump: \`%s\`\n" "$BUMP"
-          } > "$release_notes"
-
-          if [ -n "$pr_body" ]; then
             {
+              echo "## Changes"
               echo
-              echo "## Pull request notes"
+              printf -- "- %s\n" "$pr_title"
               echo
-              printf '%s\n' "$pr_body" | sed '/^------$/,$d'
-            } >> "$release_notes"
-          fi
+              echo "## Release details"
+              echo
+              printf -- "- npm: https://www.npmjs.com/package/%s/v/%s\n" "$package_name" "$version"
+              printf -- "- Pull request: %s\n" "$pr_url"
+              printf -- "- Source branch: \`%s\`\n" "$head_branch"
+              printf -- "- Version bump: \`%s\`\n" "$bump"
+            } > "$release_notes"
 
-          if gh release view "$tag" >/dev/null 2>&1; then
-            gh release edit "$tag" --title "$tag" --notes-file "$release_notes"
-          else
-            gh release create "$tag" --verify-tag --title "$tag" --notes-file "$release_notes"
-          fi
+            if [ -n "$pr_body" ]; then
+              {
+                echo
+                echo "## Pull request notes"
+                echo
+                printf '%s\n' "$pr_body" | sed '/^------$/,$d'
+              } >> "$release_notes"
+            fi
+
+            if gh release view "$tag" >/dev/null 2>&1; then
+              gh release edit "$tag" --title "$tag" --notes-file "$release_notes"
+            else
+              gh release create "$tag" --verify-tag --title "$tag" --notes-file "$release_notes"
+            fi
+          }
+
+          prs_json="$(
+            gh pr list \
+              --repo "$GITHUB_REPOSITORY" \
+              --state merged \
+              --base "$base_branch" \
+              --limit 1000 \
+              --json number,title,body,url,headRefName,mergeCommit,mergedAt
+          )"
+
+          mapfile -t release_prs < <(
+            jq -c '
+              sort_by(.mergedAt)
+              | .[]
+              | select(.mergedAt != null)
+              | select(.headRefName | test("^(fix|feat|break)(/|$)"))
+            ' <<< "$prs_json"
+          )
+
+          for pr_json in "${release_prs[@]}"; do
+            pr_number="$(jq -r '.number' <<< "$pr_json")"
+            head_branch="$(jq -r '.headRefName' <<< "$pr_json")"
+            merge_commit="$(jq -r '.mergeCommit.oid // empty' <<< "$pr_json")"
+
+            case "$head_branch" in
+              fix|fix/*)
+                bump="patch"
+                ;;
+              feat|feat/*)
+                bump="minor"
+                ;;
+              break|break/*)
+                bump="major"
+                ;;
+              *)
+                continue
+                ;;
+            esac
+
+            if release_info="$(release_for_pr "$pr_number")"; then
+              IFS=$'\t' read -r tag version release_commit <<< "$release_info"
+
+              if npm view "${package_name}@${version}" version >/dev/null 2>&1; then
+                echo "PR #${pr_number} already published as ${version}."
+              else
+                echo "Resuming npm publication for PR #${pr_number} as ${version}."
+                git checkout --detach "$release_commit"
+                yarn install --frozen-lockfile
+                yarn build
+                npm publish --access public --tag latest
+              fi
+
+              published_version="$(max_version "$published_version" "$version")"
+              ensure_github_release "$pr_json" "$tag" "$version" "$bump"
+              continue
+            fi
+
+            if [ -z "$merge_commit" ]; then
+              echo "Merged PR #${pr_number} has no merge commit."
+              exit 1
+            fi
+
+            git checkout --detach "$merge_commit"
+            manifest_version="$(node -p "require('./package.json').version")"
+            base_version="$(max_version "$manifest_version" "$published_version")"
+            next_version="$(bump_version "$base_version" "$bump")"
+            tag="v${next_version}"
+
+            if git rev-parse "refs/tags/${tag}" >/dev/null 2>&1; then
+              echo "Tag ${tag} already exists but is not recorded for PR #${pr_number}."
+              exit 1
+            fi
+
+            npm version "$next_version" --no-git-tag-version
+            yarn install --frozen-lockfile
+            yarn build
+
+            git add package.json
+            git commit -m "chore(release): 🔖 Release v${next_version} for #${pr_number}"
+            release_commit="$(git rev-parse HEAD)"
+
+            git tag -a "$tag" "$release_commit" -m "Release v${next_version} for #${pr_number}"
+            git -c "http.https://github.com/.extraheader=$auth_header" push origin "refs/tags/${tag}"
+
+            npm publish --access public --tag latest
+            published_version="$next_version"
+            ensure_github_release "$pr_json" "$tag" "$next_version" "$bump"
+          done
         env:
-          BUMP: ${{ steps.release.outputs.bump }}
           GH_TOKEN: ${{ github.token }}
-          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
-          NEXT_VERSION: ${{ steps.release.outputs.next_version }}
-          PACKAGE_NAME: ${{ steps.release.outputs.package_name }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_TOKEN: ${{ github.token }}
