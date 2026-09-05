@@ -41,6 +41,8 @@ amount.isGreaterThan(5); // true
 
 Cryptographic behavior is intentionally not part of this generic package. Pigeon Swarm-specific cryptography lives in `@haskou/pigeon-swarm-crypto`, which may depend on `@haskou/value-objects`; the dependency never points back from this package into Pigeon Swarm.
 
+The package provides separate ESM and CommonJS entry points and does not declare a Node.js engine requirement. Identifier generation delegates to the installed `uuid` dependency for Node and browser support.
+
 ## Design expectations
 
 The package keeps the public API small:

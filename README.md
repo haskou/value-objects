@@ -12,6 +12,8 @@ It provides ready-to-use objects for strings, numbers, identifiers, dates, coord
 
 Cryptographic operations are intentionally outside this package. Pigeon Swarm-specific cryptography lives in `@haskou/pigeon-swarm-crypto`; dependency direction is one-way, with the crypto package allowed to consume generic value-object representations and never the reverse.
 
+The package publishes ESM and CommonJS entry points plus TypeScript declarations. Both entry points share one runtime implementation, so class identity and NullObject configuration stay consistent when imports and requires are mixed. It does not declare a Node.js engine requirement. Identifier generation uses the installed `uuid` dependency with platform-specific Node and browser implementations.
+
 ## Documentation
 
 Full documentation is available at **https://haskou.github.io/value-objects/**.
@@ -112,6 +114,8 @@ yarn install
 yarn test
 yarn build
 ```
+
+`yarn build` type-checks the production configuration, emits a CommonJS implementation and an ESM wrapper, generates declarations, and verifies both entry points share classes and configuration.
 
 ## Release branches
 

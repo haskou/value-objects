@@ -2,13 +2,19 @@
   "name": "@haskou/value-objects",
   "version": "4.0.1",
   "description": "TypeScript value objects for validated, immutable primitive values and small domain-safe data structures.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./package.json": "./package.json"
   },
@@ -17,9 +23,6 @@
   ],
   "sideEffects": false,
   "license": "MIT",
-  "engines": {
-    "node": ">=20.20.2"
-  },
   "keywords": [
     "value-object",
     "value-objects",
@@ -54,17 +57,18 @@
     "test": "yarn lint && yarn test:unit",
     "test:unit": "jest --runInBand",
     "test:coverage": "NODE_ENV=test jest --collect-coverage",
-    "build": "rm -rf dist/ && tsc",
+    "build": "tsc -p tsconfig.build.json --noEmit && tsdown && node scripts/verify-distribution.cjs",
+    "check:distribution": "node scripts/verify-distribution.cjs",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress build docs && vitepress preview docs"
   },
   "dependencies": {
     "buffer": "^6.0.3",
-    "tslib": "^2.8.1",
     "uuid": "^11.1.1"
   },
   "devDependencies": {
+    "@arethetypeswrong/core": "^0.18.5",
     "@haskou/eslint-config": "^0.2.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.1.2",
@@ -72,7 +76,9 @@
     "jest": "^30.4.2",
     "jest-extended": "^7.0.0",
     "prettier": "^3.9.6",
+    "publint": "^0.3.24",
     "ts-jest": "^29.4.12",
+    "tsdown": "^0.23.0",
     "typescript": "^6.0.3",
     "vitepress": "^1.6.4",
     "vue": "^3.5.40"
