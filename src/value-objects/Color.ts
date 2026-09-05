@@ -2,6 +2,7 @@ import { InvalidColorError } from '../errors/InvalidColorError';
 import { assert } from '../patterns/Assert';
 import { NullObject } from './NullObject';
 import { StringValueObject } from './StringValueObject';
+import { ValueObject } from './ValueObject';
 
 export class Color extends StringValueObject {
   public static readonly RED = new Color('#FF0000');
@@ -33,7 +34,12 @@ export class Color extends StringValueObject {
     assert(hexColorPattern.test(this.value), new InvalidColorError(this.value));
   }
 
-  public isEqual(other: Color): boolean {
-    return this.value.toLowerCase() === other?.toString().toLowerCase();
+  public hasValue(other: unknown): boolean {
+    const otherValue = other instanceof ValueObject ? other.valueOf() : other;
+
+    return (
+      typeof otherValue === 'string' &&
+      this.value.toLowerCase() === otherValue.toLowerCase()
+    );
   }
 }

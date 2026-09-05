@@ -384,14 +384,14 @@ describe('NumberValueObject', () => {
 
       expect(numberValueObject1.isEqual(numberValueObject2)).toBeTrue();
       expect(numberValueObject1.isEqual(numberValueObject3)).toBeFalse();
-      expect(numberValueObject1.isEqual(value)).toBeTrue();
-      expect(numberValueObject1.isEqual(200)).toBeFalse();
+      expect(numberValueObject1.hasValue(value)).toBeTrue();
+      expect(numberValueObject1.hasValue(200)).toBeFalse();
     });
 
-    it('should compare with primitive values using isEqual', () => {
+    it('should compare with primitive values using hasValue', () => {
       const numberValueObject = new NumberValueObject(42);
-      expect(numberValueObject.isEqual(42)).toBeTrue();
-      expect(numberValueObject.isEqual(43)).toBeFalse();
+      expect(numberValueObject.hasValue(42)).toBeTrue();
+      expect(numberValueObject.hasValue(43)).toBeFalse();
     });
 
     it('should implement clone() method correctly', () => {

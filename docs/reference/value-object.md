@@ -31,7 +31,29 @@ constructor(value: T | null | undefined)
 
 Returns a null object when the constructor value is `null` or `undefined`; otherwise stores the primitive value.
 
-Object and array values are intentionally excluded from `Primitive` because `ValueObject.isEqual()` compares wrapped values with `===`. Composite domain values should model their fields explicitly instead of inheriting reference equality accidentally. Composite `toPrimitives()` serialization remains supported independently of this storage constraint.
+Object and array values are intentionally excluded from `Primitive`. Composite domain values should model their fields explicitly instead of inheriting reference equality accidentally. Composite `toPrimitives()` serialization remains supported independently of this storage constraint.
+
+## Equality and value comparison
+
+`isEqual()` expresses Value Object equality: both objects must have the same concrete class and the same value.
+
+`hasValue()` deliberately ignores the Value Object class and compares only the wrapped value. It can also compare directly against a primitive.
+
+```typescript
+class UserId extends ValueObject<string> {}
+class CommunityId extends ValueObject<string> {}
+
+const userId = new UserId('123');
+
+userId.isEqual(new UserId('123')); // true
+userId.isEqual(new CommunityId('123')); // false
+userId.isEqual('123'); // false
+
+userId.hasValue(new CommunityId('123')); // true
+userId.hasValue('123'); // true
+```
+
+Specialized Value Objects may normalize value comparison by overriding `hasValue()`. `isEqual()` still requires the same concrete class before delegating to that value comparison.
 
 ## Methods
 
@@ -39,7 +61,8 @@ Object and array values are intentionally excluded from `Primitive` because `Val
 | --- | --- |
 | `valueOf()` | Returns the wrapped primitive value. Null objects return `undefined`. |
 | `toString()` | Returns `valueOf().toString()`. |
-| `isEqual(other)` | Compares by primitive value using `other?.valueOf()`. |
+| `hasValue(other)` | Compares only the wrapped value; accepts another Value Object or a primitive. |
+| `isEqual(other)` | Returns true only for the same concrete Value Object class with an equal value. |
 | `isNotEqual(other)` | Negates `isEqual()`. |
 | `clone(value)` | Protected helper used by subclasses to return a new instance of the current class. |
 
@@ -52,14 +75,15 @@ class UserName extends ValueObject<string> {}
 
 const name = new UserName('hasko');
 name.valueOf(); // 'hasko'
-name.isEqual('hasko'); // true
+name.isEqual(new UserName('hasko')); // true
+name.hasValue('hasko'); // true
 ```
 
 ## Notes
 
-- Use `ValueObject` when no extra validation is needed beyond null-object handling.
-- Equality remains value-based and does not require matching Value Object classes.
-- Most concrete classes in this package extend it directly or indirectly.
+- Use `isEqual()` for domain equality between Value Objects.
+- Use `hasValue()` only when comparing the underlying value is intentional.
+- Most concrete classes in this package extend `ValueObject` directly or indirectly.
 
 ## Related
 

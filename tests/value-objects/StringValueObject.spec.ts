@@ -79,6 +79,7 @@ describe('StringValueObject', () => {
       expect(stringValueObject).toBeInstanceOf(StringValueObject);
       expect(stringValueObject.valueOf).toBeDefined();
       expect(stringValueObject.isEqual).toBeDefined();
+      expect(stringValueObject.hasValue).toBeDefined();
     });
 
     it('should implement valueOf() method correctly', () => {
@@ -95,14 +96,14 @@ describe('StringValueObject', () => {
 
       expect(stringValueObject1.isEqual(stringValueObject2)).toBeTrue();
       expect(stringValueObject1.isEqual(stringValueObject3)).toBeFalse();
-      expect(stringValueObject1.isEqual(value)).toBeTrue();
+      expect(stringValueObject1.isEqual(value)).toBeFalse();
       expect(stringValueObject1.isEqual('different')).toBeFalse();
     });
 
-    it('should compare with primitive values using isEqual', () => {
+    it('should compare with primitive values using hasValue', () => {
       const stringValueObject = new StringValueObject('hello');
-      expect(stringValueObject.isEqual('hello')).toBeTrue();
-      expect(stringValueObject.isEqual('world')).toBeFalse();
+      expect(stringValueObject.hasValue('hello')).toBeTrue();
+      expect(stringValueObject.hasValue('world')).toBeFalse();
     });
 
     it('should implement clone() method correctly', () => {

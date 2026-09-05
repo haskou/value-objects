@@ -30,7 +30,7 @@ export class Media extends ValueObject<string> {
     return this.getBuffer().toString('base64');
   }
 
-  public isEqual(other: unknown): boolean {
+  public hasValue(other: unknown): boolean {
     if (other instanceof Media) {
       return this.getBuffer().equals(other.getBuffer());
     }
@@ -39,6 +39,6 @@ export class Media extends ValueObject<string> {
       return this.getBuffer().equals(other);
     }
 
-    return super.isEqual(other);
+    return super.hasValue(other);
   }
 }

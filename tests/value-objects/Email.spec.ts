@@ -103,14 +103,14 @@ describe('Email', () => {
 
       expect(email1.isEqual(email2)).toBeTrue();
       expect(email1.isEqual(email3)).toBeFalse();
-      expect(email1.isEqual(emailValue)).toBeTrue();
-      expect(email1.isEqual('different@example.com')).toBeFalse();
+      expect(email1.hasValue(emailValue)).toBeTrue();
+      expect(email1.hasValue('different@example.com')).toBeFalse();
     });
 
-    it('should compare with string values using isEqual', () => {
+    it('should compare with string values using hasValue', () => {
       const email = new Email('hello@world.com');
-      expect(email.isEqual('hello@world.com')).toBeTrue();
-      expect(email.isEqual('goodbye@world.com')).toBeFalse();
+      expect(email.hasValue('hello@world.com')).toBeTrue();
+      expect(email.hasValue('goodbye@world.com')).toBeFalse();
     });
 
     it('should implement clone() method correctly inherited from ValueObject', () => {
