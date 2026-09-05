@@ -71,9 +71,9 @@
     "@arethetypeswrong/core": "^0.18.5",
     "@haskou/eslint-config": "^0.2.2",
     "@types/jest": "^30.0.0",
-    "@types/node": "^26.1.2",
-    "eslint": "^10.8.0",
-    "jest": "^30.4.2",
+    "@types/node": "^26.4.1",
+    "eslint": "^10.10.0",
+    "jest": "^30.5.1",
     "jest-extended": "^7.0.0",
     "prettier": "^3.9.6",
     "publint": "^0.3.24",
@@ -81,6 +81,6 @@
     "tsdown": "^0.23.0",
     "typescript": "^6.0.3",
     "vitepress": "^1.6.4",
-    "vue": "^3.5.40"
+    "vue": "^3.5.42"
   }
 }
