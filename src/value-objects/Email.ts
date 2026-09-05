@@ -5,7 +5,7 @@ import { StringValueObject } from './StringValueObject';
 
 export class Email extends StringValueObject {
   private static readonly PATTERN =
-    /^[\w+\-.!#$%&'*=?^`{|}~]+@(?:[\w-]+\.)+(?:[a-zA-Z]{2,63}|xn--[a-zA-Z0-9-]{1,59})$/;
+    /^[\w+\-.!#$%&'*/=?^`{|}~]+@(?:[\w-]+\.)+(?:[a-z]{2,63}|xn--[a-z0-9](?:[a-z0-9-]{0,57}[a-z0-9])?)$/i;
 
   constructor(value: string | StringValueObject) {
     super(value?.valueOf());
