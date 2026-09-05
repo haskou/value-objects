@@ -21,8 +21,18 @@ export abstract class ValueObject<T extends Primitive = Primitive> {
     ) as this;
   }
 
+  public hasValue(other: unknown): boolean {
+    const otherValue = other instanceof ValueObject ? other.valueOf() : other;
+
+    return this.value === otherValue;
+  }
+
   public isEqual(other: unknown): boolean {
-    return this.value === other?.valueOf();
+    return (
+      other instanceof ValueObject &&
+      this.constructor === other.constructor &&
+      this.hasValue(other)
+    );
   }
 
   public isNotEqual(other: unknown): boolean {

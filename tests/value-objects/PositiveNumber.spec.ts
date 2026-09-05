@@ -95,8 +95,8 @@ describe('PositiveNumber', () => {
 
       expect(positiveNumber1.isEqual(positiveNumber2)).toBeTrue();
       expect(positiveNumber1.isEqual(positiveNumber3)).toBeFalse();
-      expect(positiveNumber1.isEqual(value)).toBeTrue();
-      expect(positiveNumber1.isEqual(200.7)).toBeFalse();
+      expect(positiveNumber1.hasValue(value)).toBeTrue();
+      expect(positiveNumber1.hasValue(200.7)).toBeFalse();
     });
 
     it('should implement isZero() method correctly', () => {

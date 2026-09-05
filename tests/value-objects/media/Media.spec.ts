@@ -80,18 +80,18 @@ describe('Media', () => {
       expect(media.isEqual(other)).toBeTrue();
     });
 
-    it('should compare Media instances with buffers using preserved bytes', () => {
+    it('should compare Media values with buffers using preserved bytes', () => {
       const media = new Media(Buffer.from([0xff]));
 
-      expect(media.isEqual(Buffer.from([0xff]))).toBeTrue();
-      expect(media.isEqual(Buffer.from([0xfe]))).toBeFalse();
+      expect(media.hasValue(Buffer.from([0xff]))).toBeTrue();
+      expect(media.hasValue(Buffer.from([0xfe]))).toBeFalse();
     });
 
-    it('should delegate non-media and non-buffer comparisons to ValueObject', () => {
+    it('should delegate value-only comparisons to ValueObject', () => {
       const media = new Media(testContent);
 
-      expect(media.isEqual(testContent)).toBeTrue();
-      expect(media.isEqual('different')).toBeFalse();
+      expect(media.hasValue(testContent)).toBeTrue();
+      expect(media.hasValue('different')).toBeFalse();
     });
 
     it('should keep distinct binary payloads in unique collections', () => {

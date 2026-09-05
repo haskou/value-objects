@@ -88,6 +88,14 @@ describe('Color', () => {
       expect(color1.isEqual(color2)).toBe(true);
     });
 
+    it('should compare primitive values through hasValue case-insensitively', () => {
+      const color = new Color('#FF0000');
+
+      expect(color.hasValue('#ff0000')).toBeTrue();
+      expect(color.hasValue('#00FF00')).toBeFalse();
+      expect(color.hasValue(123)).toBeFalse();
+    });
+
     it('should return false when comparing a Color instance with null', () => {
       const color1 = new Color('#FF0000');
       expect(color1.isEqual(null as unknown as Color)).toBe(false);

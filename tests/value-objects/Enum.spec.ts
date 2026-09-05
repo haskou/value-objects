@@ -120,6 +120,7 @@ describe('Enum', () => {
       expect(enumValue).toBeInstanceOf(Enum);
       expect(enumValue.valueOf).toBeDefined();
       expect(enumValue.isEqual).toBeDefined();
+      expect(enumValue.hasValue).toBeDefined();
       expect(enumValue.toString).toBeDefined();
     });
 
@@ -146,18 +147,18 @@ describe('Enum', () => {
 
       expect(enum1.isEqual(enum2)).toBeTrue();
       expect(enum1.isEqual(enum3)).toBeFalse();
-      expect(enum1.isEqual('A')).toBeTrue();
+      expect(enum1.isEqual('A')).toBeFalse();
       expect(enum1.isEqual('B')).toBeFalse();
     });
 
-    it('should compare with primitive values using isEqual', () => {
+    it('should compare with primitive values using hasValue', () => {
       const stringEnum = new StringEnum('A');
       const numberEnum = new NumberEnum(1);
 
-      expect(stringEnum.isEqual('A')).toBeTrue();
-      expect(stringEnum.isEqual('B')).toBeFalse();
-      expect(numberEnum.isEqual(1)).toBeTrue();
-      expect(numberEnum.isEqual(2)).toBeFalse();
+      expect(stringEnum.hasValue('A')).toBeTrue();
+      expect(stringEnum.hasValue('B')).toBeFalse();
+      expect(numberEnum.hasValue(1)).toBeTrue();
+      expect(numberEnum.hasValue(2)).toBeFalse();
     });
 
     it('should implement clone() method correctly', () => {

@@ -133,10 +133,6 @@ export class Timestamp extends ValueObject<number> {
     return `${this.valueOf()}`;
   }
 
-  public isEqual(other: Timestamp): boolean {
-    return this.value === other.valueOf();
-  }
-
   public isBefore(other: Timestamp): boolean {
     return this.value < other.valueOf();
   }

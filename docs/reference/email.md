@@ -43,15 +43,18 @@ import { Email } from '@haskou/value-objects';
 const email = new Email("o'hara+tag@example.technology");
 
 email.valueOf(); // "o'hara+tag@example.technology"
-email.isEqual("o'hara+tag@example.technology"); // true
+email.isEqual(new Email("o'hara+tag@example.technology")); // true
+email.hasValue("o'hara+tag@example.technology"); // true
 ```
 
 ## Notes
 
+- `isEqual()` requires another `Email`; use `hasValue()` for deliberate primitive-value comparison.
 - Validation is intentionally format-based.
 - The class does not perform DNS checks, mailbox checks, or provider-specific normalization.
 
 ## Related
 
+- [ValueObject equality](/reference/value-object)
 - [Error handling](/guides/error-handling)
 - [Reference overview](/reference/)

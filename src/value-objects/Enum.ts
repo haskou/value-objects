@@ -21,7 +21,7 @@ export abstract class Enum<
 
   private ensureIsValidValue(): void {
     const isValueInEnum = this.getValues().some((enumValue) =>
-      this.isEqual(enumValue),
+      this.hasValue(enumValue),
     );
     assert(
       isValueInEnum,
