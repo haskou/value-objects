@@ -18,5 +18,6 @@ export * from './InvalidPositiveNumberError';
 export * from './InvalidStringLengthError';
 export * from './InvalidTimestampIntervalError';
 export * from './InvalidLengthError';
+export * from './NullObjectCreationDisabledError';
 export * from './NullObjectError';
 export * from './ValueNotInEnumError';

@@ -10,7 +10,7 @@ Factory and detector for null object instances.
 ## Import
 
 ```typescript
-import { NullObject } from '@haskou/value-objects';
+import { NullObject, ValueObject } from '@haskou/value-objects';
 ```
 
 ## Signature
@@ -24,6 +24,20 @@ abstract class NullObject
 ```typescript
 Not constructed directly.
 ```
+
+## Automatic creation
+
+Automatic NullObject creation is enabled by default. Constructing a `ValueObject` with `null` or `undefined` returns a compatible null object.
+
+Applications that prefer immediate failure can disable that behavior globally:
+
+```typescript
+ValueObject.disableNullObjectCreation();
+```
+
+With automatic creation disabled, nullish construction throws `NullObjectCreationDisabledError`. Restore the default behavior with `ValueObject.enableNullObjectCreation()`.
+
+The setting is process-wide and should normally be configured once during application bootstrap.
 
 ## Validation
 
@@ -50,9 +64,11 @@ value.valueOf(); // undefined
 ## Notes
 
 - Calling most class methods on a null object throws `NullObjectError`.
-- This is useful when nullish construction should be represented consistently.
+- `ValueObject.disableNullObjectCreation()` does not remove `NullObject.new()`; explicit null objects remain available.
 
 ## Related
 
+- [Null objects guide](/guides/null-object)
+- [ValueObject](/reference/value-object)
 - [Error handling](/guides/error-handling)
 - [Reference overview](/reference/)
