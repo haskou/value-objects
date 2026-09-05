@@ -27,7 +27,7 @@ constructor(value: string | StringValueObject)
 
 ## Validation
 
-Must match `/^[\w+\-.]+@(?:[\w-]+\.)+[a-zA-Z]{2,13}$/`.
+Validation is intentionally pragmatic rather than a complete RFC 5322 parser. It accepts the package's previous address format and additionally supports modern long TLDs, punycode TLDs, and common ASCII local-part characters such as apostrophes.
 
 ## Throws
 
@@ -40,10 +40,10 @@ This class can throw:
 ```typescript
 import { Email } from '@haskou/value-objects';
 
-const email = new Email('user+tag@example.co.uk');
+const email = new Email("o'hara+tag@example.technology");
 
-email.valueOf(); // 'user+tag@example.co.uk'
-email.isEqual('user+tag@example.co.uk'); // true
+email.valueOf(); // "o'hara+tag@example.technology"
+email.isEqual("o'hara+tag@example.technology"); // true
 ```
 
 ## Notes

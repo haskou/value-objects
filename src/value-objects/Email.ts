@@ -4,6 +4,9 @@ import { NullObject } from './NullObject';
 import { StringValueObject } from './StringValueObject';
 
 export class Email extends StringValueObject {
+  private static readonly PATTERN =
+    /^[\w+\-.!#$%&'*/=?^`{|}~]+@(?:[\w-]+\.)+(?:[a-z]{2,63}|xn--[a-z0-9](?:[a-z0-9-]{0,57}[a-z0-9])?)$/i;
+
   constructor(value: string | StringValueObject) {
     super(value?.valueOf());
 
@@ -15,9 +18,6 @@ export class Email extends StringValueObject {
   }
 
   private ensureIsValidEmail(value: string): void {
-    assert(
-      new RegExp(/^[\w+\-.]+@(?:[\w-]+\.)+[a-zA-Z]{2,13}$/).test(value),
-      new InvalidEmailError(value),
-    );
+    assert(Email.PATTERN.test(value), new InvalidEmailError(value));
   }
 }

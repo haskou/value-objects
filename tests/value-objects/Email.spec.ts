@@ -42,7 +42,7 @@ describe('Email', () => {
       'user@domain..com',
       'user name@domain.com',
       'user@domain.c',
-      'user@domain.toolongextension',
+      `user@domain.${'a'.repeat(64)}`,
       '',
     ];
 
