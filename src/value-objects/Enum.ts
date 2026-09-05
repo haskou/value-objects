@@ -17,6 +17,8 @@ export abstract class Enum<
     this.ensureIsValidValue();
   }
 
+  public abstract getValues(): T[];
+
   private ensureIsValidValue(): void {
     const isValueInEnum = this.getValues().some((enumValue) =>
       this.isEqual(enumValue),
@@ -26,6 +28,4 @@ export abstract class Enum<
       new ValueNotInEnumError(this.valueOf(), this.getValues()),
     );
   }
-
-  public abstract getValues(): T[];
 }
