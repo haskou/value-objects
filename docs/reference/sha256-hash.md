@@ -5,7 +5,7 @@ description: SHA-256 hash value object.
 
 # `SHA256Hash`
 
-SHA-256 hash value object.
+SHA-256 hash value object for representing and validating an existing digest.
 
 ## Import
 
@@ -40,7 +40,6 @@ This class can throw:
 | Method | Description |
 | --- | --- |
 | `static isValid(hash)` | Returns true when the value matches the SHA-256 hash pattern. |
-| `static from(buffer)` | Hashes a string, `StringValueObject`, `Media`, or `Buffer`. |
 | `toBase64()` | Converts the hex hash to a Base64 `StringValueObject`. |
 
 ## Example
@@ -48,13 +47,16 @@ This class can throw:
 ```typescript
 import { SHA256Hash } from '@haskou/value-objects';
 
-const hash = SHA256Hash.from('hello');
+const hash = new SHA256Hash(
+  '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+);
 hash.toString().length; // 64
 ```
 
 ## Notes
 
 - Validation is case-insensitive.
+- This package validates SHA-256 values; digest computation belongs to `@haskou/crypto`.
 
 ## Related
 

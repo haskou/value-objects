@@ -23,8 +23,6 @@ const primitives = interval.toPrimitives();
 const restored = TimestampInterval.fromPrimitives(primitives);
 ```
 
-`KeyPair` and `EncryptedKeyPair` also provide `toPrimitives()` / `fromPrimitives()` helpers.
-
 ## Rebuilding values
 
 Deserialize by passing primitive values back into constructors or factory methods.
@@ -43,4 +41,4 @@ const createdAt = new Timestamp(stored.createdAt);
 
 - `valueOf()` is the safest default for persistence payloads.
 - Use explicit helper methods when available.
-- For encrypted data, persist all required fields, including salts when deriving keys from passwords.
+- Cryptographic serialization belongs to the separate `@haskou/crypto` package.

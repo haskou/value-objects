@@ -50,17 +50,4 @@ Each exported class has its own page.
 - [`TimestampInterval`](/reference/timestamp-interval)
 - [`Year`](/reference/year)
 
-## Crypto
-
-- [`Key`](/reference/key)
-- [`PrivateKey`](/reference/private-key)
-- [`PublicKey`](/reference/public-key)
-- [`Signature`](/reference/signature)
-- [`KeyPair`](/reference/key-pair)
-- [`EncryptedPayload`](/reference/encrypted-payload)
-- [`AsymmetricEncryptedPayload`](/reference/asymmetric-encrypted-payload)
-- [`SymmetricEncryptedPayload`](/reference/symmetric-encrypted-payload)
-- [`SymmetricKey`](/reference/symmetric-key)
-- [`EncryptedPrivateKey`](/reference/encrypted-private-key)
-- [`EncryptedKeyPair`](/reference/encrypted-key-pair)
-- [`Crypto notes`](/reference/crypto-notes)
+Cryptographic operations are being extracted to `@haskou/crypto`.

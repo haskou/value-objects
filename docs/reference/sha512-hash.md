@@ -5,7 +5,7 @@ description: SHA-512 hash value object.
 
 # `SHA512Hash`
 
-SHA-512 hash value object.
+SHA-512 hash value object for representing and validating an existing digest.
 
 ## Import
 
@@ -40,7 +40,6 @@ This class can throw:
 | Method | Description |
 | --- | --- |
 | `static isValid(hash)` | Returns true when the value matches the SHA-512 hash pattern. |
-| `static from(buffer)` | Hashes a string, `StringValueObject`, `Media`, or `Buffer`. |
 | `toBase64()` | Converts the hex hash to a Base64 `StringValueObject`. |
 
 ## Example
@@ -48,13 +47,16 @@ This class can throw:
 ```typescript
 import { SHA512Hash } from '@haskou/value-objects';
 
-const hash = SHA512Hash.from('hello');
+const hash = new SHA512Hash(
+  '9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca72323c3d99ba5c11d7c7acc6e14b8c5da0c4663475c2e5c3adef46f73bcdec043',
+);
 hash.toString().length; // 128
 ```
 
 ## Notes
 
 - Validation is case-insensitive.
+- This package validates SHA-512 values; digest computation belongs to `@haskou/crypto`.
 
 ## Related
 

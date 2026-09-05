@@ -5,7 +5,7 @@ description: MD5 hash value object.
 
 # `MD5Hash`
 
-MD5 hash value object.
+MD5 hash value object for representing and validating an existing digest.
 
 ## Import
 
@@ -40,7 +40,6 @@ This class can throw:
 | Method | Description |
 | --- | --- |
 | `static isValid(hash)` | Returns true when the value matches the MD5 hash pattern. |
-| `static from(buffer)` | Hashes a string, `StringValueObject`, `Media`, or `Buffer`. |
 | `toBase64()` | Inherited from `Hash`. |
 
 ## Example
@@ -48,12 +47,13 @@ This class can throw:
 ```typescript
 import { MD5Hash } from '@haskou/value-objects';
 
-const hash = MD5Hash.from('hello');
+const hash = new MD5Hash('5d41402abc4b2a76b9719d911017c592');
 hash.toString(); // '5d41402abc4b2a76b9719d911017c592'
 ```
 
 ## Notes
 
+- This package validates MD5 values; digest computation belongs to `@haskou/crypto`.
 - MD5 is available for compatibility and identifiers. Do not use MD5 as a secure password hash.
 
 ## Related

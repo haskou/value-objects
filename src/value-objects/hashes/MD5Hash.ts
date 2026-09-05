@@ -1,9 +1,5 @@
-import { Buffer } from 'buffer';
-
 import { InvalidHashError } from '../../errors/InvalidHashError';
 import { assert } from '../../patterns';
-import { CryptoAdapter } from '../crypto/CryptoAdapter';
-import { Media } from '../media/Media';
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
 import { Hash } from './Hash';
@@ -11,17 +7,6 @@ import { Hash } from './Hash';
 export class MD5Hash extends Hash {
   public static isValid(hash: string | StringValueObject): boolean {
     return !!hash.valueOf().match(/^[a-f0-9]{32}$/);
-  }
-
-  public static from(
-    buffer: string | StringValueObject | Media | Buffer,
-  ): MD5Hash {
-    return new MD5Hash(
-      CryptoAdapter.hash(
-        'md5',
-        buffer instanceof Media ? buffer.getBuffer() : buffer.valueOf(),
-      ),
-    );
   }
 
   constructor(source: string | StringValueObject) {

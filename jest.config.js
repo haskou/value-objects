@@ -26,9 +26,6 @@ const config = {
     '^.+\\.js$': 'ts-jest',
     '^.+\\.ts': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],
   },
-  transformIgnorePatterns: [
-    'node_modules/(?!(@noble/ciphers|@noble/curves|@noble/hashes)/)',
-  ],
   verbose: true,
 };
 

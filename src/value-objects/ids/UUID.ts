@@ -1,7 +1,8 @@
+import { Buffer } from 'buffer';
+
 import { InvalidFormatError } from '../../errors/InvalidFormatError';
 import { InvalidLengthError } from '../../errors/InvalidLengthError';
 import { assert } from '../../patterns';
-import { CryptoAdapter } from '../crypto/CryptoAdapter';
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
 import { ValueObject } from '../ValueObject';
@@ -13,6 +14,13 @@ export class UUID extends ValueObject<string> {
 
   private static readonly SENTINEL_PATTERN =
     /^(?:00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
+
+  private static randomBytes(size: number): Buffer {
+    const bytes = new Uint8Array(size);
+    globalThis.crypto.getRandomValues(bytes);
+
+    return Buffer.from(bytes);
+  }
 
   private static fromRandomBytes(bytes: Buffer): string {
     const uuidBytes = Buffer.from(bytes);
@@ -31,7 +39,7 @@ export class UUID extends ValueObject<string> {
   }
 
   public static generate(): UUID {
-    return new UUID(UUID.fromRandomBytes(CryptoAdapter.randomBytes(16)));
+    return new UUID(UUID.fromRandomBytes(UUID.randomBytes(16)));
   }
 
   constructor(value: string | StringValueObject) {
