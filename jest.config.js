@@ -24,7 +24,7 @@ const config = {
   testPathIgnorePatterns: ['<rootDir>/node_modules/', 'index.ts'],
   transform: {
     '^.+\\.js$': 'ts-jest',
-    '^.+\\.ts': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],
+    '^.+\\.ts': ['ts-jest', { tsconfig: 'tsconfig.test.json' }],
   },
   verbose: true,
 };

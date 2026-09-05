@@ -2,7 +2,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "baseUrl": "./",
-    "esModuleInterop": true,
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "noEmit": true,
     "rootDir": ".",
     "types": [

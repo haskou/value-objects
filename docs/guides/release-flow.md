@@ -29,7 +29,9 @@ The package publishes only the compiled `dist` directory.
 
 The package metadata declares:
 
-- CommonJS entrypoint: `dist/index.js`
-- Type declarations: `dist/index.d.ts`
+- CommonJS entrypoint: `dist/index.cjs` with `dist/index.d.cts` declarations
+- ESM entrypoint: `dist/index.mjs` with `dist/index.d.mts` declarations
 - `sideEffects: false`
 - Public npm access
+
+The ESM entrypoint re-exports the CommonJS implementation, preserving class identity and shared configuration when consumers mix `import` and `require`. The build verifies both entrypoints and their declarations before publication.
