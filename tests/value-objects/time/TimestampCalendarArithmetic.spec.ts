@@ -69,4 +69,10 @@ describe('Timestamp calendar arithmetic', () => {
     expect(timestamp.addMonths(1).toMilliseconds()).toBe(2678400001.5);
     expect(timestamp.addYears(1).toMilliseconds()).toBe(31536000001.5);
   });
+
+  it('keeps negative fractional milliseconds on the correct calendar day', () => {
+    const timestamp = new Timestamp(-86400000.5);
+
+    expect(timestamp.addMonths(2).toMilliseconds()).toBe(5097599999.5);
+  });
 });
