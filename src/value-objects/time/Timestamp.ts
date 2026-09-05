@@ -68,7 +68,7 @@ export class Timestamp extends ValueObject<number> {
     month: number,
     day: number,
   ): number {
-    const integerValue = Math.trunc(sourceValue);
+    const integerValue = Math.floor(sourceValue);
     const fractionalMilliseconds = sourceValue - integerValue;
     const source = new Date(integerValue);
     const target = new Date(0);
@@ -193,7 +193,7 @@ export class Timestamp extends ValueObject<number> {
     const delta = months.valueOf();
     Timestamp.ensureCalendarDelta(delta);
 
-    const source = new Date(Math.trunc(this.value));
+    const source = new Date(Math.floor(this.value));
     const totalMonths =
       source.getUTCFullYear() * 12 + source.getUTCMonth() + delta;
     const targetYear = Math.floor(totalMonths / 12);
@@ -217,7 +217,7 @@ export class Timestamp extends ValueObject<number> {
     const delta = years.valueOf();
     Timestamp.ensureCalendarDelta(delta);
 
-    const source = new Date(Math.trunc(this.value));
+    const source = new Date(Math.floor(this.value));
     const targetYear = source.getUTCFullYear() + delta;
     const targetMonth = source.getUTCMonth();
     const targetDay = Math.min(
