@@ -18,6 +18,129 @@ function shellFunction(name) {
   assert.notEqual(end, -1);
   return workflow.slice(start, end + 2);
 }
+test('maintenance dependency PRs never enter the npm release queue', () => {
+  const filter = workflow.match(
+    /jq -c '(\s*sort_by[\s\S]*?)'\s*<<< "\$prs_json"/,
+  );
+  assert.ok(filter, 'Missing release PR filter');
+  const prs = [
+    {
+      number: 33,
+      headRefName: 'break/actions-checkout-7.x',
+      title: 'chore(deps): ⬆️ update actions/checkout',
+      mergedAt: '2026-09-05T10:00:00Z',
+    },
+    {
+      number: 39,
+      headRefName: 'break/typescript-7.x',
+      title: 'chore(deps): ⬆️ update typescript',
+      mergedAt: '2026-09-05T10:01:00Z',
+    },
+    {
+      number: 62,
+      headRefName: 'chore/non-major-dev-dependencies',
+      title: 'chore(deps): ⬆️ update dev dependencies',
+      mergedAt: '2026-09-05T10:02:00Z',
+    },
+    {
+      number: 63,
+      headRefName: 'break/uuid-14.x',
+      title: 'fix(deps): ⬆️ update uuid',
+      mergedAt: '2026-09-05T10:03:00Z',
+    },
+    {
+      number: 64,
+      headRefName: 'fix/runtime-dependencies',
+      title: 'fix(deps): ⬆️ update runtime dependencies',
+      mergedAt: '2026-09-05T10:04:00Z',
+    },
+    {
+      number: 65,
+      headRefName: 'feat/example',
+      title: 'feat: ✨ Add feature',
+      mergedAt: null,
+    },
+    {
+      number: 66,
+      headRefName: 'break/package',
+      title: 'break(package): 💥 Change exports',
+      mergedAt: '2026-09-05T10:05:00Z',
+    },
+    {
+      number: 67,
+      headRefName: 'break/runtime-major',
+      title: 'break(deps): ⬆️ update runtime dependency',
+      mergedAt: '2026-09-05T10:06:00Z',
+    },
+  ];
+  const selected = execFileSync('jq', ['-cs', `${filter[1]} | .number`], {
+    input: prs.map((pr) => JSON.stringify(pr)).join('\n'),
+    encoding: 'utf8',
+  })
+    .trim()
+    .split('\n')
+    .map(Number);
+  assert.deepEqual(selected, [63, 64, 66, 67]);
+});
+test('Renovate classifies runtime majors as releases and tooling as maintenance', () => {
+  const config = JSON.parse(
+    readFileSync(resolve(__dirname, '../../renovate.json'), 'utf8'),
+  );
+  const classify = (manager, depType, updateType) => {
+    let result = {
+      semanticCommitType: 'chore',
+      additionalBranchPrefix: '',
+      automerge: false,
+    };
+    for (const rule of config.packageRules) {
+      if (rule.matchManagers && !rule.matchManagers.includes(manager)) continue;
+      if (rule.matchDepTypes && !rule.matchDepTypes.includes(depType)) continue;
+      if (rule.matchUpdateTypes && !rule.matchUpdateTypes.includes(updateType))
+        continue;
+      result = { ...result, ...rule };
+    }
+    return [
+      result.semanticCommitType,
+      result.additionalBranchPrefix,
+      result.automerge,
+    ];
+  };
+  assert.deepEqual(classify('npm', 'dependencies', 'major'), [
+    'break',
+    'break/',
+    false,
+  ]);
+  assert.deepEqual(classify('npm', 'optionalDependencies', 'major'), [
+    'break',
+    'break/',
+    false,
+  ]);
+  assert.deepEqual(classify('npm', 'dependencies', 'minor'), [
+    'fix',
+    'fix/',
+    true,
+  ]);
+  assert.deepEqual(classify('npm', 'devDependencies', 'major'), [
+    'chore',
+    'chore/',
+    false,
+  ]);
+  assert.deepEqual(classify('npm', 'devDependencies', 'patch'), [
+    'chore',
+    'chore/',
+    true,
+  ]);
+  assert.deepEqual(classify('github-actions', 'action', 'major'), [
+    'chore',
+    'chore/',
+    false,
+  ]);
+  assert.deepEqual(classify('github-actions', 'uses-with', 'major'), [
+    'chore',
+    'chore/',
+    false,
+  ]);
+});
 function fixture(t) {
   const cwd = mkdtempSync(join(tmpdir(), 'release-queue-test-'));
   t.after(() => rmSync(cwd, { recursive: true, force: true }));

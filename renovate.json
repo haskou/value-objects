@@ -42,8 +42,25 @@
     {
       "description": "Major updates: manual review",
       "matchUpdateTypes": ["major"],
+      "semanticCommitType": "break",
       "additionalBranchPrefix": "break/",
       "automerge": false
+    },
+    {
+      "description": "Major dev dependency updates: manual review, no runtime release",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["major"],
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps",
+      "additionalBranchPrefix": "chore/",
+      "automerge": false
+    },
+    {
+      "description": "GitHub Actions and workflow Node updates: maintenance, no runtime release",
+      "matchManagers": ["github-actions"],
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps",
+      "additionalBranchPrefix": "chore/"
     }
   ]
 }
