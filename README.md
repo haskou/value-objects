@@ -60,6 +60,22 @@ try {
 }
 ```
 
+## Nullish construction
+
+Automatic `NullObject` creation remains enabled by default for compatibility. Applications that prefer strict construction can disable it globally:
+
+```typescript
+import { StringValueObject, ValueObject } from '@haskou/value-objects';
+
+ValueObject.disableNullObjectCreation();
+
+new StringValueObject(undefined as never); // throws NullObjectCreationDisabledError
+
+ValueObject.enableNullObjectCreation();
+```
+
+The VitePress guide documents the default and strict modes in detail.
+
 ## Available categories
 
 | Category | Examples |

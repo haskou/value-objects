@@ -27,9 +27,23 @@ abstract class ValueObject<T extends Primitive = Primitive>
 constructor(value: T | null | undefined)
 ```
 
-## Validation
+## NullObject creation
 
-Returns a null object when the constructor value is `null` or `undefined`; otherwise stores the primitive value.
+Automatic NullObject creation is enabled by default. A `null` or `undefined` constructor value returns a compatible null object instead of storing the nullish value.
+
+Applications that prefer nullish construction to fail immediately can configure the base class once during bootstrap:
+
+```typescript
+ValueObject.disableNullObjectCreation();
+```
+
+Nullish construction then throws `NullObjectCreationDisabledError`. Restore the default behavior with:
+
+```typescript
+ValueObject.enableNullObjectCreation();
+```
+
+The setting is global to the process. Explicit `NullObject.new(...)` creation remains available regardless of this setting.
 
 Object and array values are intentionally excluded from `Primitive`. Composite domain values should model their fields explicitly instead of inheriting reference equality accidentally. Composite `toPrimitives()` serialization remains supported independently of this storage constraint.
 
@@ -59,6 +73,8 @@ Specialized Value Objects may normalize value comparison by overriding `hasValue
 
 | Method | Description |
 | --- | --- |
+| `static disableNullObjectCreation()` | Makes nullish Value Object construction throw instead of returning a NullObject. |
+| `static enableNullObjectCreation()` | Restores automatic NullObject creation. |
 | `valueOf()` | Returns the wrapped primitive value. Null objects return `undefined`. |
 | `toString()` | Returns `valueOf().toString()`. |
 | `hasValue(other)` | Compares only the wrapped value; accepts another Value Object or a primitive. |
@@ -87,5 +103,6 @@ name.hasValue('hasko'); // true
 
 ## Related
 
+- [Null objects](/guides/null-object)
 - [Error handling](/guides/error-handling)
 - [Reference overview](/reference/)

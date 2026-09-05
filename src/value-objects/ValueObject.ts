@@ -1,11 +1,26 @@
+import { NullObjectCreationDisabledError } from '../errors';
 import { Primitive, Nullish } from '../types';
 import { NullObject } from './NullObject';
 
 export abstract class ValueObject<T extends Primitive = Primitive> {
+  private static nullObjectCreationEnabled = true;
+
   protected readonly value!: T;
+
+  public static disableNullObjectCreation(): void {
+    ValueObject.nullObjectCreationEnabled = false;
+  }
+
+  public static enableNullObjectCreation(): void {
+    ValueObject.nullObjectCreationEnabled = true;
+  }
 
   constructor(value: T | Nullish) {
     if (this.isNullish(value)) {
+      if (ValueObject.nullObjectCreationEnabled === false) {
+        throw new NullObjectCreationDisabledError(new.target.name);
+      }
+
       return NullObject.new(new.target);
     }
     this.value = value;
