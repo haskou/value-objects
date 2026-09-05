@@ -15,6 +15,14 @@ Publishing is handled by CI when a pull request is merged into the default branc
 
 Branches without one of these prefixes still run CI, but they do not publish to npm.
 
+Dependency maintenance PRs titled `chore(deps): ...` do not publish to npm,
+including older Renovate PRs whose branches still use `break/*`. Renovate uses
+`chore/*` branches for development dependencies and GitHub Actions updates.
+Major development dependency and Action updates still require manual review.
+Runtime dependency updates retain the release branch policy above.
+Renovate explicitly titles major dependency updates `break(deps): ...` before
+applying the development-tool and GitHub Actions maintenance exceptions.
+
 ## Before opening a release PR
 
 ```bash

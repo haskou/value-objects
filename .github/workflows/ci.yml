@@ -232,6 +232,7 @@ jobs:
               sort_by(.mergedAt)
               | .[]
               | select(.mergedAt != null)
+              | select(.title | startswith("chore(deps):") | not)
               | select(.headRefName | test("^(fix|feat|break)(/|$)"))
             ' <<< "$prs_json"
           )
