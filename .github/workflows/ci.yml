@@ -107,7 +107,7 @@ jobs:
           current_version="$(node -p "require('./package.json').version")"
           published_version="$(npm view "$package_name" version)"
           branch_name="${HEAD_BRANCH}"
-          release_marker="for #${PR_NUMBER}"
+          release_marker="for #${PR_NUMBER}$"
 
           echo "already_released=false" >> "$GITHUB_OUTPUT"
 
@@ -127,13 +127,13 @@ jobs:
               ;;
           esac
 
-          release_subject="$(git log --format=%s --grep="$release_marker" -n 1 HEAD || true)"
+          release_subject="$(git log --format=%s --extended-regexp --grep="$release_marker" -n 1 HEAD || true)"
 
-          if [ -n "$release_subject" ] && grep -q "$release_marker" <<< "$release_subject"; then
+          if [ -n "$release_subject" ] && grep -Eq "$release_marker" <<< "$release_subject"; then
             next_version="$(
               node - "$release_subject" "$current_version" <<'NODE'
           const [subject, fallbackVersion] = process.argv.slice(2);
-          const match = subject.match(/Release v([^ ]+) for #\d+/);
+          const match = subject.match(/Release v([^ ]+) for #\d+$/);
 
           process.stdout.write(match?.[1] ?? fallbackVersion);
           NODE
@@ -216,8 +216,7 @@ jobs:
           steps.release.outputs.should_publish == 'true'
         run: npm publish --access public --tag latest
 
-      - name: Commit release version
-        if: steps.release.outputs.already_released != 'true'
+      - name: Commit release version and ensure tag
         shell: bash
         run: |
           set -euo pipefail
@@ -225,26 +224,31 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add package.json
+          auth_header="$(
+            node -e "process.stdout.write('AUTHORIZATION: basic ' + Buffer.from('x-access-token:' + process.env.GITHUB_TOKEN).toString('base64'))"
+          )"
 
-          if git diff --cached --quiet; then
-            echo "No package.json version changes to commit."
-          else
-            git commit -m "chore(release): 🔖 Release v${NEXT_VERSION} for #${PR_NUMBER}"
+          if [ "$ALREADY_RELEASED" != "true" ]; then
+            git add package.json
+
+            if git diff --cached --quiet; then
+              echo "No package.json version changes to commit."
+            else
+              git commit -m "chore(release): 🔖 Release v${NEXT_VERSION} for #${PR_NUMBER}"
+            fi
+
+            git -c "http.https://github.com/.extraheader=$auth_header" push origin "HEAD:${BASE_BRANCH}"
           fi
 
-          if git rev-parse "v${NEXT_VERSION}" >/dev/null 2>&1; then
-            echo "Tag v${NEXT_VERSION} already exists."
+          if git rev-parse "refs/tags/v${NEXT_VERSION}" >/dev/null 2>&1; then
+            echo "Tag v${NEXT_VERSION} already exists locally."
           else
             git tag -a "v${NEXT_VERSION}" -m "Release v${NEXT_VERSION} for #${PR_NUMBER}"
           fi
 
-          auth_header="$(
-            node -e "process.stdout.write('AUTHORIZATION: basic ' + Buffer.from('x-access-token:' + process.env.GITHUB_TOKEN).toString('base64'))"
-          )"
-          git -c "http.https://github.com/.extraheader=$auth_header" push origin "HEAD:${BASE_BRANCH}"
-          git -c "http.https://github.com/.extraheader=$auth_header" push origin "v${NEXT_VERSION}"
+          git -c "http.https://github.com/.extraheader=$auth_header" push origin "refs/tags/v${NEXT_VERSION}"
         env:
+          ALREADY_RELEASED: ${{ steps.release.outputs.already_released }}
           BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
           NEXT_VERSION: ${{ steps.release.outputs.next_version }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
