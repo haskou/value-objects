@@ -38,19 +38,19 @@ export class NumberValueObject extends ValueObject<number> {
     return this.value <= other.valueOf();
   }
 
-  public add(other: number | NumberValueObject): NumberValueObject {
+  public add(other: number | NumberValueObject): this {
     return this.clone(this.value + other.valueOf());
   }
 
-  public subtract(other: number | NumberValueObject): NumberValueObject {
+  public subtract(other: number | NumberValueObject): this {
     return this.clone(this.value - other.valueOf());
   }
 
-  public multiply(other: number | NumberValueObject): NumberValueObject {
+  public multiply(other: number | NumberValueObject): this {
     return this.clone(this.value * other.valueOf());
   }
 
-  public divide(other: number | NumberValueObject): NumberValueObject {
+  public divide(other: number | NumberValueObject): this {
     return this.clone(this.value / other.valueOf());
   }
 }
