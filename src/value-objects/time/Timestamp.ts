@@ -16,10 +16,8 @@ export class Timestamp extends ValueObject<number> {
     DAYS: 24 * 60 * 60 * 1000,
     HOURS: 60 * 60 * 1000,
     MINUTES: 60 * 1000,
-    MONTHS: 30 * 24 * 60 * 60 * 1000,
     SECONDS: 1000,
     WEEKS: 7 * 24 * 60 * 60 * 1000,
-    YEARS: 365 * 24 * 60 * 60 * 1000,
   };
 
   private static valueMilliseconds(value?: TimestampValue): number {
@@ -36,6 +34,14 @@ export class Timestamp extends ValueObject<number> {
     }
 
     return Date.now().valueOf();
+  }
+
+  private static getLastDayOfUtcMonth(year: number, month: number): number {
+    const date = new Date(0);
+    date.setUTCHours(0, 0, 0, 0);
+    date.setUTCFullYear(year, month + 1, 0);
+
+    return date.getUTCDate();
   }
 
   public static new(value: TimestampValue): Timestamp {
@@ -144,15 +150,41 @@ export class Timestamp extends ValueObject<number> {
   }
 
   public addMonths(months: number | NumberValueObject): Timestamp {
-    const value = this.value + months.valueOf() * Timestamp.FACTORS.MONTHS;
+    const date = this.toDate();
+    const originalDay = date.getUTCDate();
 
-    return this.clone(value);
+    date.setUTCDate(1);
+    date.setUTCMonth(date.getUTCMonth() + months.valueOf());
+    date.setUTCDate(
+      Math.min(
+        originalDay,
+        Timestamp.getLastDayOfUtcMonth(
+          date.getUTCFullYear(),
+          date.getUTCMonth(),
+        ),
+      ),
+    );
+
+    return this.clone(date.valueOf());
   }
 
   public addYears(years: number | NumberValueObject): Timestamp {
-    const value = this.value + years.valueOf() * Timestamp.FACTORS.YEARS;
+    const date = this.toDate();
+    const originalDay = date.getUTCDate();
 
-    return this.clone(value);
+    date.setUTCDate(1);
+    date.setUTCFullYear(date.getUTCFullYear() + years.valueOf());
+    date.setUTCDate(
+      Math.min(
+        originalDay,
+        Timestamp.getLastDayOfUtcMonth(
+          date.getUTCFullYear(),
+          date.getUTCMonth(),
+        ),
+      ),
+    );
+
+    return this.clone(date.valueOf());
   }
 
   public addDuration(duration: Duration): Timestamp {
