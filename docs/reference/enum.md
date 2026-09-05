@@ -16,7 +16,7 @@ import { Enum } from '@haskou/value-objects';
 ## Signature
 
 ```typescript
-abstract class Enum<T extends Primitive = Primitive> extends ValueObject<T>
+abstract class Enum<T extends Scalar = Scalar> extends ValueObject<T>
 ```
 
 ## Constructor
@@ -27,7 +27,7 @@ constructor(value: T)
 
 ## Validation
 
-The value must be included in the array returned by `getValues()`.
+The scalar value must be included in the array returned by `getValues()`.
 
 ## Throws
 
@@ -39,7 +39,7 @@ This class can throw:
 
 | Method | Description |
 | --- | --- |
-| `getValues()` | Abstract method. Return all allowed primitive enum values. |
+| `getValues()` | Abstract method. Return all allowed scalar enum values. |
 
 ## Example
 
@@ -62,7 +62,8 @@ new StatusValue(Status.ACTIVE).valueOf(); // 'active'
 
 ## Notes
 
-- Works with string, number, and mixed primitive enum values.
+- Works with string, number, boolean, bigint, and symbol enum-like values.
+- Object and array values are intentionally excluded because the base equality contract is scalar.
 
 ## Related
 
