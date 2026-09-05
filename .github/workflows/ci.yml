@@ -63,6 +63,9 @@ jobs:
       contents: write
       id-token: write
       pull-requests: read
+    env:
+      # Select the public registry without generating a token-based .npmrc.
+      NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
 
     steps:
       - name: Checkout repository
@@ -76,7 +79,6 @@ jobs:
         with:
           node-version: 24.20.0
           cache: yarn
-          registry-url: https://registry.npmjs.org/
 
       - name: Drain merged release PRs
         shell: bash
