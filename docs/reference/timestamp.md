@@ -50,8 +50,8 @@ String values are parsed with `new Date(value)`. Inputs that produce an invalid 
 | `addHours(value)`             | Returns a new timestamp.                                |
 | `addDays(value)`              | Returns a new timestamp.                                |
 | `addWeeks(value)`             | Returns a new timestamp.                                |
-| `addMonths(value)`            | Uses a fixed 30-day month factor.                       |
-| `addYears(value)`             | Uses a fixed 365-day year factor.                       |
+| `addMonths(value)`            | Adds UTC calendar months, clamping the day when needed. |
+| `addYears(value)`             | Adds UTC calendar years, clamping the day when needed.  |
 | `addDuration(duration)`       | Adds a `Duration`.                                      |
 | `isSameDay(other)`            | Compares `CalendarDay`.                                 |
 | `isSameMonth(other)`          | Compares `MonthOfYear`.                                 |
@@ -72,16 +72,18 @@ String values are parsed with `new Date(value)`. Inputs that produce an invalid 
 ```typescript
 import { Timestamp } from '@haskou/value-objects';
 
-const timestamp = new Timestamp('2026-06-23T10:00:00.000Z');
+const timestamp = new Timestamp('2026-01-31T10:00:00.000Z');
 
-timestamp.addHours(2).toDate().toISOString(); // '2026-06-23T12:00:00.000Z'
+timestamp.addMonths(1).toDate().toISOString(); // '2026-02-28T10:00:00.000Z'
 timestamp.getYear().valueOf(); // 2026
 ```
 
 ## Notes
 
-- All date component getters use UTC.
-- `addMonths()` and `addYears()` use fixed duration factors, not calendar arithmetic.
+- All date component getters and calendar arithmetic use UTC.
+- `addMonths()` preserves the day when possible and clamps to the last valid day of the target month otherwise.
+- `addYears()` preserves month/day when possible and clamps leap-day results to the last valid day of February.
+- `addDays()`, `addWeeks()`, `addHours()`, and smaller units remain fixed-duration arithmetic.
 
 ## Related
 
