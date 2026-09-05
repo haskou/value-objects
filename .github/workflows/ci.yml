@@ -35,6 +35,9 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Verify release workflow
+        run: node --test scripts/tests/release-workflow.test.cjs
+
       - name: Run lint and tests with coverage
         run: yarn lint && yarn test:coverage
 
@@ -82,6 +85,7 @@ jobs:
 
           package_name="$(node -p "require('./package.json').name")"
           base_branch="${GITHUB_REF_NAME}"
+          release_head="${GITHUB_SHA}"
           published_version="$(npm view "$package_name" version 2>/dev/null || true)"
           auth_header="$(
             node -e "process.stdout.write('AUTHORIZATION: basic ' + Buffer.from('x-access-token:' + process.env.GITHUB_TOKEN).toString('base64'))"
@@ -90,6 +94,23 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin "$base_branch" --tags --force
+
+          # Older PRs were already shipped by the legacy release workflow.
+          release_baseline="$(git log "$release_head" --first-parent -n 1 --format=%H --extended-regexp --grep='^chore\(release\): .*Release v[^ ]+ for #[0-9]+$')"
+          if [ -z "$release_baseline" ]; then
+            echo "Cannot determine the historical release baseline."
+            exit 1
+          fi
+
+          is_queued_release() {
+            git merge-base --is-ancestor "$1" "$release_head" &&
+              ! git merge-base --is-ancestor "$1" "$release_baseline"
+          }
+
+          create_release_tag() {
+            # Tag an existing remote commit; do not manufacture historical workflows.
+            git tag -a "$tag" "$merge_commit" -m "Release v${next_version} for #${pr_number}"
+          }
 
           max_version() {
             node - "$1" "$2" <<'NODE'
@@ -139,7 +160,10 @@ jobs:
 
             while IFS= read -r tag; do
               release_commit="$(git rev-parse "${tag}^{commit}")"
-              subject="$(git show -s --format=%s "$release_commit")"
+              subject="$(git for-each-ref --format='%(contents:subject)' "refs/tags/${tag}")"
+              if ! [[ "$subject" =~ ^Release\ v([^[:space:]]+)\ for\ \#${pr_number}$ ]]; then
+                subject="$(git show -s --format=%s "$release_commit")"
+              fi
 
               if [[ "$subject" =~ Release\ v([^[:space:]]+)\ for\ \#${pr_number}$ ]]; then
                 version="${BASH_REMATCH[1]}"
@@ -232,6 +256,14 @@ jobs:
                 ;;
             esac
 
+            if [ -z "$merge_commit" ]; then
+              echo "Merged PR #${pr_number} has no merge commit."
+              exit 1
+            fi
+            if ! is_queued_release "$merge_commit"; then
+              continue
+            fi
+
             if release_info="$(release_for_pr "$pr_number")"; then
               IFS=$'\t' read -r tag version release_commit <<< "$release_info"
 
@@ -240,19 +272,16 @@ jobs:
               else
                 echo "Resuming npm publication for PR #${pr_number} as ${version}."
                 git checkout --detach "$release_commit"
+                npm version "$version" --no-git-tag-version --allow-same-version
                 yarn install --frozen-lockfile
                 yarn build
                 npm publish --access public --tag latest
+                git restore -- package.json
               fi
 
               published_version="$(max_version "$published_version" "$version")"
               ensure_github_release "$pr_json" "$tag" "$version" "$bump"
               continue
-            fi
-
-            if [ -z "$merge_commit" ]; then
-              echo "Merged PR #${pr_number} has no merge commit."
-              exit 1
             fi
 
             git checkout --detach "$merge_commit"
@@ -270,14 +299,11 @@ jobs:
             yarn install --frozen-lockfile
             yarn build
 
-            git add package.json
-            git commit -m "chore(release): 🔖 Release v${next_version} for #${pr_number}"
-            release_commit="$(git rev-parse HEAD)"
-
-            git tag -a "$tag" "$release_commit" -m "Release v${next_version} for #${pr_number}"
+            create_release_tag
             git -c "http.https://github.com/.extraheader=$auth_header" push origin "refs/tags/${tag}"
 
             npm publish --access public --tag latest
+            git restore -- package.json
             published_version="$next_version"
             ensure_github_release "$pr_json" "$tag" "$next_version" "$bump"
           done
