@@ -42,7 +42,8 @@ yarn add @haskou/value-objects
 | [Hashes](/reference/hash) | `Hash`, `MD5Hash`, `SHA256Hash`, `SHA512Hash` |
 | [Media](/reference/media) | `Media` |
 | [Collections](/reference/unique-object-array) | `UniqueObjectArray` |
-| [Crypto helpers](/reference/crypto-notes) | `KeyPair`, `PrivateKey`, `PublicKey`, `SymmetricKey`, payload value objects |
+
+Cryptographic operations are being extracted to `@haskou/crypto` and are intentionally not part of this package's value-object API.
 
 ## Agent skill
 

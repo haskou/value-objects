@@ -32,7 +32,8 @@ amount.isGreaterThan(5); // true
 | Hashes | `Hash`, `MD5Hash`, `SHA256Hash`, `SHA512Hash` |
 | Media | `Media` |
 | Collections | `UniqueObjectArray` |
-| Crypto | `Key`, `PrivateKey`, `PublicKey`, `Signature`, `KeyPair`, encrypted payload and key helpers |
+
+Cryptographic behavior is intentionally not part of this generic package. Pigeon Swarm-specific cryptography lives in `@haskou/pigeon-swarm-crypto`, which may depend on `@haskou/value-objects`; the dependency never points back from this package into Pigeon Swarm.
 
 ## Design expectations
 

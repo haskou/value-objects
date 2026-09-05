@@ -1,7 +1,8 @@
+import { Buffer } from 'buffer';
+
 import { InvalidFormatError } from '../../errors/InvalidFormatError';
 import { InvalidLengthError } from '../../errors/InvalidLengthError';
 import { assert } from '../../patterns';
-import { CryptoAdapter } from '../crypto/CryptoAdapter';
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
 import { ValueObject } from '../ValueObject';
@@ -10,8 +11,15 @@ export class ShortId extends ValueObject<string> {
   private static readonly LENGTH = 24;
   private static readonly PATTERN = new RegExp(`[a-zA-Z0-9]{${this.LENGTH}}$`);
 
+  private static randomBytes(size: number): Buffer {
+    const bytes = new Uint8Array(size);
+    globalThis.crypto.getRandomValues(bytes);
+
+    return Buffer.from(bytes);
+  }
+
   private static generateObjectIdHex(): string {
-    const bytes = CryptoAdapter.randomBytes(12);
+    const bytes = ShortId.randomBytes(12);
     bytes.writeUInt32BE(Math.floor(Date.now() / 1000), 0);
 
     return bytes.toString('hex');

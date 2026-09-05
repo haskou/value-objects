@@ -112,24 +112,6 @@ const referenceSidebar = [
       { text: 'UniqueObjectArray', link: '/reference/unique-object-array' },
     ],
   },
-  {
-    text: 'Crypto helpers',
-    collapsed: true,
-    items: [
-      { text: 'Crypto notes', link: '/reference/crypto-notes' },
-      { text: 'Key', link: '/reference/key' },
-      { text: 'PrivateKey', link: '/reference/private-key' },
-      { text: 'PublicKey', link: '/reference/public-key' },
-      { text: 'KeyPair', link: '/reference/key-pair' },
-      { text: 'SymmetricKey', link: '/reference/symmetric-key' },
-      { text: 'Signature', link: '/reference/signature' },
-      { text: 'EncryptedPrivateKey', link: '/reference/encrypted-private-key' },
-      { text: 'EncryptedPayload', link: '/reference/encrypted-payload' },
-      { text: 'AsymmetricEncryptedPayload', link: '/reference/asymmetric-encrypted-payload' },
-      { text: 'SymmetricEncryptedPayload', link: '/reference/symmetric-encrypted-payload' },
-      { text: 'EncryptedKeyPair', link: '/reference/encrypted-key-pair' },
-    ],
-  },
 ];
 
 export default defineConfig({

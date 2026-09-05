@@ -8,8 +8,9 @@
 
 A TypeScript library for validated, immutable primitive wrappers and small utility value objects.
 
-It provides ready-to-use objects for strings, numbers, identifiers, dates, coordinates, hashes, media, collections, and cryptographic payload helpers. Validation happens when an object is created, so code receiving one of these objects can rely on its shape.
+It provides ready-to-use objects for strings, numbers, identifiers, dates, coordinates, hashes, media, and collections. Validation happens when an object is created, so code receiving one of these objects can rely on its shape.
 
+Cryptographic operations are intentionally outside this package. Pigeon Swarm-specific cryptography lives in `@haskou/pigeon-swarm-crypto`; dependency direction is one-way, with the crypto package allowed to consume generic value-object representations and never the reverse.
 
 ## Documentation
 
@@ -18,7 +19,6 @@ Full documentation is available at **https://haskou.github.io/value-objects/**.
 The documentation includes installation, quick start, examples, error handling, serialization notes, and one reference page per exported class.
 
 Reusable agent instructions and engineering skills are available at **https://github.com/haskou/ddd-engineer-skills**.
-
 
 ## Installation
 
@@ -73,7 +73,6 @@ try {
 | Hashes | `MD5Hash`, `SHA256Hash`, `SHA512Hash` |
 | Media | `Media` |
 | Collections | `UniqueObjectArray` |
-| Crypto helpers | `KeyPair`, `PrivateKey`, `PublicKey`, `SymmetricKey`, encrypted payload objects |
 
 See the complete API reference in the documentation: https://haskou.github.io/value-objects/reference/
 
