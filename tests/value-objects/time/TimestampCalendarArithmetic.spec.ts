@@ -1,4 +1,4 @@
-import { Timestamp } from '../../../src';
+import { InvalidIntegerError, Timestamp } from '../../../src';
 
 describe('Timestamp calendar arithmetic', () => {
   it('clamps addMonths to the last valid day of the target month', () => {
@@ -31,5 +31,42 @@ describe('Timestamp calendar arithmetic', () => {
     expect(timestamp.addYears(1).toDate().toISOString()).toBe(
       '2025-02-28T12:34:56.789Z',
     );
+  });
+
+  it('moves inward from the minimum ECMAScript timestamp without invalid intermediates', () => {
+    const timestamp = new Timestamp(-8640000000000000);
+    const result = timestamp.addMonths(1).toDate();
+
+    expect(result.getUTCFullYear()).toBe(-271821);
+    expect(result.getUTCMonth()).toBe(4);
+    expect(result.getUTCDate()).toBe(20);
+  });
+
+  it('can target the maximum ECMAScript timestamp month', () => {
+    const source = new Date(0);
+    source.setUTCFullYear(275760, 7, 13);
+    source.setUTCHours(0, 0, 0, 0);
+
+    expect(new Timestamp(source).addMonths(1).valueOf()).toBe(
+      8640000000000000,
+    );
+  });
+
+  it.each([
+    ['months', 0.1, (timestamp: Timestamp) => timestamp.addMonths(0.1)],
+    ['months', -0.1, (timestamp: Timestamp) => timestamp.addMonths(-0.1)],
+    ['years', 0.1, (timestamp: Timestamp) => timestamp.addYears(0.1)],
+    ['years', -0.1, (timestamp: Timestamp) => timestamp.addYears(-0.1)],
+  ])('rejects fractional %s delta %s', (_unit, _delta, operation) => {
+    expect(() => operation(Timestamp.new('2026-05-15T00:00:00.000Z'))).toThrow(
+      InvalidIntegerError,
+    );
+  });
+
+  it('preserves sub-millisecond precision across calendar arithmetic', () => {
+    const timestamp = Timestamp.fromSeconds(0.0015);
+
+    expect(timestamp.addMonths(1).toMilliseconds()).toBe(2678400001.5);
+    expect(timestamp.addYears(1).toMilliseconds()).toBe(31536000001.5);
   });
 });
