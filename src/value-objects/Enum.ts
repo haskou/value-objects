@@ -1,11 +1,11 @@
 import { ValueNotInEnumError } from '../errors/ValueNotInEnumError';
 import { assert } from '../patterns/Assert';
-import { Primitive } from '../types';
+import { Scalar } from '../types';
 import { NullObject } from './NullObject';
 import { ValueObject } from './ValueObject';
 
 export abstract class Enum<
-  T extends Primitive = Primitive,
+  T extends Scalar = Scalar,
 > extends ValueObject<T> {
   constructor(protected readonly value: T) {
     super(value);
