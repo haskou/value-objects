@@ -1,3 +1,4 @@
+import { InvalidIntegerError } from '../../errors/InvalidIntegerError';
 import { InvalidNumberError } from '../../errors/InvalidNumberError';
 import { assert } from '../../patterns/Assert';
 import { NumberValueObject } from '../NumberValueObject';
@@ -16,10 +17,8 @@ export class Timestamp extends ValueObject<number> {
     DAYS: 24 * 60 * 60 * 1000,
     HOURS: 60 * 60 * 1000,
     MINUTES: 60 * 1000,
-    MONTHS: 30 * 24 * 60 * 60 * 1000,
     SECONDS: 1000,
     WEEKS: 7 * 24 * 60 * 60 * 1000,
-    YEARS: 365 * 24 * 60 * 60 * 1000,
   };
 
   private static valueMilliseconds(value?: TimestampValue): number {
@@ -36,6 +35,53 @@ export class Timestamp extends ValueObject<number> {
     }
 
     return Date.now().valueOf();
+  }
+
+  private static getLastDayOfUtcMonth(year: number, month: number): number {
+    const normalizedYear = year + Math.floor(month / 12);
+    const normalizedMonth = ((month % 12) + 12) % 12;
+    const days = [
+      31,
+      new Year(normalizedYear).isLeapYear() ? 29 : 28,
+      31,
+      30,
+      31,
+      30,
+      31,
+      31,
+      30,
+      31,
+      30,
+      31,
+    ];
+
+    return days[normalizedMonth];
+  }
+
+  private static ensureCalendarDelta(value: number): void {
+    assert(Number.isInteger(value), new InvalidIntegerError(value));
+  }
+
+  private static createUtcCalendarValue(
+    sourceValue: number,
+    year: number,
+    month: number,
+    day: number,
+  ): number {
+    const integerValue = Math.floor(sourceValue);
+    const fractionalMilliseconds = sourceValue - integerValue;
+    const source = new Date(integerValue);
+    const target = new Date(0);
+
+    target.setUTCFullYear(year, month, day);
+    target.setUTCHours(
+      source.getUTCHours(),
+      source.getUTCMinutes(),
+      source.getUTCSeconds(),
+      source.getUTCMilliseconds(),
+    );
+
+    return target.valueOf() + fractionalMilliseconds;
   }
 
   public static new(value: TimestampValue): Timestamp {
@@ -144,15 +190,49 @@ export class Timestamp extends ValueObject<number> {
   }
 
   public addMonths(months: number | NumberValueObject): Timestamp {
-    const value = this.value + months.valueOf() * Timestamp.FACTORS.MONTHS;
+    const delta = months.valueOf();
+    Timestamp.ensureCalendarDelta(delta);
 
-    return this.clone(value);
+    const source = new Date(Math.floor(this.value));
+    const totalMonths =
+      source.getUTCFullYear() * 12 + source.getUTCMonth() + delta;
+    const targetYear = Math.floor(totalMonths / 12);
+    const targetMonth = totalMonths - targetYear * 12;
+    const targetDay = Math.min(
+      source.getUTCDate(),
+      Timestamp.getLastDayOfUtcMonth(targetYear, targetMonth),
+    );
+
+    return this.clone(
+      Timestamp.createUtcCalendarValue(
+        this.value,
+        targetYear,
+        targetMonth,
+        targetDay,
+      ),
+    );
   }
 
   public addYears(years: number | NumberValueObject): Timestamp {
-    const value = this.value + years.valueOf() * Timestamp.FACTORS.YEARS;
+    const delta = years.valueOf();
+    Timestamp.ensureCalendarDelta(delta);
 
-    return this.clone(value);
+    const source = new Date(Math.floor(this.value));
+    const targetYear = source.getUTCFullYear() + delta;
+    const targetMonth = source.getUTCMonth();
+    const targetDay = Math.min(
+      source.getUTCDate(),
+      Timestamp.getLastDayOfUtcMonth(targetYear, targetMonth),
+    );
+
+    return this.clone(
+      Timestamp.createUtcCalendarValue(
+        this.value,
+        targetYear,
+        targetMonth,
+        targetDay,
+      ),
+    );
   }
 
   public addDuration(duration: Duration): Timestamp {
