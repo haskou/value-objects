@@ -22,9 +22,12 @@ describe('Primitive contracts', () => {
 
   it('keeps null-object valueOf typing visible for the default generic', () => {
     const value = new UntypedValue(undefined);
+    const compileOnly = () => {
+      // @ts-expect-error valueOf() may be nullish for a null object.
+      value.valueOf().toString();
+    };
 
-    // @ts-expect-error valueOf() may be nullish for a null object.
-    value.valueOf().toString();
+    expect(compileOnly).toBeDefined();
     expect(value.valueOf()).toBeUndefined();
   });
 });
