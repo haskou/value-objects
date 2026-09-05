@@ -1,3 +1,4 @@
+import { InvalidIntegerError } from '../../errors/InvalidIntegerError';
 import { InvalidNumberError } from '../../errors/InvalidNumberError';
 import { assert } from '../../patterns/Assert';
 import { NumberValueObject } from '../NumberValueObject';
@@ -36,12 +37,55 @@ export class Timestamp extends ValueObject<number> {
     return Date.now().valueOf();
   }
 
-  private static getLastDayOfUtcMonth(year: number, month: number): number {
-    const date = new Date(0);
-    date.setUTCHours(0, 0, 0, 0);
-    date.setUTCFullYear(year, month + 1, 0);
+  private static isLeapYear(year: number): boolean {
+    return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  }
 
-    return date.getUTCDate();
+  private static getLastDayOfUtcMonth(year: number, month: number): number {
+    const normalizedYear = year + Math.floor(month / 12);
+    const normalizedMonth = ((month % 12) + 12) % 12;
+    const days = [
+      31,
+      Timestamp.isLeapYear(normalizedYear) ? 29 : 28,
+      31,
+      30,
+      31,
+      30,
+      31,
+      31,
+      30,
+      31,
+      30,
+      31,
+    ];
+
+    return days[normalizedMonth];
+  }
+
+  private static ensureCalendarDelta(value: number): void {
+    assert(Number.isInteger(value), new InvalidIntegerError(value));
+  }
+
+  private static createUtcCalendarValue(
+    sourceValue: number,
+    year: number,
+    month: number,
+    day: number,
+  ): number {
+    const integerValue = Math.trunc(sourceValue);
+    const fractionalMilliseconds = sourceValue - integerValue;
+    const source = new Date(integerValue);
+    const target = new Date(0);
+
+    target.setUTCFullYear(year, month, day);
+    target.setUTCHours(
+      source.getUTCHours(),
+      source.getUTCMinutes(),
+      source.getUTCSeconds(),
+      source.getUTCMilliseconds(),
+    );
+
+    return target.valueOf() + fractionalMilliseconds;
   }
 
   public static new(value: TimestampValue): Timestamp {
@@ -150,41 +194,49 @@ export class Timestamp extends ValueObject<number> {
   }
 
   public addMonths(months: number | NumberValueObject): Timestamp {
-    const date = this.toDate();
-    const originalDay = date.getUTCDate();
+    const delta = months.valueOf();
+    Timestamp.ensureCalendarDelta(delta);
 
-    date.setUTCDate(1);
-    date.setUTCMonth(date.getUTCMonth() + months.valueOf());
-    date.setUTCDate(
-      Math.min(
-        originalDay,
-        Timestamp.getLastDayOfUtcMonth(
-          date.getUTCFullYear(),
-          date.getUTCMonth(),
-        ),
-      ),
+    const source = new Date(Math.trunc(this.value));
+    const totalMonths =
+      source.getUTCFullYear() * 12 + source.getUTCMonth() + delta;
+    const targetYear = Math.floor(totalMonths / 12);
+    const targetMonth = totalMonths - targetYear * 12;
+    const targetDay = Math.min(
+      source.getUTCDate(),
+      Timestamp.getLastDayOfUtcMonth(targetYear, targetMonth),
     );
 
-    return this.clone(date.valueOf());
+    return this.clone(
+      Timestamp.createUtcCalendarValue(
+        this.value,
+        targetYear,
+        targetMonth,
+        targetDay,
+      ),
+    );
   }
 
   public addYears(years: number | NumberValueObject): Timestamp {
-    const date = this.toDate();
-    const originalDay = date.getUTCDate();
+    const delta = years.valueOf();
+    Timestamp.ensureCalendarDelta(delta);
 
-    date.setUTCDate(1);
-    date.setUTCFullYear(date.getUTCFullYear() + years.valueOf());
-    date.setUTCDate(
-      Math.min(
-        originalDay,
-        Timestamp.getLastDayOfUtcMonth(
-          date.getUTCFullYear(),
-          date.getUTCMonth(),
-        ),
-      ),
+    const source = new Date(Math.trunc(this.value));
+    const targetYear = source.getUTCFullYear() + delta;
+    const targetMonth = source.getUTCMonth();
+    const targetDay = Math.min(
+      source.getUTCDate(),
+      Timestamp.getLastDayOfUtcMonth(targetYear, targetMonth),
     );
 
-    return this.clone(date.valueOf());
+    return this.clone(
+      Timestamp.createUtcCalendarValue(
+        this.value,
+        targetYear,
+        targetMonth,
+        targetDay,
+      ),
+    );
   }
 
   public addDuration(duration: Duration): Timestamp {
