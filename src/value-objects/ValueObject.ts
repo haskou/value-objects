@@ -1,7 +1,7 @@
-import { Nullish, Scalar } from '../types';
+import { Primitive, Nullish } from '../types';
 import { NullObject } from './NullObject';
 
-export abstract class ValueObject<T extends Scalar = Scalar> {
+export abstract class ValueObject<T extends Primitive = Primitive> {
   protected readonly value!: T;
 
   constructor(value: T | Nullish) {
@@ -16,7 +16,7 @@ export abstract class ValueObject<T extends Scalar = Scalar> {
   }
 
   protected clone(value: T): this {
-    return new (this.constructor as new (value: Scalar) => this)(
+    return new (this.constructor as new (value: Primitive) => this)(
       this.isNullish(value) ? this.value : value,
     ) as this;
   }
