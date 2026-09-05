@@ -37,16 +37,12 @@ export class Timestamp extends ValueObject<number> {
     return Date.now().valueOf();
   }
 
-  private static isLeapYear(year: number): boolean {
-    return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
-  }
-
   private static getLastDayOfUtcMonth(year: number, month: number): number {
     const normalizedYear = year + Math.floor(month / 12);
     const normalizedMonth = ((month % 12) + 12) % 12;
     const days = [
       31,
-      Timestamp.isLeapYear(normalizedYear) ? 29 : 28,
+      new Year(normalizedYear).isLeapYear() ? 29 : 28,
       31,
       30,
       31,
