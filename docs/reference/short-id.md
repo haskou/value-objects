@@ -58,6 +58,8 @@ const existing = new ShortId('507f1f77bcf86cd799439011');
 - Generation returns lowercase hex.
 - Constructor validation currently allows alphanumeric characters, not only lowercase hex.
 
+Generation uses the installed `uuid` dependency, which selects its Node or browser implementation. Consumers do not need to configure a global crypto object in Node. Browser bundlers select the browser entry automatically.
+
 ## Related
 
 - [Error handling](/guides/error-handling)

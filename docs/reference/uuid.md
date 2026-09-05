@@ -55,6 +55,8 @@ id.toString(); // e.g. '3fd4c04a-8e73-4e10-aef3-f491b32ec538'
 
 - The constructor pattern accepts lowercase `a-z`, `0-9`, and hyphens.
 
+Generation uses the installed `uuid` dependency, which selects its Node or browser implementation. Consumers do not need to configure a global crypto object in Node. Browser bundlers select the browser entry automatically.
+
 ## Related
 
 - [Error handling](/guides/error-handling)

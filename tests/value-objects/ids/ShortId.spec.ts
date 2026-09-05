@@ -5,6 +5,35 @@ import { ShortId } from '../../../src/value-objects/ids/ShortId';
 
 describe('ShortId', () => {
   describe('generate', () => {
+    it('preserves the timestamp prefix', () => {
+      const now = jest.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+      try {
+        expect(ShortId.generate().valueOf().slice(0, 8)).toBe('6553f100');
+      } finally {
+        now.mockRestore();
+      }
+    });
+
+    it('generates in Node without a global crypto object', () => {
+      const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+      Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        value: undefined,
+      });
+      try {
+        const values = Array.from({ length: 100 }, () =>
+          ShortId.generate().valueOf(),
+        );
+        expect(new Set(values).size).toBe(100);
+        expect(
+          values.every((value) => new ShortId(value) instanceof ShortId),
+        ).toBeTrue();
+      } finally {
+        if (descriptor) Object.defineProperty(globalThis, 'crypto', descriptor);
+        else Reflect.deleteProperty(globalThis, 'crypto');
+      }
+    });
+
     it('should generate a valid ShortId', () => {
       const id = ShortId.generate();
       expect(id).toBeInstanceOf(ShortId);

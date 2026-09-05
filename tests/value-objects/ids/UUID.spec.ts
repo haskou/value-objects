@@ -5,6 +5,26 @@ import { UUID } from '../../../src/value-objects/ids/UUID';
 
 describe('UUID', () => {
   describe('generate', () => {
+    it('generates in Node without a global crypto object', () => {
+      const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+      Object.defineProperty(globalThis, 'crypto', {
+        configurable: true,
+        value: undefined,
+      });
+      try {
+        const values = Array.from({ length: 100 }, () =>
+          UUID.generate().valueOf(),
+        );
+        expect(new Set(values).size).toBe(100);
+        expect(
+          values.every((value) => new UUID(value) instanceof UUID),
+        ).toBeTrue();
+      } finally {
+        if (descriptor) Object.defineProperty(globalThis, 'crypto', descriptor);
+        else Reflect.deleteProperty(globalThis, 'crypto');
+      }
+    });
+
     it('should generate a valid LongId', () => {
       const id = UUID.generate();
       expect(id).toBeInstanceOf(UUID);
