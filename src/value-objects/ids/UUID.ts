@@ -1,4 +1,4 @@
-import { Buffer } from 'buffer';
+import { v4 as uuidV4 } from 'uuid';
 
 import { InvalidFormatError } from '../../errors/InvalidFormatError';
 import { InvalidLengthError } from '../../errors/InvalidLengthError';
@@ -15,31 +15,8 @@ export class UUID extends ValueObject<string> {
   private static readonly SENTINEL_PATTERN =
     /^(?:00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
 
-  private static randomBytes(size: number): Buffer {
-    const bytes = new Uint8Array(size);
-    globalThis.crypto.getRandomValues(bytes);
-
-    return Buffer.from(bytes);
-  }
-
-  private static fromRandomBytes(bytes: Buffer): string {
-    const uuidBytes = Buffer.from(bytes);
-    uuidBytes[6] = (uuidBytes[6] % 16) + 64;
-    uuidBytes[8] = (uuidBytes[8] % 64) + 128;
-
-    const hex = uuidBytes.toString('hex');
-
-    return [
-      hex.slice(0, 8),
-      hex.slice(8, 12),
-      hex.slice(12, 16),
-      hex.slice(16, 20),
-      hex.slice(20),
-    ].join('-');
-  }
-
   public static generate(): UUID {
-    return new UUID(UUID.fromRandomBytes(UUID.randomBytes(16)));
+    return new UUID(uuidV4());
   }
 
   constructor(value: string | StringValueObject) {

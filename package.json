@@ -61,7 +61,8 @@
   },
   "dependencies": {
     "buffer": "^6.0.3",
-    "tslib": "^2.8.1"
+    "tslib": "^2.8.1",
+    "uuid": "^11.1.1"
   },
   "devDependencies": {
     "@haskou/eslint-config": "^0.2.2",
