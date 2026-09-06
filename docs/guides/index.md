@@ -14,4 +14,3 @@ Use these guides when you need to adapt value objects to application code, handl
 - [Serialization](/guides/serialization)
 - [Null object](/guides/null-object)
 - [Release flow](/guides/release-flow)
-- [Agent skill](/guides/agent-skill)

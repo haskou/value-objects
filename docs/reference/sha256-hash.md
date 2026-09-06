@@ -56,7 +56,6 @@ hash.toString().length; // 64
 ## Notes
 
 - Validation is case-insensitive.
-- This package validates SHA-256 values; digest computation belongs to `@haskou/crypto`.
 
 ## Related
 

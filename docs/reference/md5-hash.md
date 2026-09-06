@@ -53,7 +53,6 @@ hash.toString(); // '5d41402abc4b2a76b9719d911017c592'
 
 ## Notes
 
-- This package validates MD5 values; digest computation belongs to `@haskou/crypto`.
 - MD5 is available for compatibility and identifiers. Do not use MD5 as a secure password hash.
 
 ## Related

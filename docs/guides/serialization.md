@@ -41,4 +41,3 @@ const createdAt = new Timestamp(stored.createdAt);
 
 - `valueOf()` is the safest default for persistence payloads.
 - Use explicit helper methods when available.
-- Cryptographic serialization belongs to the separate `@haskou/crypto` package.
