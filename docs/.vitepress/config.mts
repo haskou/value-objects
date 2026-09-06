@@ -21,7 +21,6 @@ const guideSidebar = [
       { text: 'Serialization', link: '/guides/serialization' },
       { text: 'Null object', link: '/guides/null-object' },
       { text: 'Release flow', link: '/guides/release-flow' },
-      { text: 'Agent skill', link: '/guides/agent-skill' },
     ],
   },
 ];
