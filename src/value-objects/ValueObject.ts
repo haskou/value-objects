@@ -23,7 +23,12 @@ export abstract class ValueObject<T extends Primitive = Primitive> {
 
       return NullObject.new(new.target);
     }
-    this.value = value;
+    Object.defineProperty(this, 'value', {
+      value,
+      writable: false,
+      configurable: false,
+      enumerable: true,
+    });
   }
 
   private isNullish(value: T | Nullish): value is null | undefined {

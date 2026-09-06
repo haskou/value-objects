@@ -7,7 +7,7 @@ import { ValueObject } from './ValueObject';
 export abstract class Enum<
   T extends Primitive = Primitive,
 > extends ValueObject<T> {
-  constructor(protected readonly value: T) {
+  constructor(value: T) {
     super(value);
 
     if (NullObject.isNullObject(this)) {

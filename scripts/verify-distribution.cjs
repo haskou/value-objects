@@ -49,6 +49,38 @@ const main = async () => {
   const esm = await import(esmUrl);
   verifyExports(esm, 'ESM');
 
+  for (const runtime of [cjs, esm]) {
+    const email = new runtime.Email('user@example.com');
+    assert.equal(Reflect.set(email, 'value', 'invalid'), false);
+    email.value = 'invalid'; // Non-strict JavaScript must leave the value intact.
+    assert.throws(() => {
+      'use strict';
+      email.value = 'invalid';
+    }, TypeError);
+    assert.equal(Reflect.deleteProperty(email, 'value'), false);
+    assert.throws(
+      () => Object.defineProperty(email, 'value', { value: 'invalid' }),
+      TypeError,
+    );
+    assert.equal(email.valueOf(), 'user@example.com');
+
+    class LabeledEmail extends runtime.Email {
+      label = 'work';
+    }
+    const labeled = new LabeledEmail('user@example.com');
+    assert.equal(labeled.label, 'work');
+    assert.equal(labeled.valueOf(), 'user@example.com');
+
+    class Status extends runtime.Enum {
+      getValues() {
+        return ['active', 'inactive'];
+      }
+    }
+    assert.equal(new Status('active').valueOf(), 'active');
+    assert.throws(() => new Status('invalid'), runtime.ValueNotInEnumError);
+    assert.ok(runtime.NullObject.isNullObject(new Status(undefined)));
+  }
+
   for (const name of Object.keys(cjs)) {
     assert.strictEqual(
       esm[name],
