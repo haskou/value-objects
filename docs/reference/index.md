@@ -49,5 +49,3 @@ Each exported class has its own page.
 - [`Timestamp`](/reference/timestamp)
 - [`TimestampInterval`](/reference/timestamp-interval)
 - [`Year`](/reference/year)
-
-Cryptographic operations are being extracted to `@haskou/crypto`.

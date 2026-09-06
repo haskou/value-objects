@@ -42,11 +42,3 @@ yarn add @haskou/value-objects
 | [Hashes](/reference/hash) | `Hash`, `MD5Hash`, `SHA256Hash`, `SHA512Hash` |
 | [Media](/reference/media) | `Media` |
 | [Collections](/reference/unique-object-array) | `UniqueObjectArray` |
-
-Cryptographic operations are being extracted to `@haskou/crypto` and are intentionally not part of this package's value-object API.
-
-## Agent skill
-
-Reusable agent instructions and engineering skills live in [`haskou/ddd-engineer-skills`](https://github.com/haskou/ddd-engineer-skills).
-
-This repository documents and ships the runtime library. The skill repository is separate on purpose.
