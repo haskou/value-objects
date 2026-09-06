@@ -27,6 +27,12 @@ abstract class ValueObject<T extends Primitive = Primitive>
 constructor(value: T | null | undefined)
 ```
 
+## Runtime immutability
+
+The stored `value` cannot be reassigned, deleted, or redefined, including from JavaScript. Writes in strict mode throw a `TypeError`; non-strict assignments leave the value unchanged.
+
+Only the stored value is protected. Subclasses can initialize additional fields after `super()`, and are responsible for protecting those fields if needed. Subclasses must pass their final primitive value to `super()` instead of redeclaring or assigning `value` afterward.
+
 ## NullObject creation
 
 Automatic NullObject creation is enabled by default. A `null` or `undefined` constructor value returns a compatible null object instead of storing the nullish value.
