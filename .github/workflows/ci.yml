@@ -220,6 +220,52 @@ jobs:
             fi
           }
 
+          sync_package_version() {
+            local version attempt
+            version="$(npm view "$package_name" dist-tags.latest)"
+            version="$(max_version "$published_version" "$version")"
+            for attempt in 1 2 3; do
+              git fetch origin "$base_branch"
+              git checkout --detach FETCH_HEAD
+              node - "$version" "$package_name" <<'NODE'
+            const fs = require('node:fs');
+            const version = process.argv[2];
+            const manifest = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            if (manifest.name !== process.argv[3]) {
+              throw new Error(`Package name changed from ${process.argv[3]} to ${manifest.name}; refusing version synchronization`);
+            }
+            const parse = (value) => {
+              if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(value)) {
+                throw new Error(`Unsupported release version: ${value}`);
+              }
+              return value.split('.').map(Number);
+            };
+            const current = parse(manifest.version);
+            const published = parse(version);
+            const different = current.findIndex((part, index) => part !== published[index]);
+            if (different !== -1 && current[different] > published[different]) {
+              throw new Error(`Refusing to downgrade ${manifest.version} to ${version}`);
+            }
+            if (manifest.version !== version) {
+              manifest.version = version;
+              fs.writeFileSync('package.json', JSON.stringify(manifest, null, 2) + '\n');
+            }
+          NODE
+              if git diff --quiet -- package.json; then
+                return 0
+              fi
+              git add package.json
+              # Do not match the historical "Release v... for #..." baseline.
+              git commit -m "chore(release): 🔖 Sync package version to v${version}"
+              if git -c "http.https://github.com/.extraheader=$auth_header" push origin "HEAD:refs/heads/${base_branch}"; then
+                return 0
+              fi
+              echo "Version sync push failed; retrying from the latest remote commit (${attempt}/3)."
+            done
+            echo "Could not synchronize package.json after three attempts."
+            return 1
+          }
+
           prs_json="$(
             gh pr list \
               --repo "$GITHUB_REPOSITORY" \
@@ -310,6 +356,7 @@ jobs:
             published_version="$next_version"
             ensure_github_release "$pr_json" "$tag" "$next_version" "$bump"
           done
+          sync_package_version
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}

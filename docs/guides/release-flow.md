@@ -33,6 +33,12 @@ yarn build
 
 ## What CI publishes
 
+After the release queue completes, CI reads npm's `latest` version and synchronizes `package.json` on the base branch with a dedicated `chore(release)` commit. It starts from the latest remote commit and retries rejected pushes without force-pushing. Re-running the workflow does not create another commit when the version already matches. Registry errors and version downgrades fail the synchronization instead of writing an unverified version.
+
+The synchronization commit does not create a new release or change the historical release baseline. Published tags continue to identify the original source snapshots.
+
+Synchronization never falls below the version successfully published by the current run, even if npm temporarily returns an older `latest`. It stops if the package name changes on the remote branch, rather than copying a version from another package.
+
 The package publishes only the compiled `dist` directory.
 
 The package metadata declares:

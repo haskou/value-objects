@@ -14,7 +14,7 @@ const workflow = readFileSync(
 function shellFunction(name) {
   const start = workflow.indexOf(`${name}() {`);
   assert.notEqual(start, -1, `Missing workflow function ${name}`);
-  const end = workflow.indexOf('\n}', start);
+  const end = workflow.indexOf('\n}\n', start);
   assert.notEqual(end, -1);
   return workflow.slice(start, end + 2);
 }
@@ -227,3 +227,176 @@ test('legacy release commits remain recognized and PR numbers match exactly', (t
   );
   assert.equal(absent.status, 1);
 });
+
+test('version sync preserves newer remote commits and is idempotent', (t) => {
+  const f = fixture(t);
+  writeFileSync(
+    join(f.cwd, 'package.json'),
+    '{\n  "name": "test",\n  "version": "4.0.1"\n}\n',
+  );
+  f.commit('add manifest');
+  const remote = mkdtempSync(join(tmpdir(), 'release-sync-remote-'));
+  t.after(() => rmSync(remote, { recursive: true, force: true }));
+  execFileSync('git', ['clone', '--bare', f.cwd, remote], { stdio: 'pipe' });
+  f.git('remote', 'add', 'origin', remote);
+  const newer = f.commit('unrelated newer change');
+  f.git('push', 'origin', 'master');
+  f.git('checkout', '--detach', 'HEAD~1');
+  const sync = () =>
+    spawnSync(
+      'bash',
+      [
+        '-c',
+        `set -euo pipefail\n${shellFunction('max_version')}\n${shellFunction('sync_package_version')}\npublished_version=0.0.0; base_branch=master; package_name=test; auth_header=''; npm() { echo 7.0.2; }; sync_package_version`,
+      ],
+      { cwd: f.cwd, encoding: 'utf8' },
+    );
+  const result = sync();
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(f.git('rev-parse', 'HEAD^'), newer);
+  assert.equal(
+    JSON.parse(readFileSync(join(f.cwd, 'package.json'))).version,
+    '7.0.2',
+  );
+  assert.equal(f.git('diff', '--name-only', newer, 'HEAD'), 'package.json');
+  const first = f.git('rev-parse', 'HEAD');
+  assert.equal(sync().status, 0);
+  assert.equal(f.git('rev-parse', 'HEAD'), first);
+  assert.equal(
+    f.git(
+      'log',
+      '--first-parent',
+      '-n',
+      '1',
+      '--format=%H',
+      '--extended-regexp',
+      '--grep=^chore\\(release\\): .*Release v[^ ]+ for #[0-9]+$',
+    ),
+    f.baseline,
+  );
+
+  for (const npm of [
+    'npm() { return 1; }',
+    'npm() { echo invalid; }',
+    'npm() { echo 6.0.0; }',
+  ]) {
+    const failed = spawnSync(
+      'bash',
+      [
+        '-c',
+        `set -euo pipefail\n${shellFunction('max_version')}\n${shellFunction('sync_package_version')}\npublished_version=0.0.0; base_branch=master; package_name=test; auth_header=''; ${npm}; sync_package_version`,
+      ],
+      { cwd: f.cwd, encoding: 'utf8' },
+    );
+    assert.notEqual(failed.status, 0);
+    assert.equal(f.git('rev-parse', 'HEAD'), first);
+    assert.equal(
+      JSON.parse(readFileSync(join(f.cwd, 'package.json'))).version,
+      '7.0.2',
+    );
+  }
+});
+
+test('version sync retries a concurrent push without losing its changes', (t) => {
+  const f = fixture(t);
+  writeFileSync(
+    join(f.cwd, 'package.json'),
+    '{"name":"test","version":"7.0.2"}\n',
+  );
+  f.commit('add manifest');
+  const root = mkdtempSync(join(tmpdir(), 'release-sync-race-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const remote = join(root, 'remote.git');
+  const competitor = join(root, 'competitor');
+  execFileSync('git', ['clone', '--bare', f.cwd, remote], { stdio: 'pipe' });
+  execFileSync('git', ['clone', remote, competitor], { stdio: 'pipe' });
+  f.git('remote', 'add', 'origin', remote);
+  const result = spawnSync(
+    'bash',
+    [
+      '-c',
+      `
+set -euo pipefail
+${shellFunction('max_version')}\n${shellFunction('sync_package_version')}
+published_version=0.0.0; base_branch=master; package_name=test; auth_header=''
+npm() { echo 7.0.3; }
+competed=false
+git() {
+  if [[ "$*" == *"push origin"* ]] && [ "$competed" = false ]; then
+    competed=true
+    echo concurrent > "$COMPETITOR/concurrent"
+    command git -C "$COMPETITOR" add concurrent
+    command git -C "$COMPETITOR" -c user.name=Test -c user.email=test@example.invalid commit -m concurrent
+    command git -C "$COMPETITOR" push origin master
+  fi
+  command git "$@"
+}
+sync_package_version
+`,
+    ],
+    {
+      cwd: f.cwd,
+      encoding: 'utf8',
+      env: { ...process.env, COMPETITOR: competitor },
+    },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /retrying/);
+  assert.equal(readFileSync(join(f.cwd, 'concurrent'), 'utf8'), 'concurrent\n');
+  assert.equal(
+    JSON.parse(readFileSync(join(f.cwd, 'package.json'))).version,
+    '7.0.3',
+  );
+  assert.equal(f.git('log', '-1', '--format=%s', 'HEAD^'), 'concurrent');
+  assert.equal(f.git('rev-parse', 'HEAD'), f.git('rev-parse', 'origin/master'));
+});
+
+for (const renamed of [false, true]) {
+  test(
+    renamed
+      ? 'version sync rejects a renamed remote package'
+      : 'version sync retains the just-published version when npm latest is stale',
+    (t) => {
+      const f = fixture(t);
+      writeFileSync(
+        join(f.cwd, 'package.json'),
+        JSON.stringify({
+          name: renamed ? 'renamed' : 'test',
+          version: '7.0.2',
+        }) + '\n',
+      );
+      const original = f.commit('manifest');
+      const remote = mkdtempSync(join(tmpdir(), 'release-sync-registry-'));
+      t.after(() => rmSync(remote, { recursive: true, force: true }));
+      execFileSync('git', ['clone', '--bare', f.cwd, remote], {
+        stdio: 'pipe',
+      });
+      f.git('remote', 'add', 'origin', remote);
+      const result = spawnSync(
+        'bash',
+        [
+          '-c',
+          `set -euo pipefail
+${shellFunction('max_version')}
+${shellFunction('sync_package_version')}
+published_version=7.0.3; base_branch=master; package_name=test; auth_header=''
+npm() { echo 7.0.2; }
+sync_package_version
+`,
+        ],
+        { cwd: f.cwd, encoding: 'utf8' },
+      );
+      if (renamed) {
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /Package name changed/);
+        assert.equal(f.git('rev-parse', 'HEAD'), original);
+      } else {
+        assert.equal(result.status, 0, result.stderr);
+        assert.equal(
+          JSON.parse(readFileSync(join(f.cwd, 'package.json'))).version,
+          '7.0.3',
+        );
+      }
+    },
+  );
+}
