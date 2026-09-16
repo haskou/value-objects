@@ -75,7 +75,7 @@
     "eslint": "^10.10.0",
     "jest": "^30.5.1",
     "jest-extended": "^7.0.0",
-    "prettier": "^3.9.6",
+    "prettier": "^3.9.7",
     "publint": "^0.3.24",
     "ts-jest": "^29.4.12",
     "tsdown": "^0.23.0",
