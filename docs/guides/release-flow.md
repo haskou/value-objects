@@ -37,6 +37,8 @@ After the release queue completes, CI reads npm's `latest` version and synchroni
 
 The synchronization commit does not create a new release or change the historical release baseline. Published tags continue to identify the original source snapshots.
 
+Synchronization never falls below the version successfully published by the current run, even if npm temporarily returns an older `latest`. It stops if the package name changes on the remote branch, rather than copying a version from another package.
+
 The package publishes only the compiled `dist` directory.
 
 The package metadata declares:

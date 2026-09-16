@@ -223,13 +223,17 @@ jobs:
           sync_package_version() {
             local version attempt
             version="$(npm view "$package_name" dist-tags.latest)"
+            version="$(max_version "$published_version" "$version")"
             for attempt in 1 2 3; do
               git fetch origin "$base_branch"
               git checkout --detach FETCH_HEAD
-              node - "$version" <<'NODE'
+              node - "$version" "$package_name" <<'NODE'
             const fs = require('node:fs');
             const version = process.argv[2];
             const manifest = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            if (manifest.name !== process.argv[3]) {
+              throw new Error(`Package name changed from ${process.argv[3]} to ${manifest.name}; refusing version synchronization`);
+            }
             const parse = (value) => {
               if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(value)) {
                 throw new Error(`Unsupported release version: ${value}`);

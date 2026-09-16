@@ -14,7 +14,7 @@ const workflow = readFileSync(
 function shellFunction(name) {
   const start = workflow.indexOf(`${name}() {`);
   assert.notEqual(start, -1, `Missing workflow function ${name}`);
-  const end = workflow.indexOf('\n}', start);
+  const end = workflow.indexOf('\n}\n', start);
   assert.notEqual(end, -1);
   return workflow.slice(start, end + 2);
 }
@@ -247,7 +247,7 @@ test('version sync preserves newer remote commits and is idempotent', (t) => {
       'bash',
       [
         '-c',
-        `set -euo pipefail\n${shellFunction('sync_package_version')}\nbase_branch=master; package_name=test; auth_header=''; npm() { echo 7.0.2; }; sync_package_version`,
+        `set -euo pipefail\n${shellFunction('max_version')}\n${shellFunction('sync_package_version')}\npublished_version=0.0.0; base_branch=master; package_name=test; auth_header=''; npm() { echo 7.0.2; }; sync_package_version`,
       ],
       { cwd: f.cwd, encoding: 'utf8' },
     );
@@ -284,7 +284,7 @@ test('version sync preserves newer remote commits and is idempotent', (t) => {
       'bash',
       [
         '-c',
-        `set -euo pipefail\n${shellFunction('sync_package_version')}\nbase_branch=master; package_name=test; auth_header=''; ${npm}; sync_package_version`,
+        `set -euo pipefail\n${shellFunction('max_version')}\n${shellFunction('sync_package_version')}\npublished_version=0.0.0; base_branch=master; package_name=test; auth_header=''; ${npm}; sync_package_version`,
       ],
       { cwd: f.cwd, encoding: 'utf8' },
     );
@@ -317,8 +317,8 @@ test('version sync retries a concurrent push without losing its changes', (t) =>
       '-c',
       `
 set -euo pipefail
-${shellFunction('sync_package_version')}
-base_branch=master; package_name=test; auth_header=''
+${shellFunction('max_version')}\n${shellFunction('sync_package_version')}
+published_version=0.0.0; base_branch=master; package_name=test; auth_header=''
 npm() { echo 7.0.3; }
 competed=false
 git() {
@@ -350,3 +350,53 @@ sync_package_version
   assert.equal(f.git('log', '-1', '--format=%s', 'HEAD^'), 'concurrent');
   assert.equal(f.git('rev-parse', 'HEAD'), f.git('rev-parse', 'origin/master'));
 });
+
+for (const renamed of [false, true]) {
+  test(
+    renamed
+      ? 'version sync rejects a renamed remote package'
+      : 'version sync retains the just-published version when npm latest is stale',
+    (t) => {
+      const f = fixture(t);
+      writeFileSync(
+        join(f.cwd, 'package.json'),
+        JSON.stringify({
+          name: renamed ? 'renamed' : 'test',
+          version: '7.0.2',
+        }) + '\n',
+      );
+      const original = f.commit('manifest');
+      const remote = mkdtempSync(join(tmpdir(), 'release-sync-registry-'));
+      t.after(() => rmSync(remote, { recursive: true, force: true }));
+      execFileSync('git', ['clone', '--bare', f.cwd, remote], {
+        stdio: 'pipe',
+      });
+      f.git('remote', 'add', 'origin', remote);
+      const result = spawnSync(
+        'bash',
+        [
+          '-c',
+          `set -euo pipefail
+${shellFunction('max_version')}
+${shellFunction('sync_package_version')}
+published_version=7.0.3; base_branch=master; package_name=test; auth_header=''
+npm() { echo 7.0.2; }
+sync_package_version
+`,
+        ],
+        { cwd: f.cwd, encoding: 'utf8' },
+      );
+      if (renamed) {
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /Package name changed/);
+        assert.equal(f.git('rev-parse', 'HEAD'), original);
+      } else {
+        assert.equal(result.status, 0, result.stderr);
+        assert.equal(
+          JSON.parse(readFileSync(join(f.cwd, 'package.json'))).version,
+          '7.0.3',
+        );
+      }
+    },
+  );
+}
