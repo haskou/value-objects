@@ -77,7 +77,7 @@
     "jest-extended": "^7.0.0",
     "prettier": "^3.9.9",
     "publint": "^0.3.24",
-    "ts-jest": "^29.4.13",
+    "ts-jest": "^29.4.14",
     "tsdown": "^0.23.0",
     "typescript": "^6.0.3",
     "vitepress": "^1.6.4",
