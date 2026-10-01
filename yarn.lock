@@ -4253,10 +4253,10 @@ property-information@^7.0.0:
   resolved "https://registry.yarnpkg.com/property-information/-/property-information-7.2.0.tgz#0809b34264e995c0bfcd3227028a1e35210af80a"
   integrity sha512-IAtzIB6sUiWaJYrX9smp3V46pBGbBeLFRGdh25kg1334VcBlD8HzhPeNIWQH9zhGmo2itIe25EHt9dQP7G5hmg==
 
-publint@^0.3.24:
-  version "0.3.24"
-  resolved "https://registry.yarnpkg.com/publint/-/publint-0.3.24.tgz#ccff1f5bfedc03f47fef8a47c2c0974eabffd048"
-  integrity sha512-9zS56KrKBoqi5Qt8h92uMP8TTM9AYZSgnmCo4u2priMqkOZvQnTsziZ2p5LJ2ywbYkAjoCDp2jda9u4cgFefIw==
+publint@^0.3.25:
+  version "0.3.25"
+  resolved "https://registry.yarnpkg.com/publint/-/publint-0.3.25.tgz#5142cbe2864d2bf798e26fed13012406cf34e590"
+  integrity sha512-WMMbn/d7JqRlfXQL/JUI4n5skC8cJ5WVr8/wT5mmiYWkUdENkZr1I5rgs2+dQPVRgoJd+JRYtB46MTsuDylw9g==
   dependencies:
     "@publint/pack" "^0.1.7"
     package-manager-detector "^1.8.0"
