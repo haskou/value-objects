@@ -1,11 +1,11 @@
 ---
 title: Media
-description: String or Buffer-backed media value object.
+description: String or Uint8Array-backed media value object.
 ---
 
 # `Media`
 
-String or Buffer-backed media value object.
+String or `Uint8Array`-backed media value object.
 
 ## Import
 
@@ -22,27 +22,26 @@ class Media extends ValueObject<string>
 ## Constructor
 
 ```typescript
-constructor(value: string | Buffer)
+constructor(value: string | Uint8Array)
 ```
 
 ## Validation
 
-Accepts strings and Node `Buffer` values.
+Accepts strings and `Uint8Array` values (Node `Buffer` is a `Uint8Array`).
 
 ## Methods
 
 | Method | Description |
 | --- | --- |
-| `getBuffer()` | Returns a defensive `Buffer` copy. |
+| `getBuffer()` | Returns a defensive `Uint8Array` copy. |
 | `getSize()` | Returns byte length. |
 | `getBase64()` | Returns the content encoded as Base64. |
-| `hasValue(other)` | Compares Media, Buffer, or primitive values by their underlying bytes/value. |
+| `hasValue(other)` | Compares Media, `Uint8Array`, or primitive values by their underlying bytes/value. |
 | `isEqual(other)` | Requires another `Media` and compares its underlying bytes. |
 
 ## Example
 
 ```typescript
-import { Buffer } from 'buffer';
 import { Media } from '@haskou/value-objects';
 
 const media = new Media('hello world');
@@ -50,12 +49,13 @@ const media = new Media('hello world');
 media.getSize(); // 11
 media.getBase64(); // 'aGVsbG8gd29ybGQ='
 media.isEqual(new Media('hello world')); // true
-media.hasValue(Buffer.from('hello world')); // true
+media.hasValue(new TextEncoder().encode('hello world')); // true
 ```
 
 ## Notes
 
-- When constructed from a Buffer, the Buffer is copied. Returned buffers are also copies.
+- When constructed from bytes, the bytes are copied. Returned arrays are also copies.
+- Text decoding of byte input is UTF-8 and keeps a leading BOM. Equality and `getBuffer()` use the original bytes.
 - Use `isEqual()` for Media-to-Media equality and `hasValue()` when only the underlying content matters.
 
 ## Related

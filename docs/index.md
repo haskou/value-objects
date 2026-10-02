@@ -5,7 +5,7 @@ description: Documentation for @haskou/value-objects.
 
 # Value Objects documentation
 
-A TypeScript library for validated, immutable primitive wrappers and small utility value objects.
+A dependency-less TypeScript library for validated, immutable primitive wrappers and small utility value objects.
 
 ::: info Documentation
 This site is the main documentation for `@haskou/value-objects`.

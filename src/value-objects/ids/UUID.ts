@@ -1,5 +1,3 @@
-import { v4 as uuidV4 } from 'uuid';
-
 import { InvalidFormatError } from '../../errors/InvalidFormatError';
 import { InvalidLengthError } from '../../errors/InvalidLengthError';
 import { assert } from '../../patterns';
@@ -16,7 +14,23 @@ export class UUID extends ValueObject<string> {
     /^(?:00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
 
   public static generate(): UUID {
-    return new UUID(uuidV4());
+    const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+    // RFC 4122 §4.4: version 4 and variant 10xx.
+    bytes[6] = (bytes[6] % 16) + 64;
+    bytes[8] = (bytes[8] % 64) + 128;
+    const hex = Array.from(bytes, (byte) =>
+      byte.toString(16).padStart(2, '0'),
+    ).join('');
+
+    return new UUID(
+      [
+        hex.slice(0, 8),
+        hex.slice(8, 12),
+        hex.slice(12, 16),
+        hex.slice(16, 20),
+        hex.slice(20),
+      ].join('-'),
+    );
   }
 
   constructor(value: string | StringValueObject) {

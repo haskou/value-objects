@@ -19,10 +19,15 @@ describe('Media', () => {
       expect(media.valueOf()).toBe(testContent);
     });
 
-    it('should create from a Buffer', () => {
-      const media = new Media(Buffer.from(testContent));
+    it('should create from a plain Uint8Array', () => {
+      const media = new Media(new TextEncoder().encode(testContent));
       expect(media).toBeInstanceOf(Media);
       expect(media.valueOf()).toBe(testContent);
+    });
+
+    it('should keep a leading BOM when decoding bytes', () => {
+      const media = new Media(new Uint8Array([0xef, 0xbb, 0xbf, 0x61]));
+      expect(media.valueOf()).toBe('\uFEFFa');
     });
 
     it('should preserve non-text bytes from a Buffer', () => {
@@ -38,12 +43,12 @@ describe('Media', () => {
   });
 
   describe('getBuffer', () => {
-    it('should return the content as a Buffer', () => {
+    it('should return the content as a Uint8Array', () => {
       const media = new Media(testContent);
-      const buffer = media.getBuffer();
+      const bytes = media.getBuffer();
 
-      expect(buffer).toBeInstanceOf(Buffer);
-      expect(buffer.toString()).toBe(testContent);
+      expect(bytes).toBeInstanceOf(Uint8Array);
+      expect(new TextDecoder().decode(bytes)).toBe(testContent);
     });
   });
 

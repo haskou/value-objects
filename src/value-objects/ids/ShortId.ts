@@ -1,6 +1,3 @@
-import { Buffer } from 'buffer';
-import { parse, v4 as uuidV4 } from 'uuid';
-
 import { InvalidFormatError } from '../../errors/InvalidFormatError';
 import { InvalidLengthError } from '../../errors/InvalidLengthError';
 import { assert } from '../../patterns';
@@ -13,14 +10,13 @@ export class ShortId extends ValueObject<string> {
   private static readonly PATTERN = new RegExp(`[a-zA-Z0-9]{${this.LENGTH}}$`);
 
   private static generateObjectIdHex(): string {
-    const random = parse(uuidV4());
-    const bytes = Buffer.alloc(12);
-    bytes.writeUInt32BE(Math.floor(Date.now() / 1000), 0);
-    // Keep eight fully random bytes, excluding the UUID version/variant bytes.
-    bytes.set(random.subarray(0, 6), 4);
-    bytes.set(random.subarray(9, 11), 10);
+    const bytes = new Uint8Array(12);
+    new DataView(bytes.buffer).setUint32(0, Math.floor(Date.now() / 1000));
+    bytes.set(globalThis.crypto.getRandomValues(new Uint8Array(8)), 4);
 
-    return bytes.toString('hex');
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join(
+      '',
+    );
   }
 
   public static generate(): ShortId {

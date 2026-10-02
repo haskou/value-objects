@@ -4,10 +4,13 @@
 
 Replace primitive obsession and defensive validation with domain-safe values that validate themselves.
 
+Dependency-less: zero runtime dependencies, for Node.js and browsers.
+
 [![CI](https://github.com/haskou/value-objects/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/haskou/value-objects/actions/workflows/ci.yml?query=branch%3Amaster)
 [![codecov](https://codecov.io/gh/haskou/value-objects/branch/master/graph/badge.svg)](https://codecov.io/gh/haskou/value-objects)
 [![npm version](https://img.shields.io/npm/v/@haskou/value-objects.svg)](https://www.npmjs.com/package/@haskou/value-objects)
 [![npm downloads](https://img.shields.io/npm/dw/@haskou/value-objects.svg)](https://www.npmjs.com/package/@haskou/value-objects)
+[![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](https://www.npmjs.com/package/@haskou/value-objects?activeTab=dependencies)
 [![license](https://img.shields.io/npm/l/@haskou/value-objects.svg)](LICENSE.txt)
 
 ## Installation
