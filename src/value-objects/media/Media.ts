@@ -1,25 +1,30 @@
-import { Buffer } from 'buffer';
-
 import { NullObject } from '../NullObject';
 import { ValueObject } from '../ValueObject';
 
 export class Media extends ValueObject<string> {
-  private readonly buffer?: Buffer;
+  private static readonly BASE64_CHUNK_SIZE = 0x8000;
 
-  constructor(value: string | Buffer) {
-    super(value?.toString());
+  private readonly buffer?: Uint8Array;
+
+  constructor(value: string | Uint8Array) {
+    super(
+      value instanceof Uint8Array
+        ? new TextDecoder('utf-8', { ignoreBOM: true }).decode(value)
+        : value,
+    );
 
     if (NullObject.isNullObject(this)) {
       return this;
     }
 
-    this.buffer = Buffer.isBuffer(value) ? Buffer.from(value) : undefined;
+    this.buffer =
+      value instanceof Uint8Array ? new Uint8Array(value) : undefined;
   }
 
-  public getBuffer(): Buffer {
+  public getBuffer(): Uint8Array {
     return this.buffer === undefined
-      ? Buffer.from(this.value)
-      : Buffer.from(this.buffer);
+      ? new TextEncoder().encode(this.value)
+      : new Uint8Array(this.buffer);
   }
 
   public getSize(): number {
@@ -27,18 +32,37 @@ export class Media extends ValueObject<string> {
   }
 
   public getBase64(): string {
-    return this.getBuffer().toString('base64');
+    const bytes = this.getBuffer();
+    const chunks: string[] = [];
+
+    // Chunked so large payloads do not overflow the call stack.
+    for (let i = 0; i < bytes.length; i += Media.BASE64_CHUNK_SIZE) {
+      chunks.push(
+        String.fromCharCode(...bytes.subarray(i, i + Media.BASE64_CHUNK_SIZE)),
+      );
+    }
+
+    return btoa(chunks.join(''));
   }
 
   public hasValue(other: unknown): boolean {
+    let otherBytes: Uint8Array | undefined;
+
     if (other instanceof Media) {
-      return this.getBuffer().equals(other.getBuffer());
+      otherBytes = other.getBuffer();
+    } else if (other instanceof Uint8Array) {
+      otherBytes = other;
     }
 
-    if (Buffer.isBuffer(other)) {
-      return this.getBuffer().equals(other);
+    if (otherBytes === undefined) {
+      return super.hasValue(other);
     }
 
-    return super.hasValue(other);
+    const bytes = this.getBuffer();
+
+    return (
+      bytes.length === otherBytes.length &&
+      bytes.every((byte, i) => byte === otherBytes[i])
+    );
   }
 }

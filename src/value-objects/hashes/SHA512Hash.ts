@@ -1,12 +1,10 @@
-import { Buffer } from 'buffer';
-
 import { InvalidHashError } from '../../errors/InvalidHashError';
 import { assert } from '../../patterns';
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
-import { ValueObject } from '../ValueObject';
+import { Hash } from './Hash';
 
-export class SHA512Hash extends ValueObject<string> {
+export class SHA512Hash extends Hash {
   public static isValid(hash: string | StringValueObject): boolean {
     return !!hash.valueOf().match(/^[a-f0-9]{128}$/i);
   }
@@ -21,12 +19,6 @@ export class SHA512Hash extends ValueObject<string> {
     assert(
       SHA512Hash.isValid(this.valueOf()),
       new InvalidHashError('SHA512', source.valueOf()),
-    );
-  }
-
-  public toBase64(): StringValueObject {
-    return new StringValueObject(
-      Buffer.from(this.valueOf(), 'hex').toString('base64'),
     );
   }
 }

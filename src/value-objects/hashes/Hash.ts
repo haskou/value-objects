@@ -1,5 +1,3 @@
-import { Buffer } from 'buffer';
-
 import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
 import { ValueObject } from '../ValueObject';
@@ -14,8 +12,10 @@ export abstract class Hash extends ValueObject<string> {
   }
 
   public toBase64(): StringValueObject {
-    return new StringValueObject(
-      Buffer.from(this.valueOf(), 'hex').toString('base64'),
+    const bytes = Array.from(this.valueOf().matchAll(/../g), ([pair]) =>
+      parseInt(pair, 16),
     );
+
+    return new StringValueObject(btoa(String.fromCharCode(...bytes)));
   }
 }

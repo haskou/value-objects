@@ -39,7 +39,7 @@ amount.isGreaterThan(5); // true
 | Media | `Media` |
 | Collections | `UniqueObjectArray` |
 
-The package provides separate ESM and CommonJS entry points and does not declare a Node.js engine requirement. Identifier generation delegates to the installed `uuid` dependency for Node and browser support.
+The package is dependency-less, provides separate ESM and CommonJS entry points, and does not declare a Node.js engine requirement.
 
 ## Design expectations
 

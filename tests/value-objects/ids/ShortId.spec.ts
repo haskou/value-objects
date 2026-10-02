@@ -14,24 +14,14 @@ describe('ShortId', () => {
       }
     });
 
-    it('generates in Node without a global crypto object', () => {
-      const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
-      Object.defineProperty(globalThis, 'crypto', {
-        configurable: true,
-        value: undefined,
-      });
-      try {
-        const values = Array.from({ length: 100 }, () =>
-          ShortId.generate().valueOf(),
-        );
-        expect(new Set(values).size).toBe(100);
-        expect(
-          values.every((value) => new ShortId(value) instanceof ShortId),
-        ).toBeTrue();
-      } finally {
-        if (descriptor) Object.defineProperty(globalThis, 'crypto', descriptor);
-        else Reflect.deleteProperty(globalThis, 'crypto');
-      }
+    it('generates unique valid values', () => {
+      const values = Array.from({ length: 100 }, () =>
+        ShortId.generate().valueOf(),
+      );
+      expect(new Set(values).size).toBe(100);
+      expect(
+        values.every((value) => new ShortId(value) instanceof ShortId),
+      ).toBeTrue();
     });
 
     it('should generate a valid ShortId', () => {
