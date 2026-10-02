@@ -35,6 +35,7 @@ amount.isGreaterThan(5); // true
 | IDs | `ShortId`, `UUID` |
 | Time | `Timestamp`, `CalendarDay`, `Day`, `DayOfWeek`, `Duration`, `Hour`, `Month`, `MonthOfYear`, `TimestampInterval`, `Year` |
 | Location | `Latitude`, `Longitude`, `Coordinates` |
+| Money | `Money`, `Currency` |
 | Hashes | `Hash`, `MD5Hash`, `SHA256Hash`, `SHA512Hash` |
 | Media | `Media` |
 | Collections | `UniqueObjectArray` |

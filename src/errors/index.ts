@@ -1,4 +1,5 @@
 export * from './BaseError';
+export * from './CurrencyMismatchError';
 export * from './DomainError';
 export * from './InvalidColorError';
 export * from './InvalidDayError';
@@ -12,6 +13,7 @@ export * from './InvalidLatitudeError';
 export * from './InvalidLongitudeError';
 export * from './InvalidEmailError';
 export * from './InvalidMinutesError';
+export * from './InvalidMoneyError';
 export * from './InvalidNumberError';
 export * from './InvalidPasswordError';
 export * from './InvalidPositiveNumberError';
