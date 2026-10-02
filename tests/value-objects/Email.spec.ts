@@ -1,4 +1,9 @@
-import { Email, InvalidEmailError, StringValueObject } from '../../src';
+import {
+  Email,
+  InvalidEmailError,
+  InvalidStringLengthError,
+  StringValueObject,
+} from '../../src';
 import { NullObject } from '../../src/value-objects/NullObject';
 
 describe('Email', () => {
@@ -137,5 +142,45 @@ describe('Email', () => {
       expect(() => cloned.toString()).not.toThrow();
       expect(cloned.toString()).toBe('valid@example.com');
     });
+  });
+});
+
+describe('Email limits and domain', () => {
+  it('should accept an address of exactly 254 characters', () => {
+    const email = `${'a'.repeat(64)}@${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(57)}.com`;
+
+    expect(email.length).toBe(254);
+    expect(() => new Email(email)).not.toThrow();
+  });
+
+  it('should reject addresses longer than 254 characters', () => {
+    const email = `${'a'.repeat(64)}@${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(63)}.com`;
+
+    expect(email.length).toBeGreaterThan(254);
+    expect(() => new Email(email)).toThrow(InvalidStringLengthError);
+  });
+
+  it('should reject local parts longer than 64 characters', () => {
+    expect(() => new Email(`${'a'.repeat(65)}@example.com`)).toThrow(
+      InvalidEmailError,
+    );
+  });
+
+  it('should reject underscores in the domain', () => {
+    expect(() => new Email('user@my_domain.com')).toThrow(InvalidEmailError);
+    expect(() => new Email('user@sub_domain.example.com')).toThrow(
+      InvalidEmailError,
+    );
+  });
+
+  it('should reject domain labels longer than 63 characters', () => {
+    expect(() => new Email(`user@${'a'.repeat(64)}.com`)).toThrow(
+      InvalidEmailError,
+    );
+  });
+
+  it('should reject domain labels starting or ending with a hyphen', () => {
+    expect(() => new Email('user@-example.com')).toThrow(InvalidEmailError);
+    expect(() => new Email('user@example-.com')).toThrow(InvalidEmailError);
   });
 });
