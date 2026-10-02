@@ -1,10 +1,11 @@
+import { NullObject } from '../NullObject';
 import { StringValueObject } from '../StringValueObject';
 import { Latitude } from './Latitude';
 import { Longitude } from './Longitude';
 
 export class Coordinates extends StringValueObject {
-  private latitude: Latitude;
-  private longitude: Longitude;
+  private latitude!: Latitude;
+  private longitude!: Longitude;
 
   public static fromString(value: string): Coordinates {
     const latitude = parseFloat(value.split(',')[0]);
@@ -14,7 +15,17 @@ export class Coordinates extends StringValueObject {
   }
 
   constructor(latitude: number | Latitude, longitude: number | Longitude) {
-    super(latitude?.valueOf() + ',' + longitude?.valueOf());
+    const hasValues =
+      latitude !== null &&
+      latitude !== undefined &&
+      longitude !== null &&
+      longitude !== undefined;
+
+    super(hasValues ? latitude.valueOf() + ',' + longitude.valueOf() : null);
+
+    if (NullObject.isNullObject(this)) {
+      return this;
+    }
 
     this.latitude = new Latitude(latitude.valueOf());
     this.longitude = new Longitude(longitude.valueOf());

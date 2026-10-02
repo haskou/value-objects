@@ -1,10 +1,14 @@
 import { InvalidStringLengthError } from '../errors/InvalidStringLengthError';
 import { assert } from '../patterns/Assert';
+import { Nullish } from '../types';
 import { NullObject } from './NullObject';
 import { ValueObject } from './ValueObject';
 
 export class StringValueObject extends ValueObject<string> {
-  constructor(value: string | StringValueObject, maxLength: number = 512) {
+  constructor(
+    value: string | StringValueObject | Nullish,
+    maxLength: number = 512,
+  ) {
     super(value?.valueOf());
 
     if (NullObject.isNullObject(this)) {

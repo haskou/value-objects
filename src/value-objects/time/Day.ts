@@ -1,11 +1,16 @@
 import { InvalidDayError } from '../../errors/InvalidDayError';
 import { assert } from '../../patterns/Assert';
 import { Integer } from '../Integer';
+import { NullObject } from '../NullObject';
 import { NumberValueObject } from '../NumberValueObject';
 
 export class Day extends Integer {
   constructor(value: number | NumberValueObject) {
-    super(value.valueOf());
+    super(value?.valueOf());
+
+    if (NullObject.isNullObject(this)) {
+      return this;
+    }
 
     this.ensureIsValidDay();
   }

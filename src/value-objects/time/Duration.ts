@@ -75,7 +75,7 @@ export class Duration extends NumberValueObject {
   }
 
   constructor(milliseconds: NumberValueObject | Duration) {
-    super(milliseconds.valueOf());
+    super(milliseconds?.valueOf());
   }
 
   public getTotalDays(): NumberValueObject {
