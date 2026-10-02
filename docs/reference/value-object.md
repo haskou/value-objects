@@ -83,6 +83,7 @@ Specialized Value Objects may normalize value comparison by overriding `hasValue
 | `static enableNullObjectCreation()` | Restores automatic NullObject creation. |
 | `valueOf()` | Returns the wrapped primitive value. Null objects return `undefined`. |
 | `toString()` | Returns `valueOf().toString()`. |
+| `toJSON()` | Returns the wrapped primitive, so `JSON.stringify` emits `"a@b.co"` instead of `{"value":"a@b.co"}`. |
 | `hasValue(other)` | Compares only the wrapped value; accepts another Value Object or a primitive. |
 | `isEqual(other)` | Returns true only for the same concrete Value Object class with an equal value. |
 | `isNotEqual(other)` | Negates `isEqual()`. |
@@ -102,6 +103,8 @@ name.hasValue('hasko'); // true
 ```
 
 ## Notes
+
+- `toString()` and `toJSON()` throw `NullObjectError` on null objects, like every other method.
 
 - Use `isEqual()` for domain equality between Value Objects.
 - Use `hasValue()` only when comparing the underlying value is intentional.

@@ -5,7 +5,17 @@ description: Serialization notes for @haskou/value-objects
 
 # Serialization
 
-Most value objects serialize through `valueOf()`.
+Every value object implements `toJSON()` returning its primitive, so `JSON.stringify` emits clean values.
+
+```typescript
+JSON.stringify({
+  email: new Email('user@example.com'),
+  createdAt: new Timestamp(1782218400000),
+});
+// {"email":"user@example.com","createdAt":1782218400000}
+```
+
+`valueOf()` returns the same primitive.
 
 ```typescript
 const email = new Email('user@example.com');

@@ -66,4 +66,8 @@ export abstract class ValueObject<T extends Primitive = Primitive> {
   public toString(): string {
     return this.value!.toString();
   }
+
+  public toJSON(): T {
+    return this.value;
+  }
 }
