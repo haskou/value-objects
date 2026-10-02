@@ -94,8 +94,8 @@ const main = async () => {
   assert.ok(requiredEmail.isEqual(email));
   const unique = esm.UniqueObjectArray.fromArray([email]);
   assert.ok(unique.includes(requiredEmail));
-  assert.equal(unique.push(requiredEmail), false);
-  assert.equal(unique.length(), 1);
+  assert.equal(unique.push(requiredEmail).length, 1);
+  assert.equal(unique.length, 1);
 
   for (const [configure, consume] of [
     [esm, cjs],
