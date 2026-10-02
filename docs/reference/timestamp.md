@@ -27,6 +27,8 @@ constructor(value?: number | Date | Timestamp | string)
 
 ## Validation
 
+`undefined` creates the current time; `null` returns a NullObject.
+
 String values are parsed with `new Date(value)`. Inputs that produce an invalid ECMAScript `Date`, including non-finite and out-of-range millisecond values, are rejected with `InvalidNumberError`.
 
 ## Methods
@@ -36,7 +38,7 @@ String values are parsed with `new Date(value)`. Inputs that produce an invalid 
 | `static new(value)`           | Creates a new `Timestamp`.                              |
 | `static now()`                | Creates a timestamp for the current time.               |
 | `static fromSeconds(seconds)` | Creates from seconds.                                   |
-| `toExactHour()`               | Returns a timestamp rounded down to the exact UTC hour. |
+| `toExactHour()`               | Returns a timestamp rounded down to the exact UTC hour, independent of the local timezone. |
 | `toMilliseconds()`            | Returns milliseconds.                                   |
 | `toSeconds()`                 | Returns rounded seconds.                                |
 | `toDate()`                    | Returns a `Date`.                                       |
