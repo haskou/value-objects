@@ -18,9 +18,9 @@ export class Longitude extends NumberValueObject {
 
   constructor(value: number | NumberValueObject) {
     assert(
-      Longitude.isValid(value),
-      new InvalidLongitudeError(value.valueOf()),
+      value === null || value === undefined || Longitude.isValid(value),
+      new InvalidLongitudeError(value?.valueOf()),
     );
-    super(value.valueOf());
+    super(value?.valueOf());
   }
 }

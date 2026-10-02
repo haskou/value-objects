@@ -47,6 +47,17 @@ const value = new StringValueObject(undefined as never);
 value.isEmpty(); // throws NullObjectError
 ```
 
+## Time and coordinates
+
+`Day`, `Hour`, `Duration`, `CalendarDay`, `MonthOfYear`, `TimestampInterval`, `Latitude`, `Longitude` and `Coordinates` follow the same rule as the rest of the package: nullish input returns a NullObject instead of throwing `TypeError`. Composites such as `TimestampInterval` and `Coordinates` return a NullObject when any of their parts is nullish.
+
+```typescript
+const day = new Day(undefined as never);
+
+NullObject.isNullObject(day); // true
+day.valueOf(); // undefined
+```
+
 ## When to check
 
 ```typescript

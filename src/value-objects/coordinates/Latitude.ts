@@ -17,7 +17,10 @@ export class Latitude extends NumberValueObject {
   }
 
   constructor(value: number | NumberValueObject) {
-    assert(Latitude.isValid(value), new InvalidLatitudeError(value.valueOf()));
-    super(value.valueOf());
+    assert(
+      value === null || value === undefined || Latitude.isValid(value),
+      new InvalidLatitudeError(value?.valueOf()),
+    );
+    super(value?.valueOf());
   }
 }

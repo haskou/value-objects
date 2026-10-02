@@ -34,7 +34,7 @@ Month and year are validated through `Month` and `Year`.
 | Method | Description |
 | --- | --- |
 | `static fromTimestamp(timestamp)` | Creates a month/year from a timestamp. |
-| `static fromString(value)` | Parses `YYYY/MM`. |
+| `static fromString(value)` | Parses `YYYY/MM`; throws `InvalidFormatError` when the text is not `year/month`. |
 | `getMonth()` | Returns a `Month`. |
 | `getYear()` | Returns a `Year`. |
 | `getNumberOfDays()` | Returns the number of days in that month. |

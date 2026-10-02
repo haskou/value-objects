@@ -4,8 +4,8 @@ import { assert } from '../../patterns/Assert';
 import { StringValueObject } from '../StringValueObject';
 
 export class Hour extends StringValueObject {
-  private readonly minutes: string;
-  private readonly hours: string;
+  private readonly minutes!: string;
+  private readonly hours!: string;
 
   private static addTrailZero(value: number): string {
     return value < 10 ? `0${value}` : value.toString();
@@ -55,14 +55,22 @@ export class Hour extends StringValueObject {
   constructor(value: string);
   constructor(value: number, minutes?: number);
   constructor(value: string | number, minutes?: number) {
-    const [parsedHours, parsedMinutes] =
-      typeof value === 'number' && minutes !== undefined
-        ? Hour.parseFromNumber(value, minutes)
-        : Hour.parseFromString(value as string);
+    let parsed: string[] | undefined;
 
-    super(`${parsedHours}:${parsedMinutes}`);
-    this.hours = parsedHours;
-    this.minutes = parsedMinutes;
+    if (value !== null && value !== undefined) {
+      parsed =
+        typeof value === 'number' && minutes !== undefined
+          ? Hour.parseFromNumber(value, minutes)
+          : Hour.parseFromString(value as string);
+    }
+
+    super(parsed && `${parsed[0]}:${parsed[1]}`);
+
+    if (parsed === undefined) {
+      return this;
+    }
+
+    [this.hours, this.minutes] = parsed;
   }
 
   public addMinutes(minutes: number): Hour {

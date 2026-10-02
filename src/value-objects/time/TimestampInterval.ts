@@ -1,6 +1,7 @@
 import { InvalidTimestampIntervalError } from '../../errors/InvalidTimestampIntervalError';
 import { PrimitiveOf } from '../../interfaces/PrimitiveOf';
 import { assert } from '../../patterns/Assert';
+import { NullObject } from '../NullObject';
 import { PositiveNumber } from '../PositiveNumber';
 import { ValueObject } from '../ValueObject';
 import { CalendarDay } from './CalendarDay';
@@ -22,7 +23,11 @@ export class TimestampInterval extends ValueObject<string> {
     private readonly start: Timestamp,
     private readonly end: Timestamp,
   ) {
-    super(`${start.valueOf()}-${end.valueOf()}`);
+    super(start && end ? `${start.valueOf()}-${end.valueOf()}` : null);
+
+    if (NullObject.isNullObject(this)) {
+      return this;
+    }
 
     assert(
       start.isBeforeOrEqual(end),

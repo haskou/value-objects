@@ -9,9 +9,9 @@ import { MonthOfYear } from './MonthOfYear';
 import { Timestamp } from './Timestamp';
 
 export class CalendarDay extends ValueObject<string> {
-  private readonly year: number;
-  private readonly month: number;
-  private readonly day: number;
+  private readonly year!: number;
+  private readonly month!: number;
+  private readonly day!: number;
 
   private static ensureIsValidString(value: string): void {
     assert(
@@ -62,15 +62,19 @@ export class CalendarDay extends ValueObject<string> {
   }
 
   constructor(value?: string | Date | number | Timestamp) {
-    let timestamp: Timestamp;
+    let timestamp: Timestamp | undefined;
 
-    if (value !== undefined) {
-      timestamp = CalendarDay.timestampFromValue(value);
-    } else {
+    if (value === undefined) {
       timestamp = new Timestamp();
+    } else if (value !== null) {
+      timestamp = CalendarDay.timestampFromValue(value);
     }
 
-    super(CalendarDay.generateStringValue(timestamp));
+    super(timestamp && CalendarDay.generateStringValue(timestamp));
+
+    if (timestamp === undefined) {
+      return this;
+    }
 
     this.year = timestamp.getYear().valueOf();
     this.month = timestamp.getMonth().getIndex() + 1;
