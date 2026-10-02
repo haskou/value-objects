@@ -69,6 +69,14 @@ const referenceSidebar = [
     ],
   },
   {
+    text: 'Money',
+    collapsed: true,
+    items: [
+      { text: 'Money', link: '/reference/money' },
+      { text: 'Currency', link: '/reference/currency' },
+    ],
+  },
+  {
     text: 'Time',
     collapsed: true,
     items: [

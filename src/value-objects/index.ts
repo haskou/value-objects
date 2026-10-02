@@ -2,6 +2,7 @@ export * from './coordinates';
 export * from './hashes';
 export * from './ids';
 export * from './media';
+export * from './money';
 export * from './time';
 export * from './Color';
 export * from './Email';

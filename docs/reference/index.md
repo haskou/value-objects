@@ -37,6 +37,11 @@ Each exported class has its own page.
 - [`Longitude`](/reference/longitude)
 - [`Coordinates`](/reference/coordinates)
 
+## Money
+
+- [`Money`](/reference/money)
+- [`Currency`](/reference/currency)
+
 ## Time
 
 - [`CalendarDay`](/reference/calendar-day)

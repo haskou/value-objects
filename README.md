@@ -240,6 +240,7 @@ try {
 | Identifiers | `ShortId`, `UUID`                                             |
 | Date & time | `Timestamp`, `CalendarDay`, `Hour`, `Duration`, `MonthOfYear` |
 | Coordinates | `Latitude`, `Longitude`, `Coordinates`                        |
+| Money       | `Money`, `Currency`                                           |
 | Hashes      | `MD5Hash`, `SHA256Hash`, `SHA512Hash`                         |
 | Media       | `Media`                                                       |
 | Collections | `UniqueObjectArray`                                           |
