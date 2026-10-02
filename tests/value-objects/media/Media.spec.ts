@@ -105,7 +105,7 @@ describe('Media', () => {
         new Media(Buffer.from([0xfe])),
       ]);
 
-      expect(medias.length()).toBe(2);
+      expect(medias.length).toBe(2);
     });
   });
 

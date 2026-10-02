@@ -2,116 +2,171 @@ import { DayOfWeek, EDaysOfWeek } from '../../src/value-objects/time/DayOfWeek';
 import { UniqueObjectArray } from '../../src/value-objects/UniqueObjectArray';
 
 describe('UniqueObjectArray', () => {
-  let uniqueDaysArray: UniqueObjectArray<DayOfWeek>;
   const monday = new DayOfWeek(EDaysOfWeek.MONDAY);
   const tuesday = new DayOfWeek(EDaysOfWeek.TUESDAY);
   const thursday = new DayOfWeek(EDaysOfWeek.THURSDAY);
 
-  beforeEach(() => {
-    uniqueDaysArray = new UniqueObjectArray<DayOfWeek>();
+  class Tag {
+    constructor(private readonly name: string) {}
+
+    public isEqual(other: unknown): boolean {
+      return other instanceof Tag && other.name === this.name;
+    }
+  }
+
+  describe('push', () => {
+    it('should return a new instance without mutating the original', () => {
+      const empty = new UniqueObjectArray<DayOfWeek>();
+
+      const result = empty.push(monday);
+
+      expect(result).not.toBe(empty);
+      expect(empty.length).toBe(0);
+      expect([...result]).toEqual([monday]);
+    });
+
+    it('should accept several items keeping insertion order', () => {
+      const result = new UniqueObjectArray<DayOfWeek>().push(
+        monday,
+        tuesday,
+        thursday,
+      );
+
+      expect([...result]).toEqual([monday, tuesday, thursday]);
+    });
+
+    it('should ignore items equal to an existing one', () => {
+      const result = UniqueObjectArray.fromArray([monday]).push(
+        new DayOfWeek(EDaysOfWeek.MONDAY),
+      );
+
+      expect(result.length).toBe(1);
+    });
   });
 
-  it('should add items to the array', () => {
-    uniqueDaysArray.push(monday);
-    uniqueDaysArray.push(tuesday);
-    uniqueDaysArray.push(thursday);
+  describe('remove', () => {
+    it('should return a new instance without the equal item', () => {
+      const days = UniqueObjectArray.fromArray([monday, tuesday, thursday]);
 
-    expect([...uniqueDaysArray]).toEqual([monday, tuesday, thursday]);
+      const result = days.remove(new DayOfWeek(EDaysOfWeek.TUESDAY));
+
+      expect([...result]).toEqual([monday, thursday]);
+      expect(days.length).toBe(3);
+    });
+
+    it('should keep the collection when the item is missing', () => {
+      const days = UniqueObjectArray.fromArray([monday]);
+
+      expect([...days.remove(tuesday)]).toEqual([monday]);
+    });
   });
 
-  it('should not add duplicate items to the array', () => {
-    uniqueDaysArray.push(monday);
-    uniqueDaysArray.push(monday);
+  describe('fromArray', () => {
+    it('should remove duplicates keeping first occurrences', () => {
+      const days = UniqueObjectArray.fromArray([
+        monday,
+        tuesday,
+        thursday,
+        monday,
+        tuesday,
+        thursday,
+      ]);
 
-    expect([...uniqueDaysArray]).toEqual([new DayOfWeek(EDaysOfWeek.MONDAY)]);
+      expect([...days]).toEqual([monday, tuesday, thursday]);
+    });
+
+    it('should honor isEqual for items sharing the same lookup key', () => {
+      const tags = UniqueObjectArray.fromArray([
+        new Tag('a'),
+        new Tag('b'),
+        new Tag('a'),
+      ]);
+
+      expect(tags.length).toBe(2);
+      expect(tags.includes(new Tag('b'))).toBeTrue();
+    });
   });
 
-  it('should check if an element is in the array', () => {
-    uniqueDaysArray.push(monday);
+  describe('includes', () => {
+    it('should find equal items by value and not by identity', () => {
+      const days = UniqueObjectArray.fromArray([monday]);
 
-    expect(uniqueDaysArray.includes(monday)).toBeTruthy();
-    expect(uniqueDaysArray.includes(thursday)).toBeFalsy();
+      expect(days.includes(new DayOfWeek(EDaysOfWeek.MONDAY))).toBeTrue();
+      expect(days.includes(thursday)).toBeFalse();
+    });
   });
 
-  it('should remove an item from the array', () => {
-    uniqueDaysArray.push(monday);
-    uniqueDaysArray.push(tuesday);
-    uniqueDaysArray.push(thursday);
-
-    uniqueDaysArray.remove(tuesday);
-
-    expect([...uniqueDaysArray]).toEqual([monday, thursday]);
+  describe('length', () => {
+    it('should be a getter with the number of stored items', () => {
+      expect(new UniqueObjectArray<DayOfWeek>().length).toBe(0);
+      expect(UniqueObjectArray.fromArray([monday, tuesday]).length).toBe(2);
+    });
   });
 
-  it('should not remove an item that is not in the array', () => {
-    uniqueDaysArray.push(monday);
-    uniqueDaysArray.remove(tuesday);
+  describe('array methods', () => {
+    const days = UniqueObjectArray.fromArray([monday, tuesday, thursday]);
 
-    expect([...uniqueDaysArray]).toEqual([monday]);
-  });
+    it('should map into a plain array', () => {
+      expect(days.map((day) => day.toString())).toEqual([
+        monday.toString(),
+        tuesday.toString(),
+        thursday.toString(),
+      ]);
+    });
 
-  it('should create a unique object array from an existing array', () => {
-    const daysArray = [monday, tuesday, thursday, monday, tuesday, thursday];
+    it('should filter into a new unique collection', () => {
+      const result = days.filter((day) => day.isNotEqual(tuesday));
 
-    const uniqueDaysArray = UniqueObjectArray.fromArray(daysArray);
+      expect(result).toBeInstanceOf(UniqueObjectArray);
+      expect(result.toArray()).toEqual([monday, thursday]);
+    });
 
-    expect([...uniqueDaysArray]).toEqual([monday, tuesday, thursday]);
-  });
+    it('should find an item or return undefined', () => {
+      expect(days.find((day) => day.isEqual(tuesday))).toBe(tuesday);
+      expect(days.find(() => false)).toBeUndefined();
+    });
 
-  it('should return true when adding a new item', () => {
-    expect(uniqueDaysArray.push(monday)).toBeTruthy();
-  });
+    it('should evaluate some and every', () => {
+      expect(days.some((day) => day.isEqual(monday))).toBeTrue();
+      expect(days.some(() => false)).toBeFalse();
+      expect(days.every((day) => day.isNotEqual(new Tag('x')))).toBeTrue();
+      expect(days.every((day) => day.isEqual(monday))).toBeFalse();
+    });
 
-  it('should return false when adding existing item', () => {
-    uniqueDaysArray.push(monday);
-    expect(uniqueDaysArray.push(monday)).toBeFalsy();
-  });
+    it('should iterate with forEach in order with index', () => {
+      const seen: [string, number][] = [];
 
-  it('should return true if removes existing item', () => {
-    uniqueDaysArray.push(monday);
-    expect(uniqueDaysArray.remove(monday)).toBeTruthy();
-  });
+      days.forEach((day, index) => seen.push([day.toString(), index]));
 
-  it('should return true if removes existing item with different instance', () => {
-    uniqueDaysArray.push(monday);
-    expect(
-      uniqueDaysArray.remove(new DayOfWeek(EDaysOfWeek.MONDAY)),
-    ).toBeTruthy();
-  });
+      expect(seen).toEqual([
+        [monday.toString(), 0],
+        [tuesday.toString(), 1],
+        [thursday.toString(), 2],
+      ]);
+    });
 
-  it('should return false if removes non-existing item', () => {
-    expect(uniqueDaysArray.remove(monday)).toBeFalsy();
-  });
+    it('should reduce with an initial value', () => {
+      expect(days.reduce((count) => count + 1, 0)).toBe(3);
+    });
 
-  it('should return the correct length of the array', () => {
-    expect(uniqueDaysArray.length()).toBe(0);
+    it('should access items by position, including negative indexes', () => {
+      expect(days.at(0)).toBe(monday);
+      expect(days.at(-1)).toBe(thursday);
+      expect(days.at(10)).toBeUndefined();
+    });
 
-    uniqueDaysArray.push(monday);
-    expect(uniqueDaysArray.length()).toBe(1);
+    it('should report emptiness', () => {
+      expect(days.isEmpty()).toBeFalse();
+      expect(new UniqueObjectArray<DayOfWeek>().isEmpty()).toBeTrue();
+    });
 
-    uniqueDaysArray.push(tuesday);
-    expect(uniqueDaysArray.length()).toBe(2);
+    it('should return a copy from toArray', () => {
+      const copy = days.toArray();
 
-    uniqueDaysArray.push(thursday);
-    expect(uniqueDaysArray.length()).toBe(3);
+      copy.pop();
 
-    uniqueDaysArray.remove(tuesday);
-    expect(uniqueDaysArray.length()).toBe(2);
-  });
-
-  it('should convert the unique object array to a regular array', () => {
-    uniqueDaysArray.push(monday);
-    uniqueDaysArray.push(tuesday);
-    uniqueDaysArray.push(thursday);
-
-    const array = uniqueDaysArray.toArray();
-
-    expect(array).toEqual([monday, tuesday, thursday]);
-  });
-
-  it('should return an empty array if the unique object array is empty', () => {
-    const array = uniqueDaysArray.toArray();
-
-    expect(array).toEqual([]);
+      expect(days.length).toBe(3);
+      expect(new UniqueObjectArray<DayOfWeek>().toArray()).toEqual([]);
+    });
   });
 });
