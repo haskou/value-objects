@@ -29,11 +29,14 @@ constructor(value: string | StringValueObject)
 
 Validation is intentionally pragmatic rather than a complete RFC 5322 parser. It accepts the package's previous address format and additionally supports modern long TLDs, punycode TLDs, and common ASCII local-part characters such as apostrophes.
 
+Addresses are limited to 254 characters (RFC 5321) and local parts to 64. Domain labels accept only letters, digits and hyphens (1-63 characters, not starting or ending with a hyphen); underscores are rejected.
+
 ## Throws
 
 This class can throw:
 
 - `InvalidEmailError`
+- `InvalidStringLengthError` when longer than 254 characters
 
 ## Example
 
