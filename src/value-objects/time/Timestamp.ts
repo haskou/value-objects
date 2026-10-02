@@ -1,6 +1,7 @@
 import { InvalidIntegerError } from '../../errors/InvalidIntegerError';
 import { InvalidNumberError } from '../../errors/InvalidNumberError';
 import { assert } from '../../patterns/Assert';
+import { NullObject } from '../NullObject';
 import { NumberValueObject } from '../NumberValueObject';
 import { ValueObject } from '../ValueObject';
 import { CalendarDay } from './CalendarDay';
@@ -97,7 +98,11 @@ export class Timestamp extends ValueObject<number> {
   }
 
   public constructor(value?: TimestampValue) {
-    super(Timestamp.valueMilliseconds(value));
+    super(value === null ? null : Timestamp.valueMilliseconds(value));
+
+    if (NullObject.isNullObject(this)) {
+      return this;
+    }
 
     assert(
       Number.isFinite(new Date(this.value).valueOf()),
@@ -106,15 +111,9 @@ export class Timestamp extends ValueObject<number> {
   }
 
   public toExactHour(): Timestamp {
-    const date = new Date(this.valueOf());
+    const hours = Math.floor(this.value / Timestamp.FACTORS.HOURS);
 
-    date.setSeconds(0);
-    date.setMinutes(0);
-    date.setMilliseconds(0);
-
-    const value = Timestamp.new(date.getTime()).value;
-
-    return this.clone(value);
+    return this.clone(hours * Timestamp.FACTORS.HOURS);
   }
 
   public toMilliseconds(): number {

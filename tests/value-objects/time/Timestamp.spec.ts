@@ -1,4 +1,6 @@
 import {
+  NullObject,
+  NullObjectError,
   Timestamp,
   Year,
   Month,
@@ -512,5 +514,30 @@ describe('Timestamp', () => {
       expect(monthOfYear.getMonth()).toStrictEqual(Month.DECEMBER);
       expect(monthOfYear.getYear()).toStrictEqual(new Year(2024));
     });
+  });
+});
+
+describe('Timestamp toExactHour and null', () => {
+  it('should floor to the UTC hour regardless of the local timezone', () => {
+    const timestamp = new Timestamp('2024-05-06T09:35:53.205Z');
+
+    expect(timestamp.toExactHour().toDate().toISOString()).toBe(
+      '2024-05-06T09:00:00.000Z',
+    );
+  });
+
+  it('should floor negative timestamps towards the previous hour', () => {
+    expect(new Timestamp(-1).toExactHour().valueOf()).toBe(-3600000);
+  });
+
+  it('should return a NullObject when null is received', () => {
+    const timestamp = new Timestamp(null as unknown as number);
+
+    expect(NullObject.isNullObject(timestamp)).toBeTrue();
+    expect(() => timestamp.toExactHour()).toThrow(NullObjectError);
+  });
+
+  it('should still default to now when undefined is received', () => {
+    expect(NullObject.isNullObject(new Timestamp(undefined))).toBeFalse();
   });
 });
