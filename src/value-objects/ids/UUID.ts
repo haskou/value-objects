@@ -13,7 +13,9 @@ export class UUID extends ValueObject<string> {
   private static readonly SENTINEL_PATTERN =
     /^(?:00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
 
-  public static generate(): UUID {
+  public static generate<T extends UUID = UUID>(
+    this: new (value: string) => T,
+  ): T {
     const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
     // RFC 4122 §4.4: version 4 and variant 10xx.
     bytes[6] = (bytes[6] % 16) + 64;
@@ -22,7 +24,7 @@ export class UUID extends ValueObject<string> {
       byte.toString(16).padStart(2, '0'),
     ).join('');
 
-    return new UUID(
+    return new this(
       [
         hex.slice(0, 8),
         hex.slice(8, 12),

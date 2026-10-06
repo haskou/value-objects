@@ -85,16 +85,24 @@ export class Timestamp extends ValueObject<number> {
     return target.valueOf() + fractionalMilliseconds;
   }
 
-  public static new(value: TimestampValue): Timestamp {
-    return new Timestamp(value);
+  public static new<T extends Timestamp = Timestamp>(
+    this: new (value?: TimestampValue) => T,
+    value: TimestampValue,
+  ): T {
+    return new this(value);
   }
 
-  public static now(): Timestamp {
-    return new Timestamp();
+  public static now<T extends Timestamp = Timestamp>(
+    this: new (value?: TimestampValue) => T,
+  ): T {
+    return new this();
   }
 
-  public static fromSeconds(seconds: number | NumberValueObject): Timestamp {
-    return new Timestamp(seconds.valueOf() * Timestamp.FACTORS.SECONDS);
+  public static fromSeconds<T extends Timestamp = Timestamp>(
+    this: new (value?: TimestampValue) => T,
+    seconds: number | NumberValueObject,
+  ): T {
+    return new this(seconds.valueOf() * Timestamp.FACTORS.SECONDS);
   }
 
   public constructor(value?: TimestampValue) {

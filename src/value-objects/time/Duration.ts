@@ -36,42 +36,55 @@ export class Duration extends NumberValueObject {
     ),
   };
 
-  public static fromDays(days: number | NumberValueObject): Duration {
-    return new Duration(
+  public static fromDays<T extends Duration = Duration>(
+    this: new (milliseconds: NumberValueObject) => T,
+    days: number | NumberValueObject,
+  ): T {
+    return new this(
       new NumberValueObject(days.valueOf()).multiply(
-        this.millisecondFactors.DAYS,
+        Duration.millisecondFactors.DAYS,
       ),
     );
   }
 
-  public static fromHours(hours: number | NumberValueObject): Duration {
-    return new Duration(
+  public static fromHours<T extends Duration = Duration>(
+    this: new (milliseconds: NumberValueObject) => T,
+    hours: number | NumberValueObject,
+  ): T {
+    return new this(
       new NumberValueObject(hours.valueOf()).multiply(
-        this.millisecondFactors.HOURS,
+        Duration.millisecondFactors.HOURS,
       ),
     );
   }
 
-  public static fromMinutes(minutes: number | NumberValueObject): Duration {
-    return new Duration(
+  public static fromMinutes<T extends Duration = Duration>(
+    this: new (milliseconds: NumberValueObject) => T,
+    minutes: number | NumberValueObject,
+  ): T {
+    return new this(
       new NumberValueObject(minutes.valueOf()).multiply(
-        this.millisecondFactors.MINUTES,
+        Duration.millisecondFactors.MINUTES,
       ),
     );
   }
 
-  public static fromSeconds(seconds: number | NumberValueObject): Duration {
-    return new Duration(
+  public static fromSeconds<T extends Duration = Duration>(
+    this: new (milliseconds: NumberValueObject) => T,
+    seconds: number | NumberValueObject,
+  ): T {
+    return new this(
       new NumberValueObject(seconds.valueOf()).multiply(
-        this.millisecondFactors.SECONDS,
+        Duration.millisecondFactors.SECONDS,
       ),
     );
   }
 
-  public static fromMilliseconds(
+  public static fromMilliseconds<T extends Duration = Duration>(
+    this: new (milliseconds: NumberValueObject) => T,
     milliseconds: number | NumberValueObject,
-  ): Duration {
-    return new Duration(new NumberValueObject(milliseconds.valueOf()));
+  ): T {
+    return new this(new NumberValueObject(milliseconds.valueOf()));
   }
 
   constructor(milliseconds: NumberValueObject | Duration) {
