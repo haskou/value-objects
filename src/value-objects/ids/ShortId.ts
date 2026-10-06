@@ -19,8 +19,10 @@ export class ShortId extends ValueObject<string> {
     );
   }
 
-  public static generate(): ShortId {
-    return new ShortId(ShortId.generateObjectIdHex());
+  public static generate<T extends ShortId = ShortId>(
+    this: new (value: string) => T,
+  ): T {
+    return new this(ShortId.generateObjectIdHex());
   }
 
   constructor(value: string | StringValueObject) {
