@@ -16,7 +16,7 @@ import { PositiveInteger } from '@haskou/value-objects';
 ## Signature
 
 ```typescript
-class PositiveInteger extends Integer
+class PositiveInteger extends PositiveNumber
 ```
 
 ## Constructor
@@ -52,7 +52,8 @@ items.divide(2); // throws InvalidIntegerError
 
 ## Notes
 
-- Like `PositiveNumber`, it accepts `0`.
+- Like `PositiveNumber`, it accepts `0`. It is not an `Integer` subclass: `instanceof Integer` is `false`.
+- The sign is checked first, so `-0.5` throws `InvalidPositiveNumberError`, not `InvalidIntegerError`.
 - Arithmetic is inherited from `NumberValueObject` and goes through the constructor, so a result that is negative or not an integer throws.
 
 ## Related
