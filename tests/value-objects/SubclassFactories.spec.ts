@@ -1,8 +1,10 @@
+import { FileSize, FileSizeUnit } from '../../src';
 import { ShortId } from '../../src/value-objects/ids/ShortId';
 import { UUID } from '../../src/value-objects/ids/UUID';
 import { Duration } from '../../src/value-objects/time/Duration';
 import { Timestamp } from '../../src/value-objects/time/Timestamp';
 
+class MyFileSize extends FileSize {}
 class MyUUID extends UUID {}
 class MyShortId extends ShortId {}
 class MyTimestamp extends Timestamp {}
@@ -35,6 +37,17 @@ describe('Static factories on subclasses', () => {
     expect(MyDuration.fromMinutes(1)).toBeInstanceOf(MyDuration);
     expect(MyDuration.fromSeconds(1)).toBeInstanceOf(MyDuration);
     expect(MyDuration.fromMilliseconds(1)).toBeInstanceOf(MyDuration);
+  });
+
+  it('should return the subclass from FileSize factories', () => {
+    expect(MyFileSize.fromBytes(1)).toBeInstanceOf(MyFileSize);
+    expect(MyFileSize.from(1, FileSizeUnit.KIBIBYTE)).toBeInstanceOf(
+      MyFileSize,
+    );
+    expect(MyFileSize.parse('1 MB')).toBeInstanceOf(MyFileSize);
+    expect(
+      MyFileSize.fromBytes(10).add(MyFileSize.fromBytes(5)),
+    ).toBeInstanceOf(MyFileSize);
   });
 
   it('should keep returning the base class when called on it', () => {
