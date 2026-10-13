@@ -5,6 +5,7 @@ import {
   InvalidPositiveNumberError,
   NullObject,
   PositiveInteger,
+  PositiveNumber,
 } from '../../src';
 
 describe('PositiveInteger', () => {
@@ -34,7 +35,9 @@ describe('PositiveInteger', () => {
 
     it('should reject non-integer values', () => {
       expect(() => new PositiveInteger(1.5)).toThrow(InvalidIntegerError);
-      expect(() => new PositiveInteger(-0.5)).toThrow(InvalidIntegerError);
+      expect(() => new PositiveInteger(-0.5)).toThrow(
+        InvalidPositiveNumberError,
+      );
     });
 
     it('should reject NaN and infinite values', () => {
@@ -52,8 +55,12 @@ describe('PositiveInteger', () => {
   });
 
   describe('inheritance', () => {
-    it('should inherit from Integer', () => {
-      expect(new PositiveInteger(1)).toBeInstanceOf(Integer);
+    it('should inherit from PositiveNumber', () => {
+      expect(new PositiveInteger(1)).toBeInstanceOf(PositiveNumber);
+    });
+
+    it('should not inherit from Integer', () => {
+      expect(new PositiveInteger(1)).not.toBeInstanceOf(Integer);
     });
 
     it('should not be equal to an Integer with the same value', () => {
