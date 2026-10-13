@@ -41,6 +41,14 @@ export class FileSize extends PositiveInteger {
     return new this(Math.round(Number(value) * unit.getBytes().valueOf()));
   }
 
+  public add(other: FileSize): FileSize {
+    return this.clone(this.value + other.valueOf());
+  }
+
+  public subtract(other: FileSize): FileSize {
+    return this.clone(this.value - other.valueOf());
+  }
+
   public toBytes(): PositiveInteger {
     return new PositiveInteger(this.value);
   }
