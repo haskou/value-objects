@@ -1,6 +1,4 @@
-interface ComparableItem {
-  isEqual(item: unknown): boolean;
-}
+import { ComparableItem } from '../interfaces/ComparableItem';
 
 export class UniqueObjectArray<
   T extends ComparableItem,
