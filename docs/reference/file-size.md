@@ -31,16 +31,16 @@ Accepts integers greater than or equal to `0`.
 
 ## Methods
 
-| Method | Description |
-| --- | --- |
-| `static fromBytes(bytes)` | Creates a size from bytes. |
-| `static from(value, unit)` | Creates a size from a value in a `FileSizeUnit`, rounded to the nearest byte. |
-| `static parse(text)` | Parses text such as `1.5 MiB` or `2MB`. |
-| `toBytes()` | Returns the bytes as `PositiveInteger`. |
-| `to(unit)` | Returns the size in `unit` as `NumberValueObject`, without rounding. |
-| `toHumanReadable(units)` | Returns `{ value, unit }` using the largest unit of `units` that fits. |
-| `add(other)` | Returns the sum as `FileSize`. |
-| `subtract(other)` | Returns the difference as `FileSize`. |
+| Method                      | Description                                                                                          |
+| --------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `static fromBytes(bytes)`   | Creates a size from bytes.                                                                           |
+| `static from(value, unit)`  | Creates a size from a value in a `FileSizeUnit`, rounded to the nearest byte.                        |
+| `static parse(text)`        | Parses text such as `1.5 MiB` or `2MB`.                                                              |
+| `toBytes()`                 | Returns the bytes as `PositiveInteger`.                                                              |
+| `to(unit)`                  | Returns the size in `unit` as `NumberValueObject`, without rounding.                                 |
+| `toHumanReadable(units)`    | Returns `{ value, unit }` using the largest unit of `units` that fits.                               |
+| `add(other: FileSize)`      | Returns the sum as `FileSize`.                                                                       |
+| `subtract(other: FileSize)` | Returns the difference as `FileSize`. Throws `InvalidPositiveNumberError` if the result is negative. |
 
 Comparison and the rest of the arithmetic are inherited from `NumberValueObject`.
 

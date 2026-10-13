@@ -60,6 +60,10 @@ describe('FileSize', () => {
       const sum = new FileSize(1000).add(new FileSize(24));
       const diff = new FileSize(1000).subtract(new FileSize(400));
 
+      // Compile-time check: only compiles if both return FileSize
+      expect(sum.to(FileSizeUnit.KIBIBYTE).valueOf()).toBeCloseTo(1);
+      expect(diff.to(FileSizeUnit.BYTE).valueOf()).toBe(600);
+
       expect(sum).toBeInstanceOf(FileSize);
       expect(sum.valueOf()).toBe(1024);
       expect(diff).toBeInstanceOf(FileSize);
