@@ -57,6 +57,7 @@ const referenceSidebar = [
     items: [
       { text: 'NumberValueObject', link: '/reference/number-value-object' },
       { text: 'Integer', link: '/reference/integer' },
+      { text: 'PositiveInteger', link: '/reference/positive-integer' },
       { text: 'PositiveNumber', link: '/reference/positive-number' },
     ],
   },
@@ -74,6 +75,14 @@ const referenceSidebar = [
     items: [
       { text: 'Money', link: '/reference/money' },
       { text: 'Currency', link: '/reference/currency' },
+    ],
+  },
+  {
+    text: 'File size',
+    collapsed: true,
+    items: [
+      { text: 'FileSize', link: '/reference/file-size' },
+      { text: 'FileSizeUnit', link: '/reference/file-size-unit' },
     ],
   },
   {

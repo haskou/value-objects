@@ -20,6 +20,7 @@ Each exported class has its own page.
 - [`Password`](/reference/password)
 - [`NumberValueObject`](/reference/number-value-object)
 - [`Integer`](/reference/integer)
+- [`PositiveInteger`](/reference/positive-integer)
 - [`PositiveNumber`](/reference/positive-number)
 - [`Email`](/reference/email)
 - [`Color`](/reference/color)
@@ -41,6 +42,11 @@ Each exported class has its own page.
 
 - [`Money`](/reference/money)
 - [`Currency`](/reference/currency)
+
+## File size
+
+- [`FileSize`](/reference/file-size)
+- [`FileSizeUnit`](/reference/file-size-unit)
 
 ## Time
 

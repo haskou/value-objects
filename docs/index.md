@@ -35,9 +35,10 @@ yarn add @haskou/value-objects
 | Section | Contents |
 | --- | --- |
 | [Base objects](/reference/value-object) | `ValueObject`, `NullObject`, `Enum` |
-| [Strings and numbers](/reference/string-value-object) | `StringValueObject`, `Email`, `Color`, `Password`, `NumberValueObject`, `Integer`, `PositiveNumber` |
+| [Strings and numbers](/reference/string-value-object) | `StringValueObject`, `Email`, `Color`, `Password`, `NumberValueObject`, `Integer`, `PositiveInteger`, `PositiveNumber` |
 | [Identifiers](/reference/uuid) | `UUID`, `ShortId` |
 | [Money](/reference/money) | `Money`, `Currency` |
+| [File size](/reference/file-size) | `FileSize`, `FileSizeUnit` |
 | [Time](/reference/timestamp) | `Timestamp`, `TimestampInterval`, `CalendarDay`, `Duration`, `Hour`, `Day`, `Year`, `Month`, `MonthOfYear`, `DayOfWeek` |
 | [Coordinates](/reference/coordinates) | `Latitude`, `Longitude`, `Coordinates` |
 | [Hashes](/reference/hash) | `Hash`, `MD5Hash`, `SHA256Hash`, `SHA512Hash` |

@@ -1,4 +1,5 @@
 export * from './coordinates';
+export * from './file-size';
 export * from './hashes';
 export * from './ids';
 export * from './media';
@@ -11,6 +12,7 @@ export * from './Integer';
 export * from './NumberValueObject';
 export * from './Password';
 export * from './PositiveNumber';
+export * from './PositiveInteger';
 export * from './StringValueObject';
 export * from './NullObject';
 export * from './UniqueObjectArray';

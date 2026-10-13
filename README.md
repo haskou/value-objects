@@ -122,18 +122,19 @@ This is the main idea behind the library: use the provided Value Objects where t
 
 ## Available Value Objects
 
-| Category    | Classes                                                       | What they give you                                                |
-| ----------- | ------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Base        | `ValueObject`, `NullObject`, `Enum`                           | Immutability, equality by value, safe absence                     |
-| Strings     | `StringValueObject`, `Password`, `Email`, `Color`             | Length, format and emptiness rules                                |
-| Numbers     | `NumberValueObject`, `Integer`, `PositiveNumber`              | Range and integer guarantees                                      |
-| Money       | `Money`, `Currency`                                           | Exact arithmetic in minor units, no floating point errors         |
-| Identifiers | `ShortId`, `UUID`                                             | Generated and validated identifiers                               |
-| Date & time | `Timestamp`, `CalendarDay`, `Hour`, `Duration`, `MonthOfYear` | Arithmetic and comparison without hand-rolled `Date` code         |
-| Coordinates | `Latitude`, `Longitude`, `Coordinates`                        | Range-checked geographic points                                   |
-| Hashes      | `MD5Hash`, `SHA256Hash`, `SHA512Hash`                         | Validated digests                                                 |
-| Media       | `Media`                                                       | Typed media references                                            |
-| Collections | `UniqueObjectArray`                                           | Immutable collection without duplicates, by Value Object equality |
+| Category    | Classes                                                             | What they give you                                                |
+| ----------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Base        | `ValueObject`, `NullObject`, `Enum`                                 | Immutability, equality by value, safe absence                     |
+| Strings     | `StringValueObject`, `Password`, `Email`, `Color`                   | Length, format and emptiness rules                                |
+| Numbers     | `NumberValueObject`, `Integer`, `PositiveInteger`, `PositiveNumber` | Range and integer guarantees                                      |
+| Money       | `Money`, `Currency`                                                 | Exact arithmetic in minor units, no floating point errors         |
+| File size   | `FileSize`, `FileSizeUnit`                                          | Bytes with SI and IEC units, parsing and unit conversion          |
+| Identifiers | `ShortId`, `UUID`                                                   | Generated and validated identifiers                               |
+| Date & time | `Timestamp`, `CalendarDay`, `Hour`, `Duration`, `MonthOfYear`       | Arithmetic and comparison without hand-rolled `Date` code         |
+| Coordinates | `Latitude`, `Longitude`, `Coordinates`                              | Range-checked geographic points                                   |
+| Hashes      | `MD5Hash`, `SHA256Hash`, `SHA512Hash`                               | Validated digests                                                 |
+| Media       | `Media`                                                             | Typed media references                                            |
+| Collections | `UniqueObjectArray`                                                 | Immutable collection without duplicates, by Value Object equality |
 
 Every class has its own page in the [API reference](https://haskou.github.io/value-objects/reference/).
 
